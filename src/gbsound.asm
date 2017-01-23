@@ -73,16 +73,19 @@ UpdateCh2Frame:	LD A, [Ch2Rate]
 		LD [HL], A
 		RET NC
 ;;; fall thru to...
-UpdateCh2Tick:	CALL SetOpcodeCh2
-		CALL DoCh2Opcode
-		JP Ch2NextOpcode
+UpdateCh2Tick:	CALL PopOpcodeCh2
+		JP DoCh2Opcode
 
-SetOpcodeCh2:	LD HL, Ch2Ptr
+PopOpcodeCh2:	LD HL, Ch2Ptr
 		LD A, [HLI]
 		LD H, [HL]
 		LD L, A
-		LD A, [HL]
+		LD A, [HLI]
 		LD [OpcodeCh2], A
+		LD A, L
+		LD [Ch2Ptr], A
+		LD A, H
+		LD [Ch2Ptr+1], A
 		RET
 
 ;;; all commands have their LSB set to 1
@@ -103,16 +106,6 @@ DoCh2Opcode:	LD A, [OpcodeCh2]
 		LD H, [HL]
 		LD L, A
 		JP [HL]
-
-Ch2NextOpcode:	LD HL, Ch2Ptr
-		LD A, [HLI]
-		LD E, A
-		LD D, [HL]
-		INC DE
-		LD A, D
-		LD [HL-], A
-		LD [HL], E
-		RET
 
 Ch2KeyOff:	XOR A
 		LDH [$17], A

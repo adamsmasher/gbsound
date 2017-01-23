@@ -35,8 +35,14 @@ InitInterrupts:	LD A, 1				; enable vblank
 InitSndEngine:	XOR A
 		LD [Ch2Timer], A
 		LD HL, Song
+		LD A, [HLI]			; volume config
+		LDH [$24], A
 		LD A, [HLI]
 		LD [Ch2Rate], A
+		LD A, [HLI]			; default duty
+		LDH [$16], A
+		LD A, [HLI]			; default envelope
+		LDH [$17], A
 		LD A, L
 		LD [Ch2Ptr], A
 		LD A, H
@@ -117,7 +123,10 @@ Ch2Stop:	XOR A
 		RET
 
 SECTION "Song", HOME
-Song:		DB $40		; rate
+Song:		DB $77		; master volume config
+		DB $40		; rate
+		DB $80		; duty
+		DB $F0		; max volume, no envelope
 	;; song starts
 		DB 3		; stop
 

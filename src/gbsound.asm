@@ -115,6 +115,15 @@ Ch2Stop:	XOR A
 		LD [Ch2Rate], A
 		RET
 
+Ch2SetRate:	LD HL, Ch2Ptr
+		LD A, [HLI]
+		LD [Ch2Rate], A
+		LD A, L
+		LD [Ch2Ptr], A
+		LD A, H
+		LD [Ch2Ptr+1], A
+		RET
+
 SECTION "Song", HOME
 Song:		DB $77		; master volume config
 		DB $40		; rate
@@ -134,3 +143,4 @@ FreqTable:	DW 44, 156, 262, 363, 457, 547, 631, 710, 786, 854, 923, 986
 SECTION "CmdTable2", HOME[$7D00]
 CmdTable2:	DW Ch2KeyOff
 		DW Ch2Stop
+		DW Ch2SetRate

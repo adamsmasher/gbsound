@@ -86,9 +86,9 @@ DoCh2Opcode:	LD A, [OpcodeCh2]
 .note:		LD H, FreqTable >> 8
 		LD L, A
 		LD A, [HLI]
-		LDH [$23], A
+		LDH [$18], A
 		LD A, [HL]
-		LDH [$24], A
+		LDH [$19], A
 		RET
 .cmd:		DEC A
 		LD H, CmdTable2 >> 8
@@ -109,7 +109,7 @@ Ch2NextOpcode:	LD HL, Ch2Ptr
 		RET
 
 Ch2KeyOff:	XOR A
-		LDH [$22], A
+		LDH [$17], A
 		RET
 
 Ch2Stop:	XOR A

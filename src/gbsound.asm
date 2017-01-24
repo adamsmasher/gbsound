@@ -1,8 +1,7 @@
 SECTION "Ch2", BSS[$C000]
-Ch2Ptr:		DS 2
-OpcodeCh2:	DS 1
-Ch2Timer:	DS 1
-Ch2Rate:	DS 1
+SongPtr:	DS 2
+SongTimer:	DS 1
+SongRate:	DS 1
 
 SECTION "VBlank", HOME[$40]
 		JP VBlank
@@ -33,22 +32,28 @@ InitInterrupts:	LD A, 1				; enable vblank
 		RET
 
 InitSndEngine:	XOR A
-		LD [Ch2Timer], A
+		LD [SongTimer], A
 		LD HL, Song
-		LD A, [HLI]			; volume config
+		CALL InitSongCtrlCh
+		CALL InitCh2
+		LD A, L
+		LD [SongPtr], A
+		LD A, H
+		LD [SongPtr+1], A
+		RET
+
+InitSongCtrlCh:	LD A, [HLI]			; volume config
 		LDH [$24], A
 		LD A, [HLI]
-		LD [Ch2Rate], A
-		LD A, [HLI]			; default duty
+		LD [SongRate], A
+		RET
+
+InitCh2:	LD A, [HLI]			; default duty
 		LDH [$16], A
 		LD A, [HLI]			; default envelope
 		LDH [$17], A
-		LD A, L
-		LD [Ch2Ptr], A
-		LD A, H
-		LD [Ch2Ptr+1], A
 		RET
-
+		
 VBlank:		PUSH AF
 		PUSH BC
 		PUSH DE
@@ -60,36 +65,42 @@ VBlank:		PUSH AF
 		POP AF
 		RETI
 
-UpdateSndFrame:	CALL UpdateCh2Frame
-		RET
-
 ;;; each frame, add a "rate" var to a timer variable
 ;;; if the timer wraps around, play the next note
 ;;; this allows tempos as fast as notes 60 per second
 ;;; or as slow as 1 every ~4s (256 frames at 60fps)
-UpdateCh2Frame:	LD A, [Ch2Rate]
-		LD HL, Ch2Timer
+UpdateSndFrame:	LD A, [SongRate]
+		LD HL, SongTimer
 		ADD [HL]
 		LD [HL], A
 		RET NC
 ;;; fall thru to...
-UpdateCh2Tick:	CALL PopOpcodeCh2
-		JP DoCh2Opcode
+		CALL TickSongCtrl
+		;; CALL TickCh1
+		CALL TickCh2
+		;; CALL TickCh3
+		;; CALL TickCh4
+		RET
 
-PopOpcodeCh2:	LD HL, Ch2Ptr
+TickSongCtrl:	CALL PopOpcode
+;;; 0 is a NOP
+		AND A
+		RET Z
+		DEC A
+		LD H, CmdTblSongCtrl >> 8
+		LD L, A
 		LD A, [HLI]
 		LD H, [HL]
 		LD L, A
-		LD A, [HLI]
-		LD [OpcodeCh2], A
-		LD A, L
-		LD [Ch2Ptr], A
-		LD A, H
-		LD [Ch2Ptr+1], A
-		RET
+		JP [HL]
 
-;;; all commands have their LSB set to 1
-DoCh2Opcode:	LD A, [OpcodeCh2]
+TickCh2:	CALL PopOpcode
+;;; 0 is a NOP
+		AND A
+		RET Z
+		DEC A
+;;; all commands have their LSB set to 0 (i.e., the first is 2, then 4...)
+;;; after shifting everything down by 1, that means they now have a 1 in the LSB
 		BIT 0,A
 		JR NZ, .cmd
 .note:		LD H, FreqTable >> 8
@@ -100,37 +111,45 @@ DoCh2Opcode:	LD A, [OpcodeCh2]
 		LDH [$19], A
 		RET
 .cmd:		DEC A
-		LD H, CmdTable2 >> 8
+		LD H, CmdTblCh2 >> 8
 		LD L, A
 		LD A, [HLI]
 		LD H, [HL]
 		LD L, A
 		JP [HL]
 
+PopOpcode:	LD HL, SongPtr
+		LD A, [HLI]
+		LD H, [HL]
+		LD L, A
+		LD A, [HLI]
+		LD B, A
+		LD A, L
+		LD [SongPtr], A
+		LD A, H
+		LD [SongPtr+1], A
+		LD A, B
+		RET
+
 Ch2KeyOff:	XOR A
 		LDH [$17], A
 		RET
 
-Ch2Stop:	XOR A
-		LD [Ch2Rate], A
+SongStop:	XOR A
+		LD [SongRate], A
 		RET
 
-Ch2SetRate:	LD HL, Ch2Ptr
-		LD A, [HLI]
-		LD [Ch2Rate], A
-		LD A, L
-		LD [Ch2Ptr], A
-		LD A, H
-		LD [Ch2Ptr+1], A
+SongSetRate:	CALL PopOpcode
+		LD [SongRate], A
 		RET
 
 SECTION "Song", HOME
 Song:		DB $77		; master volume config
 		DB $40		; rate
 		DB $80		; duty
-		DB $F0		; max volume, no envelope
+		DB $F0		; max volume
 	;; song starts
-		DB 3		; stop
+		DB 3, 0		; stop, keyoff
 
 SECTION "FreqTable", HOME[$7A00]
 FreqTable:	DW 44, 156, 262, 363, 457, 547, 631, 710, 786, 854, 923, 986
@@ -141,6 +160,7 @@ FreqTable:	DW 44, 156, 262, 363, 457, 547, 631, 710, 786, 854, 923, 986
 		DW 1985, 1988, 1992, 1995, 1998, 2001, 2004, 2006, 2009, 2011, 2013, 2015
 
 SECTION "CmdTable2", HOME[$7D00]
-CmdTable2:	DW Ch2KeyOff
-		DW Ch2Stop
-		DW Ch2SetRate
+CmdTblCh2:	DW Ch2KeyOff
+
+CmdTblSongCtrl:	DW SongSetRate
+		DW SongStop

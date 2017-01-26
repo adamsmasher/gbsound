@@ -148,8 +148,8 @@ SongSetRate:	CALL PopOpcode
 SECTION "Song", HOME
 Song:		DB $77		; master volume config
 		DB $40		; rate
-		DB $80		; duty
-		DB $F0		; max volume
+		DB $80		; ch2 duty (50%)
+		DB $F0		; ch2 envelope (max volume)
 	;; song starts
 		DB 3, 0		; stop, keyoff
 

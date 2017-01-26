@@ -108,7 +108,7 @@ TickCh2:	CALL PopOpcode
 		LD A, [HLI]
 		LDH [$18], A
 		LD A, [HL]
-	;; TODO: you could probably set this bit on each entry in the freq table
+	;; TODO: you could probably set this bit on each entry in the freq table (hmm, probably not - once you add instrument pitch...)
 		SET 7,A		; restart sound
 		LDH [$19], A
 		RET

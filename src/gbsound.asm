@@ -2,6 +2,7 @@ SECTION "Ch2", BSS[$C000]
 SongPtr:	DS 2
 SongTimer:	DS 1
 SongRate:	DS 1
+Ch2Instr:	DS 2
 
 SECTION "VBlank", HOME[$40]
 		JP VBlank
@@ -52,6 +53,10 @@ InitCh2:	LD A, [HLI]			; default duty
 		LDH [$16], A
 		LD A, [HLI]			; default envelope
 		LDH [$17], A
+		LD A, [HLI]
+		LD [Ch2Instr], A
+		LD A, [HLI]
+		LD [Ch2Instr+1], A
 		RET
 		
 VBlank:		PUSH AF
@@ -97,13 +102,45 @@ TickSongCtrl:	CALL PopOpcode
 TickCh2:	CALL PopOpcode
 ;;; 0 is a NOP
 		AND A
-		RET Z
+		JP Z, Ch2NOP
 		DEC A
 ;;; all commands have their LSB set to 0 (i.e., the first is 2, then 4...)
 ;;; after shifting everything down by 1, that means they now have a 1 in the LSB
 		BIT 0,A
-		JR NZ, .cmd
-.note:		LD H, FreqTable >> 8
+		JP NZ, Ch2Cmd
+		JP Ch2Note
+
+;;; If no event occurred, just apply the current instrument
+Ch2NOP:		LD HL, Ch2Instr
+		LD A, [HLI]
+		LD H, [HL]
+		LD L, A
+		LD A, [HLI]
+	;; 0 indicates the end of the instrument - don't do anything more (ever)
+		AND A
+		RET Z
+		LD B, A
+		LD A, L
+		LD [Ch2Instr], A
+		LD A, H
+		LD [Ch2Instr+1], A
+	;; 1 indicates the end of a frame - end the loop
+		DEC B
+		RET Z
+	;; Push Ch2NOP onto the stack as a return address, so when the effect proc ends,
+	;; we run the loop again
+		LD HL, Ch2NOP
+		PUSH HL
+	;; invoke the effect proc
+		LD H, InstrTblCh2 >> 8
+		LD L, B
+		LD A, [HLI]
+		LD H, [HL]
+		LD L, A
+		JP [HL]
+
+;;; assumes A = Note
+Ch2Note:	LD H, FreqTable >> 8
 		LD L, A
 		LD A, [HLI]
 		LDH [$18], A
@@ -112,7 +149,9 @@ TickCh2:	CALL PopOpcode
 		SET 7,A		; restart sound
 		LDH [$19], A
 		RET
-.cmd:		DEC A
+
+;;; Assumes A = Cmd + 1
+Ch2Cmd:		DEC A
 		LD H, CmdTblCh2 >> 8
 		LD L, A
 		LD A, [HLI]
@@ -120,6 +159,28 @@ TickCh2:	CALL PopOpcode
 		LD L, A
 		JP [HL]
 
+Ch2VolInstr:	LD HL, Ch2Instr
+		CALL PopInstr
+		LDH [$17], A
+		RET
+
+;;; assume HL = Instrument pointer
+;;; returns the next instrument byte in A and increments the instrument pointer
+PopInstr:	LD D, H
+		LD E, L
+		LD A, [HLI]
+		LD H, [HL]
+		LD L, A
+		LD B, A
+		LD A, L
+		LD [DE], A
+		INC E
+		LD A, H
+		LD [DE], A
+		LD A, B
+		RET
+
+;;; returns the next opcode byte in A and increments the song pointer
 PopOpcode:	LD HL, SongPtr
 		LD A, [HLI]
 		LD H, [HL]
@@ -150,8 +211,11 @@ Song:		DB $77		; master volume config
 		DB $40		; rate
 		DB $80		; ch2 duty (50%)
 		DB $F0		; ch2 envelope (max volume)
+		DW .instr1	; instrument
 	;; song starts
 		DB 3, 0		; stop, keyoff
+	;; instruments
+.instr1:	DB 0		; no effect
 
 SECTION "FreqTable", HOME[$7A00]
 FreqTable:	DW 44, 156, 262, 363, 457, 547, 631, 710, 786, 854, 923, 986
@@ -160,6 +224,9 @@ FreqTable:	DW 44, 156, 262, 363, 457, 547, 631, 710, 786, 854, 923, 986
 		DW 1798, 1812, 1825, 1837, 1849, 1860, 1871, 1881, 1890, 1899, 1907, 1915
 		DW 1923, 1930, 1936, 1943, 1949, 1954, 1959, 1964, 1969, 1974, 1978, 1982
 		DW 1985, 1988, 1992, 1995, 1998, 2001, 2004, 2006, 2009, 2011, 2013, 2015
+
+SECTION "InstrTable2", HOME[$7900]
+InstrTblCh2:	DW Ch2VolInstr
 
 SECTION "CmdTable2", HOME[$7D00]
 CmdTblCh2:	DW Ch2KeyOff

@@ -3,6 +3,7 @@ SongPtr:	DS 2
 SongTimer:	DS 1
 SongRate:	DS 1
 Ch2Instr:	DS 2
+Ch2Octave:	DS 1
 
 SECTION "VBlank", HOME[$40]
 		JP VBlank
@@ -140,7 +141,9 @@ Ch2NOP:		LD HL, Ch2Instr
 		JP [HL]
 
 ;;; assumes A = Note
-Ch2Note:	LD H, FreqTable >> 8
+Ch2Note:	LD HL, Ch2Octave
+		ADD [HL]
+		LD H, FreqTable >> 8
 		LD L, A
 		LD A, [HLI]
 		LDH [$18], A
@@ -244,6 +247,18 @@ Ch2VolInstr:	LD HL, Ch2Instr
 		LD [$17], A
 		RET
 
+Ch2OctaveCmd:	LD HL, Ch2Octave
+		LD A, [HL]
+		ADD B
+		LD [HL], A
+		RET
+
+Ch2OctaveUp:	LD B, 12
+		JR Ch2OctaveCmd
+
+Ch2OctaveDown:	LD B, -12
+		JR Ch2OctaveCmd
+
 ;;; assume HL = Instrument pointer
 ;;; returns the next instrument byte in A and increments the instrument pointer
 PopInstr:	LD D, H
@@ -322,6 +337,8 @@ CmdTblCh2:	DW Ch2KeyOff
 		DW Ch2SetEnv5
 		DW Ch2SetEnv6
 		DW Ch2SetEnv7
+		DW Ch2OctaveUp
+		DW Ch2OctaveDown
 
 CmdTblSongCtrl:	DW SongSetRate
 		DW SongStop

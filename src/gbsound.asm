@@ -183,6 +183,15 @@ Ch2SetDuty75:	LD C, $16
 		LD [C], A
 		RET
 
+Ch2SetSndLen:	CALL PopOpcode
+		LD B, A
+		LD C, $16
+		LD A, [C]
+		AND $C0
+		OR B
+		LD [C], A
+		RET
+
 Ch2VolInstr:	LD HL, Ch2Instr
 		CALL PopInstr
 		LD [$17], A
@@ -258,6 +267,7 @@ CmdTblCh2:	DW Ch2KeyOff
 		DW Ch2SetDuty25
 		DW Ch2SetDuty50
 		DW Ch2SetDuty75
+		DW Ch2SetSndLen
 
 CmdTblSongCtrl:	DW SongSetRate
 		DW SongStop

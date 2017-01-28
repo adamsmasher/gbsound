@@ -159,9 +159,33 @@ Ch2Cmd:		DEC A
 		LD L, A
 		JP [HL]
 
+Ch2DutyCmdPre:	LD C, $16
+		LD A, [C]
+		AND $3F
+		RET
+
+Ch2SetDutyLo:	CALL Ch2DutyCmdPre
+		LD [C], A
+		RET
+
+Ch2SetDuty25:	CALL Ch2DutyCmdPre
+		OR $40
+		LD [C], A
+		RET
+
+Ch2SetDuty50:	CALL Ch2DutyCmdPre
+		LD A, [C]
+		AND $3F
+
+Ch2SetDuty75:	LD C, $16
+		LD A, [C]
+		OR $C0
+		LD [C], A
+		RET
+
 Ch2VolInstr:	LD HL, Ch2Instr
 		CALL PopInstr
-		LDH [$17], A
+		LD [$17], A
 		RET
 
 ;;; assume HL = Instrument pointer
@@ -230,6 +254,10 @@ InstrTblCh2:	DW Ch2VolInstr
 
 SECTION "CmdTable2", HOME[$7D00]
 CmdTblCh2:	DW Ch2KeyOff
+		DW Ch2SetDutyLo
+		DW Ch2SetDuty25
+		DW Ch2SetDuty50
+		DW Ch2SetDuty75
 
 CmdTblSongCtrl:	DW SongSetRate
 		DW SongStop

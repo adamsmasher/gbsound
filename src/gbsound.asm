@@ -159,6 +159,10 @@ Ch2Cmd:		DEC A
 		LD L, A
 		JP [HL]
 
+Ch2KeyOff:	XOR A
+		LDH [$17], A
+		RET
+
 Ch2DutyCmdPre:	LD C, $16
 		LD A, [C]
 		AND $3F
@@ -225,10 +229,6 @@ PopOpcode:	LD HL, SongPtr
 		LD A, H
 		LD [SongPtr+1], A
 		LD A, B
-		RET
-
-Ch2KeyOff:	XOR A
-		LDH [$17], A
 		RET
 
 SongStop:	XOR A

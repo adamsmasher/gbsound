@@ -58,14 +58,23 @@ InitSongCtrlCh:	LD A, [HLI]			; volume config
 		LD [SongRate], A
 		RET
 
+;;; A - instrument number
+Ch2SetInstr:	PUSH HL
+		LD H, Instruments >> 8
+		LD L, A
+		LD A, [HLI]
+		LD [Ch2InstrBase], A
+		LD A, [HL]
+		LD [Ch2InstrBase+1], A
+		POP HL
+		RET
+
 InitCh2:	LD A, [HLI]			; default duty
 		LD [Ch2RealDuty], A
 		LD A, [HLI]			; default envelope
 		LD [Ch2RealEnv], A
 		LD A, [HLI]
-		LD [Ch2InstrBase], A
-		LD A, [HLI]
-		LD [Ch2InstrBase+1], A
+		CALL Ch2SetInstr
 		XOR A
 		LD [Ch2Octave], A
 		LD [Ch2PitchAdj], A
@@ -414,6 +423,11 @@ Ch2OctaveUp:	LD B, 12
 Ch2OctaveDown:	LD B, -12
 		JR Ch2OctaveCmd
 
+Ch2SetInstrCmd:	CALL PopOpcode
+		CALL Ch2SetInstr
+		JP Ch2RstInstr
+		
+
 ;;; assume HL = Instrument pointer
 ;;; returns the next instrument byte in A and increments the instrument pointer
 PopInstr:	LD D, H
@@ -474,13 +488,14 @@ Song:		DB $77		; master volume config
 		DB $40		; rate
 		DB $80		; ch2 duty/sound len (50%/no sound length specified)
 		DB $F0		; ch2 envelope (max volume/decrease/disabled)
-		DW Instr1	; instrument
+		DW 0		; instrument
 		DW Sequence
 Sequence:	DB 0
 Pattern1:
 		DB 3, 0		; stop, keyoff
-	;; instruments
-Instr1:	DB 0		; no effect
+SECTION "Instruments", HOME[$6100]
+Instruments:	DW .instr1
+.instr1:	DB 0		; no effect
 
 SECTION "FreqTable", HOME[$7A00]
 FreqTable:	DW 44, 156, 262, 363, 457, 547, 631, 710, 786, 854, 923, 986
@@ -521,6 +536,7 @@ CmdTblCh2:	DW Ch2KeyOff
 		DW Ch2SetEnv7
 		DW Ch2OctaveUp
 		DW Ch2OctaveDown
+		DW Ch2SetInstrCmd
 
 SECTION "CmdTblSongCtrl", HOME[$7700]
 CmdTblSongCtrl:	DW SongSetRate

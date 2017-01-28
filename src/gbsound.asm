@@ -58,6 +58,8 @@ InitCh2:	LD A, [HLI]			; default duty
 		LD [Ch2Instr], A
 		LD A, [HLI]
 		LD [Ch2Instr+1], A
+		XOR A
+		LD [Ch2Octave], A
 		RET
 
 InitSeqPtr:	LD A, [HLI]

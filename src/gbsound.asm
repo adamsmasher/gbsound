@@ -493,7 +493,20 @@ Song:		DB $77		; master volume config
 		DB 0		; instrument
 		DW Sequence
 Pattern1:
-		DB 3, 0		; stop, keyoff
+		DB 0, 49
+		DB 0, 0
+		DB 0, 0
+		DB 0, 0
+		DB 0, 61
+		DB 0, 0
+		DB 0, 0
+		DB 0, 0
+		DB 0, 73
+		DB 0, 0
+		DB 0, 0
+		DB 0, 0
+		DB 7, 0		; goto frame 0
+
 SECTION "Instruments", HOME[$6100]
 Instruments:	DW .instr1
 .instr1:	DB 0		; no effect

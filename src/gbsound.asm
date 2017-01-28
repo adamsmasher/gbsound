@@ -100,7 +100,7 @@ UpdateSndFrame:	LD HL, EndOfPat
 		LD [HL], A
 		RET NC
 ;;; fall thru to...
-		CALL TickSongCtrl
+RunSndFrame:	CALL TickSongCtrl
 		;; CALL TickCh1
 		CALL TickCh2
 		;; CALL TickCh3
@@ -113,10 +113,13 @@ NextPat:	LD HL, SeqPtr
 		LD A, [HLI]
 		LD HL, SeqPtr
 		INC [HL]
-		JR NZ, .nz
+		JR NZ, LoadPat
 		INC L
 		INC [HL]
-.nz:		LD H, PatternTable >> 8
+	;; fall thru to
+		
+;;; A = Pattern to load
+LoadPat:	LD H, PatternTable >> 8
 		LD L, A
 		LD A, [HLI]
 		LD [SongPtr], A
@@ -199,7 +202,9 @@ Ch2Note:	CALL Ch2RstInstr
 		RET
 
 ;;; Assumes A = Cmd + 1
-Ch2Cmd:		DEC A
+Ch2Cmd:		LD HL, TickCh2	; put this on the stack so that we'll try to run the next op after
+		PUSH HL
+		DEC A
 		LD H, CmdTblCh2 >> 8
 		LD L, A
 		LD A, [HLI]
@@ -371,6 +376,14 @@ SongEndOfPat:	LD A, 1
 		LD [EndOfPat], A
 		RET
 
+SongJmpFrame:	CALL PopOpcode
+		LD [SeqPtr], A
+	;; a nasty bit of trickery - instead of returning and updating the sound channels
+	;; scrap the return address and jump back to the beginning of the frame update code
+	;; so that the first song control bit isn't ignored
+		ADD SP,-2
+		JP RunSndFrame
+
 SongSetRate:	CALL PopOpcode
 		LD [SongRate], A
 		RET
@@ -427,3 +440,4 @@ SECTION "CmdTblSongCtrl", HOME[$7700]
 CmdTblSongCtrl:	DW SongSetRate
 		DW SongStop
 		DW SongEndOfPat
+		DW SongJmpFrame

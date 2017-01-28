@@ -458,7 +458,7 @@ SongJmpFrame:	CALL PopOpcode
 		LD [SeqPtr], A
 	;; another, similar nasty bit of trickery - instead of returning and updating the sound channels
 	;; scrap the return address and jump back to the beginning of the frame update code
-	;; so that the first song control bit isn't ignored
+	;; so that the first song control byte isn't ignored
 		ADD SP,-2
 		JP RunSndFrame
 

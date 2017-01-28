@@ -319,7 +319,7 @@ Ch2SetEnvVol:	CALL PopOpcode
 
 Ch2VolInstr:	LD HL, Ch2InstrPtr
 		CALL PopInstr
-		LD [$17], A
+		LDH [$17], A
 		RET
 
 Ch2PitchInstr:	LD HL, Ch2InstrPtr

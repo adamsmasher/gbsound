@@ -6,6 +6,7 @@ SongTimer:	DS 1
 SongRate:	DS 1
 Ch2Instr:	DS 2
 Ch2Octave:	DS 1
+Ch2InstrMarker:	DS 2
 
 SECTION "VBlank", HOME[$40]
 		JP VBlank
@@ -273,6 +274,20 @@ Ch2VolInstr:	LD HL, Ch2Instr
 		LD [$17], A
 		RET
 
+Ch2InstrMark:	LD HL, Ch2Instr
+		LD A, [HLI]
+		LD [Ch2InstrMarker], A
+		LD A, [HL]
+		LD [Ch2InstrMarker+1], A
+		RET
+
+Ch2InstrLoop:	LD HL, Ch2InstrMarker
+		LD A, [HLI]
+		LD [Ch2Instr], A
+		LD A, [HL]
+		LD [Ch2Instr+1], A
+		JP Ch2NOP
+
 Ch2OctaveCmd:	LD HL, Ch2Octave
 		LD A, [HL]
 		ADD B
@@ -347,6 +362,8 @@ FreqTable:	DW 44, 156, 262, 363, 457, 547, 631, 710, 786, 854, 923, 986
 
 SECTION "InstrTable2", HOME[$7900]
 InstrTblCh2:	DW Ch2VolInstr
+		DW Ch2InstrMark
+		DW Ch2InstrLoop
 
 SECTION "CmdTable2", HOME[$7D00]
 CmdTblCh2:	DW Ch2KeyOff

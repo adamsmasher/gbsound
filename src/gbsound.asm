@@ -10,6 +10,7 @@ Ch2Octave:	DS 1
 Ch2InstrMarker:	DS 2
 Ch2PitchAdj:	DS 1
 Ch2RealEnv:	DS 1
+Ch2RealDuty:	DS 1
 Ch2Freq:	DS 2
 
 SECTION "VBlank", HOME[$40]
@@ -55,7 +56,7 @@ InitSongCtrlCh:	LD A, [HLI]			; volume config
 		RET
 
 InitCh2:	LD A, [HLI]			; default duty
-		LDH [$16], A
+		LD [Ch2RealDuty], A
 		LD A, [HLI]			; default envelope
 		LD [Ch2RealEnv], A
 		LD A, [HLI]
@@ -185,6 +186,8 @@ Ch2RstInstr:	LD HL, Ch2InstrBase
 		LD [Ch2InstrPtr], A
 		LD A, [HL]
 		LD [Ch2InstrPtr+1], A
+		LD A, [Ch2RealDuty]
+		LDH [$16], A
 		LD A, [Ch2RealEnv]
 		LDH [$17], A
 		RET
@@ -356,6 +359,24 @@ Ch2HPitchInstr:	LD HL, Ch2InstrPtr
 		LDH [$19], A
 		RET
 
+Ch2DutyInstr:	LD C, $16
+		LD A, [C]
+		AND $3F
+		OR B
+		LD [C], A
+		RET
+
+Ch2DutyInstrLo: LD B, 0
+		JR Ch2DutyInstr
+
+Ch2DutyInstr25:	LD B, $40
+		JR Ch2DutyInstr
+	
+Ch2DutyInstr50: LD B, $80
+		JR Ch2DutyInstr
+
+Ch2DutyInstr75:	LD B, $C0
+		JR Ch2DutyInstr
 
 Ch2InstrMark:	LD HL, Ch2InstrPtr
 		LD A, [HLI]
@@ -460,6 +481,10 @@ InstrTblCh2:	DW Ch2VolInstr
 		DW Ch2InstrLoop
 		DW Ch2PitchInstr
 		DW Ch2HPitchInstr
+		DW Ch2DutyInstrLo
+		DW Ch2DutyInstr25
+		DW Ch2DutyInstr50
+		DW Ch2DutyInstr75
 
 SECTION "CmdTable2", HOME[$7D00]
 CmdTblCh2:	DW Ch2KeyOff

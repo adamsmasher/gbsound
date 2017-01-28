@@ -340,5 +340,6 @@ CmdTblCh2:	DW Ch2KeyOff
 		DW Ch2OctaveUp
 		DW Ch2OctaveDown
 
+SECTION "CmdTblSongCtrl", HOME[$7700]
 CmdTblSongCtrl:	DW SongSetRate
 		DW SongStop

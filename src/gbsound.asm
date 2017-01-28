@@ -492,12 +492,14 @@ Song:		DB $77		; master volume config
 		DB $F0		; ch2 envelope (max volume/decrease/disabled)
 		DB 0		; instrument
 		DW Sequence
-Sequence:	DB 0
 Pattern1:
 		DB 3, 0		; stop, keyoff
 SECTION "Instruments", HOME[$6100]
 Instruments:	DW .instr1
 .instr1:	DB 0		; no effect
+
+SECTION "Sequence", HOME[$6200]
+Sequence:	DB 0
 
 SECTION "FreqTable", HOME[$7A00]
 FreqTable:	DW 44, 156, 262, 363, 457, 547, 631, 710, 786, 854, 923, 986

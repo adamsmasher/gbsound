@@ -166,7 +166,16 @@ TickCh2:	CALL PopOpcode
 		JP Ch2Note
 
 ;;; If no event occurred, just apply the current instrument
-Ch2NOP:		LD HL, Ch2InstrPtr
+Ch2NOP:		CALL ApplyInstrCh2
+TriggerCh2:	LD HL, Ch2Freq
+		LD A, [HLI]
+		LDH [$18], A
+		LD A, [HL]
+		SET 7,A		; TODO: uh now that we have to set this every time we write maybe do this once on write?
+		LDH [$19], A
+		RET
+
+ApplyInstrCh2:	LD HL, Ch2InstrPtr
 		LD A, [HLI]
 		LD H, [HL]
 		LD L, A
@@ -181,25 +190,19 @@ Ch2NOP:		LD HL, Ch2InstrPtr
 		LD [Ch2InstrPtr+1], A
 	;; 1 indicates the end of a frame - end the loop
 		DEC B
-		JR Z, .updateSnd
-	;; Push Ch2NOP onto the stack as a return address, so when the effect proc ends,
+		RET Z
+	;; Push ApplyInstr onto the stack as a return address, so when the effect proc ends,
 	;; we run the loop again
-		LD HL, Ch2NOP
+		LD HL, ApplyInstrCh2
 		PUSH HL
 	;; invoke the effect proc
+		DEC B
 		LD H, InstrTblCh2 >> 8
 		LD L, B
 		LD A, [HLI]
 		LD H, [HL]
 		LD L, A
 		JP [HL]
-.updateSnd:	LD HL, Ch2Freq
-		LD A, [HLI]
-		LD [$18], A
-		LD A, [HL]
-		SET 7,A		; TODO: uh now that we have to set this every time we write maybe do this once on write?
-		LD [$19], A
-		RET
 
 Ch2RstInstr:	LD HL, Ch2InstrBase
 		LD A, [HLI]
@@ -219,13 +222,11 @@ Ch2Note:	CALL Ch2RstInstr
 		LD H, FreqTable >> 8
 		LD L, A
 		LD A, [HLI]
-		LDH [$18], A
 		LD [Ch2Freq], A
 		LD A, [HL]
 		LD [Ch2Freq+1], A
-		SET 7,A		; restart sound
-		LDH [$19], A
-		RET
+		CALL ApplyInstrCh2
+		JP TriggerCh2
 
 ;;; Assumes A = Cmd + 1
 Ch2Cmd:		LD HL, TickCh2	; put this on the stack so that we'll try to run the next op after
@@ -436,6 +437,7 @@ PopInstr:	LD D, H
 		LD A, [HLI]
 		LD H, [HL]
 		LD L, A
+		LD A, [HLI]
 		LD B, A
 		LD A, L
 		LD [DE], A
@@ -509,9 +511,8 @@ Pattern1:
 
 SECTION "Instruments", HOME[$6100]
 Instruments:	DW .instr1
-.instr1:	DB 2, 15
-		DB 2, 0
-		DB 0
+.instr1:	DB 2, $F0, 1
+		DB 2, $00, 0
 
 SECTION "Sequence", HOME[$6200]
 Sequence:	DB 0

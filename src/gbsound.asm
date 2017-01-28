@@ -12,6 +12,7 @@ Ch2PitchAdj:	DS 1
 Ch2RealEnv:	DS 1
 Ch2RealDuty:	DS 1
 Ch2Freq:	DS 2
+Ch2CurNote:	DS 1
 
 SECTION "VBlank", HOME[$40]
 		JP VBlank
@@ -160,6 +161,7 @@ TickCh2:	CALL PopOpcode
 ;;; after shifting everything down by 1, that means they now have a 1 in the LSB
 		BIT 0,A
 		JP NZ, Ch2Cmd
+		LD [Ch2CurNote], A
 		JP Ch2Note
 
 ;;; If no event occurred, just apply the current instrument
@@ -209,8 +211,8 @@ Ch2RstInstr:	LD HL, Ch2InstrBase
 		LDH [$17], A
 		RET
 
-;;; assumes A = Note
 Ch2Note:	CALL Ch2RstInstr
+		LD A, [Ch2CurNote]
 		LD HL, Ch2Octave
 		ADD [HL]
 		LD H, FreqTable >> 8

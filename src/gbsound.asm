@@ -509,7 +509,9 @@ Pattern1:
 
 SECTION "Instruments", HOME[$6100]
 Instruments:	DW .instr1
-.instr1:	DB 0		; no effect
+.instr1:	DB 2, 15
+		DB 2, 0
+		DB 0
 
 SECTION "Sequence", HOME[$6200]
 Sequence:	DB 0

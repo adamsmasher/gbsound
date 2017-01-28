@@ -54,6 +54,7 @@ InitSongCtrlCh:	LD A, [HLI]			; volume config
 		LDH [$24], A
 		LD A, [HLI]			; channel select
 		LDH [$25], A
+		LD A, [HLI]			; song rate
 		LD [SongRate], A
 		RET
 

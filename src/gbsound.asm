@@ -4,7 +4,8 @@ SeqPtr:		DS 2
 EndOfPat:	DS 1
 SongTimer:	DS 1
 SongRate:	DS 1
-Ch2Instr:	DS 2
+Ch2InstrPtr:	DS 2
+Ch2InstrBase:	DS 2
 Ch2Octave:	DS 1
 Ch2InstrMarker:	DS 2
 Ch2PitchAdj:	DS 1
@@ -56,9 +57,9 @@ InitCh2:	LD A, [HLI]			; default duty
 		LD A, [HLI]			; default envelope
 		LDH [$17], A
 		LD A, [HLI]
-		LD [Ch2Instr], A
+		LD [Ch2InstrBase], A
 		LD A, [HLI]
-		LD [Ch2Instr+1], A
+		LD [Ch2InstrBase+1], A
 		XOR A
 		LD [Ch2Octave], A
 		LD [Ch2PitchAdj], A
@@ -110,6 +111,7 @@ NextPat:	LD HL, SeqPtr
 		LD H, [HL]
 		LD A, [HLI]
 		LD HL, SeqPtr
+	;; TODO: this won't work if you cross a page
 		INC [HL]
 		LD H, PatternTable >> 8
 		LD L, A
@@ -143,7 +145,7 @@ TickCh2:	CALL PopOpcode
 		JP Ch2Note
 
 ;;; If no event occurred, just apply the current instrument
-Ch2NOP:		LD HL, Ch2Instr
+Ch2NOP:		LD HL, Ch2InstrPtr
 		LD A, [HLI]
 		LD H, [HL]
 		LD L, A
@@ -153,9 +155,9 @@ Ch2NOP:		LD HL, Ch2Instr
 		RET Z
 		LD B, A
 		LD A, L
-		LD [Ch2Instr], A
+		LD [Ch2InstrPtr], A
 		LD A, H
-		LD [Ch2Instr+1], A
+		LD [Ch2InstrPtr+1], A
 	;; 1 indicates the end of a frame - end the loop
 		DEC B
 		RET Z
@@ -171,8 +173,16 @@ Ch2NOP:		LD HL, Ch2Instr
 		LD L, A
 		JP [HL]
 
+Ch2RstInstr:	LD HL, Ch2InstrBase
+		LD A, [HLI]
+		LD [Ch2InstrPtr], A
+		LD A, [HL]
+		LD [Ch2InstrPtr+1], A
+		RET
+
 ;;; assumes A = Note
-Ch2Note:	LD HL, Ch2Octave
+Ch2Note:	CALL Ch2RstInstr
+		LD HL, Ch2Octave
 		ADD [HL]
 		LD H, FreqTable >> 8
 		LD L, A
@@ -272,12 +282,12 @@ Ch2SetEnvVol:	CALL PopOpcode
 		LD [C], A
 		RET
 
-Ch2VolInstr:	LD HL, Ch2Instr
+Ch2VolInstr:	LD HL, Ch2InstrPtr
 		CALL PopInstr
 		LD [$17], A
 		RET
 
-Ch2InstrMark:	LD HL, Ch2Instr
+Ch2InstrMark:	LD HL, Ch2InstrPtr
 		LD A, [HLI]
 		LD [Ch2InstrMarker], A
 		LD A, [HL]
@@ -286,9 +296,9 @@ Ch2InstrMark:	LD HL, Ch2Instr
 
 Ch2InstrLoop:	LD HL, Ch2InstrMarker
 		LD A, [HLI]
-		LD [Ch2Instr], A
+		LD [Ch2InstrPtr], A
 		LD A, [HL]
-		LD [Ch2Instr+1], A
+		LD [Ch2InstrPtr+1], A
 		JP Ch2NOP
 
 Ch2OctaveCmd:	LD HL, Ch2Octave
@@ -326,6 +336,7 @@ PopOpcode:	LD HL, SongPtr
 		LD L, A
 		LD A, [HLI]
 		LD HL, SongPtr
+	;;  TODO: this won't work if you cross a page
 		INC [HL]
 		RET
 

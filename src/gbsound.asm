@@ -7,6 +7,7 @@ SongRate:	DS 1
 Ch2Instr:	DS 2
 Ch2Octave:	DS 1
 Ch2InstrMarker:	DS 2
+Ch2PitchAdj:	DS 1
 
 SECTION "VBlank", HOME[$40]
 		JP VBlank
@@ -60,6 +61,7 @@ InitCh2:	LD A, [HLI]			; default duty
 		LD [Ch2Instr+1], A
 		XOR A
 		LD [Ch2Octave], A
+		LD [Ch2PitchAdj], A
 		RET
 
 InitSeqPtr:	LD A, [HLI]
@@ -177,7 +179,6 @@ Ch2Note:	LD HL, Ch2Octave
 		LD A, [HLI]
 		LDH [$18], A
 		LD A, [HL]
-	;; TODO: you could probably set this bit on each entry in the freq table (hmm, probably not - once you add instrument pitch...)
 		SET 7,A		; restart sound
 		LDH [$19], A
 		RET

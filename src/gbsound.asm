@@ -163,35 +163,78 @@ Ch2KeyOff:	XOR A
 		LDH [$17], A
 		RET
 
-Ch2DutyCmdPre:	LD C, $16
+Ch2DutyCmd:	LD C, $16
 		LD A, [C]
 		AND $3F
-		RET
-
-Ch2SetDutyLo:	CALL Ch2DutyCmdPre
+		OR B
 		LD [C], A
 		RET
 
-Ch2SetDuty25:	CALL Ch2DutyCmdPre
-		OR $40
-		LD [C], A
-		RET
+Ch2SetDutyLo:	LD B, 0
+		JR Ch2DutyCmd
 
-Ch2SetDuty50:	CALL Ch2DutyCmdPre
-		LD A, [C]
-		AND $3F
+Ch2SetDuty25:   LD B, $40
+		JR Ch2DutyCmd
 
-Ch2SetDuty75:	LD C, $16
-		LD A, [C]
-		OR $C0
-		LD [C], A
-		RET
+Ch2SetDuty50:	LD B, $80
+		JR Ch2DutyCmd
+
+Ch2SetDuty75:	LD B, $C0
+		JR Ch2DutyCmd
 
 Ch2SetSndLen:	CALL PopOpcode
 		LD B, A
 		LD C, $16
 		LD A, [C]
 		AND $C0
+		OR B
+		LD [C], A
+		RET
+
+Ch2SetEnvCmd:	LD C, $17
+		LD A, [C]
+		AND $07
+		OR B
+		LD [C], A
+		RET
+
+Ch2SetEnv0:	LD B, $00
+		JR Ch2SetEnvCmd
+
+Ch2SetEnv1:	LD B, $01
+		JR Ch2SetEnvCmd
+
+Ch2SetEnv2:	LD B, $02
+		JR Ch2SetEnvCmd
+
+Ch2SetEnv3:	LD B, $03
+		JR Ch2SetEnvCmd
+
+Ch2SetEnv4:	LD B, $04
+		JR Ch2SetEnvCmd
+
+Ch2SetEnv5:	LD B, $05
+		JR Ch2SetEnvCmd
+
+Ch2SetEnv6:	LD B, $06
+		JR Ch2SetEnvCmd
+
+Ch2SetEnv7:	LD B, $07
+		JR Ch2SetEnvCmd
+
+Ch2SetEnvDec:	LD HL, $FF17
+		RES 3,[HL]
+		RET
+
+Ch2SetEnvInc:	LD HL, $FF17
+		SET 3,[HL]
+		RET
+
+Ch2SetEnvVol:	CALL PopOpcode
+		LD B, A
+		LD C, $17
+		LD A, [C]
+		AND $0F
 		OR B
 		LD [C], A
 		RET
@@ -268,6 +311,17 @@ CmdTblCh2:	DW Ch2KeyOff
 		DW Ch2SetDuty50
 		DW Ch2SetDuty75
 		DW Ch2SetSndLen
+		DW Ch2SetEnvVol
+		DW Ch2SetEnvInc
+		DW Ch2SetEnvDec
+		DW Ch2SetEnv0
+		DW Ch2SetEnv1
+		DW Ch2SetEnv2
+		DW Ch2SetEnv3
+		DW Ch2SetEnv4
+		DW Ch2SetEnv5
+		DW Ch2SetEnv6
+		DW Ch2SetEnv7
 
 CmdTblSongCtrl:	DW SongSetRate
 		DW SongStop

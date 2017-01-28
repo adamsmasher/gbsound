@@ -112,9 +112,11 @@ NextPat:	LD HL, SeqPtr
 		LD H, [HL]
 		LD A, [HLI]
 		LD HL, SeqPtr
-	;; TODO: this won't work if you cross a page
 		INC [HL]
-		LD H, PatternTable >> 8
+		JR NZ, .nz
+		INC L
+		INC [HL]
+.nz:		LD H, PatternTable >> 8
 		LD L, A
 		LD A, [HLI]
 		LD [SongPtr], A
@@ -355,7 +357,9 @@ PopOpcode:	LD HL, SongPtr
 		LD L, A
 		LD A, [HLI]
 		LD HL, SongPtr
-	;;  TODO: this won't work if you cross a page
+		INC [HL]
+		RET NZ
+		INC L
 		INC [HL]
 		RET
 

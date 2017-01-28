@@ -1,5 +1,7 @@
 SECTION "Ch2", BSS[$C000]
 SongPtr:	DS 2
+SeqPtr:		DS 2
+EndOfPat:	DS 1
 SongTimer:	DS 1
 SongRate:	DS 1
 Ch2Instr:	DS 2
@@ -38,10 +40,7 @@ InitSndEngine:	XOR A
 		LD HL, Song
 		CALL InitSongCtrlCh
 		CALL InitCh2
-		LD A, L
-		LD [SongPtr], A
-		LD A, H
-		LD [SongPtr+1], A
+		CALL InitSeqPtr
 		RET
 
 InitSongCtrlCh:	LD A, [HLI]			; volume config
@@ -59,6 +58,12 @@ InitCh2:	LD A, [HLI]			; default duty
 		LD A, [HLI]
 		LD [Ch2Instr+1], A
 		RET
+
+InitSeqPtr:	LD A, [HLI]
+		LD [SeqPtr], A
+		LD A, [HL]
+		LD [SeqPtr+1], A
+		RET
 		
 VBlank:		PUSH AF
 		PUSH BC
@@ -75,7 +80,14 @@ VBlank:		PUSH AF
 ;;; if the timer wraps around, play the next note
 ;;; this allows tempos as fast as notes 60 per second
 ;;; or as slow as 1 every ~4s (256 frames at 60fps)
-UpdateSndFrame:	LD A, [SongRate]
+UpdateSndFrame:	LD HL, EndOfPat
+		LD A, [HL]
+		AND A
+		JR Z, .chkTick
+		XOR A
+		LD [HL], A
+		CALL NextPat
+.chkTick:	LD A, [SongRate]
 		LD HL, SongTimer
 		ADD [HL]
 		LD [HL], A
@@ -86,6 +98,20 @@ UpdateSndFrame:	LD A, [SongRate]
 		CALL TickCh2
 		;; CALL TickCh3
 		;; CALL TickCh4
+		RET
+
+NextPat:	LD HL, SeqPtr
+		LD A, [HLI]
+		LD H, [HL]
+		LD A, [HLI]
+		LD HL, SeqPtr
+		INC [HL]
+		LD H, PatternTable >> 8
+		LD L, A
+		LD A, [HLI]
+		LD [SongPtr], A
+		LD A, [HL]
+		LD [SongPtr+1], A
 		RET
 
 TickSongCtrl:	CALL PopOpcode
@@ -281,32 +307,35 @@ PopOpcode:	LD HL, SongPtr
 		LD H, [HL]
 		LD L, A
 		LD A, [HLI]
-		LD B, A
-		LD A, L
-		LD [SongPtr], A
-		LD A, H
-		LD [SongPtr+1], A
-		LD A, B
+		LD HL, SongPtr
+		INC [HL]
 		RET
 
 SongStop:	XOR A
 		LD [SongRate], A
 		RET
 
+SongEndOfPat:	LD A, 1
+		LD [EndOfPat], A
+		RET
+
 SongSetRate:	CALL PopOpcode
 		LD [SongRate], A
 		RET
 
-SECTION "Song", HOME
+SECTION "Song", HOME[$6000]
+PatternTable:	DW Pattern1
 Song:		DB $77		; master volume config
 		DB $40		; rate
 		DB $80		; ch2 duty/sound len (50%/no sound length specified)
 		DB $F0		; ch2 envelope (max volume/decrease/disabled)
-		DW .instr1	; instrument
-	;; song starts
+		DW Instr1	; instrument
+		DW Sequence
+Sequence:	DB 0
+Pattern1:
 		DB 3, 0		; stop, keyoff
 	;; instruments
-.instr1:	DB 0		; no effect
+Instr1:	DB 0		; no effect
 
 SECTION "FreqTable", HOME[$7A00]
 FreqTable:	DW 44, 156, 262, 363, 457, 547, 631, 710, 786, 854, 923, 986
@@ -343,3 +372,4 @@ CmdTblCh2:	DW Ch2KeyOff
 SECTION "CmdTblSongCtrl", HOME[$7700]
 CmdTblSongCtrl:	DW SongSetRate
 		DW SongStop
+		DW SongEndOfPat

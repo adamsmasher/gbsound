@@ -205,9 +205,16 @@ Ch2Cmd:		DEC A
 		LD L, A
 		JP [HL]
 
+
+NullInstr:	DB 0
+
 Ch2KeyOff:	XOR A
-	;; TODO: this won't quite work...
 		LDH [$17], A
+		LD HL, Ch2InstrPtr
+		LD A, NullInstr & $00FF
+		LD [HLI], A
+		LD A, NullInstr >> 8
+		LD [HL], A
 		RET
 
 Ch2DutyCmd:	LD C, $16

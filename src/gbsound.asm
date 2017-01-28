@@ -331,6 +331,32 @@ Ch2PitchInstr:	LD HL, Ch2InstrPtr
 		LDH [$19], A
 		RET
 
+Ch2HPitchInstr:	LD HL, Ch2InstrPtr
+		CALL PopInstr
+		LD C, A
+		SWAP A
+		AND $F0
+		LD B, A
+		LD HL, Ch2Freq
+		LD A, [HL]
+		BIT 7,C
+		JR NZ, .neg
+		ADD B
+		JR .hi
+.neg:		SUB B
+.hi:		LD [HLI], A
+		LDH [$18], A
+		SRA C
+		SRA C
+		SRA C
+		SRA C
+		LD A, [HL]
+		ADD C
+		LD [HL], A
+		LDH [$19], A
+		RET
+
+
 Ch2InstrMark:	LD HL, Ch2InstrPtr
 		LD A, [HLI]
 		LD [Ch2InstrMarker], A
@@ -433,6 +459,7 @@ InstrTblCh2:	DW Ch2VolInstr
 		DW Ch2InstrMark
 		DW Ch2InstrLoop
 		DW Ch2PitchInstr
+		DW Ch2HPitchInstr
 
 SECTION "CmdTable2", HOME[$7D00]
 CmdTblCh2:	DW Ch2KeyOff

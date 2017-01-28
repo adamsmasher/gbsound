@@ -171,7 +171,7 @@ Ch2NOP:		LD HL, Ch2InstrPtr
 		LD [Ch2InstrPtr+1], A
 	;; 1 indicates the end of a frame - end the loop
 		DEC B
-		RET Z
+		JR Z, .updateSnd
 	;; Push Ch2NOP onto the stack as a return address, so when the effect proc ends,
 	;; we run the loop again
 		LD HL, Ch2NOP
@@ -183,6 +183,13 @@ Ch2NOP:		LD HL, Ch2InstrPtr
 		LD H, [HL]
 		LD L, A
 		JP [HL]
+.updateSnd:	LD HL, Ch2Freq
+		LD A, [HLI]
+		LD [$18], A
+		LD A, [HL]
+		SET 7,A		; TODO: uh now that we have to set this every time we write maybe do this once on write?
+		LD [$19], A
+		RET
 
 Ch2RstInstr:	LD HL, Ch2InstrBase
 		LD A, [HLI]
@@ -438,6 +445,9 @@ PopOpcode:	LD HL, SongPtr
 
 SongStop:	XOR A
 		LD [SongRate], A
+	;; a nasty bit of trickery - instead of returning and updating the sound channels
+	;; scrap the return address at the top of the stack, which escapes the interrupt handler
+		ADD SP, -2
 		RET
 
 SongEndOfPat:	LD A, 1
@@ -446,7 +456,7 @@ SongEndOfPat:	LD A, 1
 
 SongJmpFrame:	CALL PopOpcode
 		LD [SeqPtr], A
-	;; a nasty bit of trickery - instead of returning and updating the sound channels
+	;; another, similar nasty bit of trickery - instead of returning and updating the sound channels
 	;; scrap the return address and jump back to the beginning of the frame update code
 	;; so that the first song control bit isn't ignored
 		ADD SP,-2

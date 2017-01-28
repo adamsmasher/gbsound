@@ -490,7 +490,7 @@ Song:		DB $77		; master volume config
 		DB $40		; rate
 		DB $80		; ch2 duty/sound len (50%/no sound length specified)
 		DB $F0		; ch2 envelope (max volume/decrease/disabled)
-		DW 0		; instrument
+		DB 0		; instrument
 		DW Sequence
 Sequence:	DB 0
 Pattern1:

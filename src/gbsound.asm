@@ -10,6 +10,7 @@ Ch2Octave:	DS 1
 Ch2InstrMarker:	DS 2
 Ch2PitchAdj:	DS 1
 Ch2RealEnv:	DS 1
+Ch2Freq:	DS 2
 
 SECTION "VBlank", HOME[$40]
 		JP VBlank
@@ -196,7 +197,9 @@ Ch2Note:	CALL Ch2RstInstr
 		LD L, A
 		LD A, [HLI]
 		LDH [$18], A
+		LD [Ch2Freq], A
 		LD A, [HL]
+		LD [Ch2Freq+1], A
 		SET 7,A		; restart sound
 		LDH [$19], A
 		RET
@@ -313,6 +316,21 @@ Ch2VolInstr:	LD HL, Ch2InstrPtr
 		LD [$17], A
 		RET
 
+Ch2PitchInstr:	LD HL, Ch2InstrPtr
+		CALL PopInstr
+		LD B, A
+		LD HL, Ch2Freq
+		LD A, [HL]
+		ADD B
+		LD [HLI], A
+		LDH [$18], A
+		RET NC
+		LD A, [HL]
+		INC A
+		LD [HL], A
+		LDH [$19], A
+		RET
+
 Ch2InstrMark:	LD HL, Ch2InstrPtr
 		LD A, [HLI]
 		LD [Ch2InstrMarker], A
@@ -414,6 +432,7 @@ SECTION "InstrTable2", HOME[$7900]
 InstrTblCh2:	DW Ch2VolInstr
 		DW Ch2InstrMark
 		DW Ch2InstrLoop
+		DW Ch2PitchInstr
 
 SECTION "CmdTable2", HOME[$7D00]
 CmdTblCh2:	DW Ch2KeyOff

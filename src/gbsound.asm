@@ -186,7 +186,7 @@ Ch2RstInstr:	LD HL, Ch2InstrBase
 		LD A, [HL]
 		LD [Ch2InstrPtr+1], A
 		LD A, [Ch2RealEnv]
-		LD [$17], A
+		LDH [$17], A
 		RET
 
 ;;; assumes A = Note

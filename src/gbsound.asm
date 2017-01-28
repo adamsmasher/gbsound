@@ -9,6 +9,7 @@ Ch2InstrBase:	DS 2
 Ch2Octave:	DS 1
 Ch2InstrMarker:	DS 2
 Ch2PitchAdj:	DS 1
+Ch2RealEnv:	DS 1
 
 SECTION "VBlank", HOME[$40]
 		JP VBlank
@@ -55,7 +56,7 @@ InitSongCtrlCh:	LD A, [HLI]			; volume config
 InitCh2:	LD A, [HLI]			; default duty
 		LDH [$16], A
 		LD A, [HLI]			; default envelope
-		LDH [$17], A
+		LD [Ch2RealEnv], A
 		LD A, [HLI]
 		LD [Ch2InstrBase], A
 		LD A, [HLI]
@@ -178,6 +179,8 @@ Ch2RstInstr:	LD HL, Ch2InstrBase
 		LD [Ch2InstrPtr], A
 		LD A, [HL]
 		LD [Ch2InstrPtr+1], A
+		LD A, [Ch2RealEnv]
+		LD [$17], A
 		RET
 
 ;;; assumes A = Note
@@ -203,6 +206,7 @@ Ch2Cmd:		DEC A
 		JP [HL]
 
 Ch2KeyOff:	XOR A
+	;; TODO: this won't quite work...
 		LDH [$17], A
 		RET
 
@@ -239,6 +243,7 @@ Ch2SetEnvCmd:	LD C, $17
 		AND $07
 		OR B
 		LD [C], A
+		LD [Ch2RealEnv], A
 		RET
 
 Ch2SetEnv0:	LD B, $00
@@ -271,6 +276,8 @@ Ch2SetEnvDec:	LD HL, $FF17
 
 Ch2SetEnvInc:	LD HL, $FF17
 		SET 3,[HL]
+		LD HL, Ch2RealEnv
+		SET 3,[HL]
 		RET
 
 Ch2SetEnvVol:	CALL PopOpcode
@@ -280,6 +287,11 @@ Ch2SetEnvVol:	CALL PopOpcode
 		AND $0F
 		OR B
 		LD [C], A
+		LD HL, Ch2RealEnv
+		LD A, [HL]
+		AND $0F
+		OR B
+		LD [HL], A
 		RET
 
 Ch2VolInstr:	LD HL, Ch2InstrPtr

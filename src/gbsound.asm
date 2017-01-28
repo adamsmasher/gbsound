@@ -51,7 +51,10 @@ InitSndEngine:	XOR A
 
 InitSongCtrlCh:	LD A, [HLI]			; volume config
 		LDH [$24], A
+		LD A, [HLI]			; channel select
+		LDH [$25], A
 		LD A, [HLI]
+		LDH [$26], A
 		LD [SongRate], A
 		RET
 
@@ -456,6 +459,8 @@ SongSetRate:	CALL PopOpcode
 SECTION "Song", HOME[$6000]
 PatternTable:	DW Pattern1
 Song:		DB $77		; master volume config
+		DB $FF		; all channels on in both speakers
+		DB $8F		; sound enabled, all channels on
 		DB $40		; rate
 		DB $80		; ch2 duty/sound len (50%/no sound length specified)
 		DB $F0		; ch2 envelope (max volume/decrease/disabled)

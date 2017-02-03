@@ -1,18 +1,38 @@
-SECTION "Ch2", BSS[$C000]
+SECTION "MusicVars", BSS[$C000]
 SongPtr:	DS 2
 SeqPtr:		DS 2
 EndOfPat:	DS 1
 SongTimer:	DS 1
 SongRate:	DS 1
-Ch2InstrPtr:	DS 2
-Ch2InstrBase:	DS 2
-Ch2Octave:	DS 1
-Ch2InstrMarker:	DS 2
-Ch2PitchAdj:	DS 1
-Ch2RealEnv:	DS 1
-Ch2RealDuty:	DS 1
-Ch2Freq:	DS 2
-Ch2CurNote:	DS 1
+ChNum:		DS 1
+ChRegBase:	DS 1
+
+SECTION "ChInstrBases", BSS[$C100]
+ChInstrBases:	DS 4 * 2
+;;; MUST BE TOGETHER
+SECTION "ChInstrPtrs", BSS[$C200]
+ChInstrPtrs:	DS 4 * 2
+;;; MUST BE TOGETHER
+SECTION "ChInstrMarkers", BSS[$C300]
+ChInstrMarkers:	DS 4 * 2
+
+SECTION "ChFreqs", BSS[$C400]
+ChFreqs:	DS 4 * 2
+
+SECTION "ChCurNotes", BSS[$C500]
+ChCurNotes:	DS 4
+;;; MUST BE TOGETHER
+SECTION "ChOctaves", BSS[$C600]
+ChOctaves:	DS 4
+;;; MUST BE TOGETHER
+SECTION "ChPitchAdjs", BSS[$C700]
+ChPitchAdjs:	DS 4
+
+SECTION "ChRealDuties", BSS[$C800]
+ChRealDuties:	DS 4
+;;; MUST BE TOGETHER
+SECTION "ChRealEnvs", BSS[$C900]
+ChRealEnvs:	DS 4
 
 SECTION "VBlank", HOME[$40]
 		JP VBlank
@@ -46,7 +66,16 @@ InitSndEngine:	XOR A
 		LD [SongTimer], A
 		LD HL, Song
 		CALL InitSongCtrlCh
-		CALL InitCh2
+		LD A, 0
+		LD [ChNum], A
+		LD A, $10
+		LD [ChRegBase], A
+		CALL InitCh
+		LD A, 1
+		LD [ChNum], A
+		LD A, $15
+		LD [ChRegBase], A
+		CALL InitCh
 		CALL InitSeqPtr
 		RET
 
@@ -59,25 +88,39 @@ InitSongCtrlCh:	LD A, [HLI]			; volume config
 		RET
 
 ;;; A - instrument number
-Ch2SetInstr:	PUSH HL
+ChSetInstr:	PUSH HL
 		LD H, Instruments >> 8
 		LD L, A
+		LD D, ChInstrBases >> 8
+		LD A, [ChNum]
+		ADD A
+		LD E, A
 		LD A, [HLI]
-		LD [Ch2InstrBase], A
-		LD A, [HL]
-		LD [Ch2InstrBase+1], A
+		LD B, [HL]
+		LD [DE], A
+		INC E
+		LD A, B
+		LD [DE], A
 		POP HL
 		RET
 
-InitCh2:	LD A, [HLI]			; default duty
-		LD [Ch2RealDuty], A
-		LD A, [HLI]			; default envelope
-		LD [Ch2RealEnv], A
+InitCh:		LD D, ChRealDuties >> 8
+		LD A, [ChNum]
+		LD E, A
+		LD A, [HLI]	; default duty
+		LD [DE], A
+		INC D		; envelopes
+		LD A, [HLI]	; default envelope
+		LD [DE], A
 		LD A, [HLI]
-		CALL Ch2SetInstr
+		CALL ChSetInstr
 		XOR A
-		LD [Ch2Octave], A
-		LD [Ch2PitchAdj], A
+		LD D, ChOctaves >> 8
+		LD A, [ChNum]	
+		LD E, A
+		LD [DE], A
+		INC D		; pitch adjusts
+		LD [DE], A
 		RET
 
 InitSeqPtr:	LD A, [HLI]
@@ -115,8 +158,14 @@ UpdateSndFrame:	LD HL, EndOfPat
 		RET NC
 ;;; fall thru to...
 RunSndFrame:	CALL TickSongCtrl
-		;; CALL TickCh1
-		CALL TickCh2
+		LD A, 0
+		LD [ChNum], A
+		LD A, $10
+		CALL TickCh
+		LD A, 1
+		LD A, $15
+		LD [ChNum], A
+		CALL TickCh
 		;; CALL TickCh3
 		;; CALL TickCh4
 		RET
@@ -153,29 +202,44 @@ TickSongCtrl:	CALL PopOpcode
 		LD L, A
 		JP [HL]
 
-TickCh2:	CALL PopOpcode
+TickCh:	CALL PopOpcode
 ;;; 0 is a NOP
-		AND A
-		JP Z, Ch2NOP
-		DEC A
+	AND A
+	JP Z, ChNOP
+	DEC A
 ;;; all commands have their LSB set to 0 (i.e., the first is 2, then 4...)
 ;;; after shifting everything down by 1, that means they now have a 1 in the LSB
-		BIT 0,A
-		JP NZ, Ch2Cmd
-		LD [Ch2CurNote], A
-		JP Ch2Note
+	BIT 0,A
+	JP NZ, ChCmd
+	LD H, ChCurNotes >> 8
+	LD A, [ChNum]
+	LD L, A
+	LD [HL], A
+	JP ChNote
 
 ;;; If no event occurred, just apply the current instrument
-Ch2NOP:		CALL ApplyInstrCh2
-TriggerCh2:	LD HL, Ch2Freq
+ChNOP:		CALL ApplyInstrCh
+TriggerCh:	LD H, ChFreqs >> 8
+		LD A, [ChNum]
+		ADD A
+		LD L, A
+		LD A, [ChRegBase]
+		ADD 3		; freq reg 1
+		LD C, A
 		LD A, [HLI]
-		LDH [$18], A
+		LD [C], A
+		INC C		; freq reg 2
 		LD A, [HL]
 		SET 7,A		; TODO: uh now that we have to set this every time we write maybe do this once on write?
-		LDH [$19], A
+		LD [C], A
 		RET
 
-ApplyInstrCh2:	LD HL, Ch2InstrPtr
+ApplyInstrCh:	LD H, ChInstrPtrs >> 8
+		LD D, H
+		LD A, [ChNum]
+		ADD A
+		LD L, A
+		LD E, A
 		LD A, [HLI]
 		LD H, [HL]
 		LD L, A
@@ -185,54 +249,74 @@ ApplyInstrCh2:	LD HL, Ch2InstrPtr
 		RET Z
 		LD B, A
 		LD A, L
-		LD [Ch2InstrPtr], A
-		LD A, H
-		LD [Ch2InstrPtr+1], A
+		LD [DE], A
+		INC E
+		LD [DE], A
 	;; 1 indicates the end of a frame - end the loop
 		DEC B
 		RET Z
 	;; Push ApplyInstr onto the stack as a return address, so when the effect proc ends,
 	;; we run the loop again
-		LD HL, ApplyInstrCh2
+		LD HL, ApplyInstrCh
 		PUSH HL
 	;; invoke the effect proc
 		DEC B
-		LD H, InstrTblCh2 >> 8
+		LD H, InstrTblCh >> 8
 		LD L, B
 		LD A, [HLI]
 		LD H, [HL]
 		LD L, A
 		JP [HL]
 
-Ch2RstInstr:	LD HL, Ch2InstrBase
+ChRstInstr:	LD H, ChInstrBases >> 8
+		LD D, ChInstrPtrs >> 8
+		LD A, [ChNum]
+		LD B, A
+		ADD A
+		LD L, A
+		LD E, A
 		LD A, [HLI]
-		LD [Ch2InstrPtr], A
+		LD [DE], A
 		LD A, [HL]
-		LD [Ch2InstrPtr+1], A
-		LD A, [Ch2RealDuty]
-		LDH [$16], A
-		LD A, [Ch2RealEnv]
-		LDH [$17], A
+		INC E
+		LD [DE], A
+		LD H, ChRealDuties >> 8
+		LD L, B
+		LD A, [ChRegBase]
+		ADD 1		; duty reg
+		LD A, [HL]
+		LD [C], A
+		INC H		; vol envelope
+		LD A, [HL]
+		INC C		; vol env reg
+		LD [C], A
 		RET
 
-Ch2Note:	CALL Ch2RstInstr
-		LD A, [Ch2CurNote]
-		LD HL, Ch2Octave
+ChNote:		CALL ChRstInstr
+		LD H, ChCurNotes >> 8
+		LD A, [ChNum]
+		LD B, A
+		LD L, A
+		LD A, [HL]
+		INC H		; octaves
 		ADD [HL]
 		LD H, FreqTable >> 8
 		LD L, A
 		LD A, [HLI]
-		LD [Ch2Freq], A
-		LD A, [HL]
-		LD [Ch2Freq+1], A
-		CALL ApplyInstrCh2
-		JP TriggerCh2
+		LD C, [HL]
+		LD H, ChFreqs >> 8
+		LD L, B
+		SLA L
+		LD [HLI], A
+		LD [HL], C
+		CALL ApplyInstrCh
+		JP TriggerCh
 
 ;;; Assumes A = Cmd + 1
-Ch2Cmd:		LD HL, TickCh2	; put this on the stack so that we'll try to run the next op after
+ChCmd:		LD HL, TickCh	; put this on the stack so that we'll try to run the next op after
 		PUSH HL
 		DEC A
-		LD H, CmdTblCh2 >> 8
+		LD H, CmdTblCh >> 8
 		LD L, A
 		LD A, [HLI]
 		LD H, [HL]
@@ -242,192 +326,257 @@ Ch2Cmd:		LD HL, TickCh2	; put this on the stack so that we'll try to run the nex
 
 NullInstr:	DB 0
 
-Ch2KeyOff:	XOR A
-		LDH [$17], A
-		LD HL, Ch2InstrPtr
+ChKeyOff:	LD A, [ChRegBase]
+		ADD 2		; volume register
+		LD C, A
+		XOR A
+		LD [C], A
+		LD H, ChInstrPtrs >> 8
+		LD A, [ChNum]
+		ADD A
+		LD L, A
 		LD A, NullInstr & $00FF
 		LD [HLI], A
 		LD A, NullInstr >> 8
 		LD [HL], A
 		RET
 
-Ch2DutyCmd:	LD C, $16
+ChDutyCmd:	LD A, [ChRegBase]
+		ADD 1		; duty reg
+		LD C, A
 		LD A, [C]
 		AND $3F
 		OR B
 		LD [C], A
 		RET
 
-Ch2SetDutyLo:	LD B, 0
-		JR Ch2DutyCmd
+ChSetDutyLo:	LD B, 0
+		JR ChDutyCmd
 
-Ch2SetDuty25:   LD B, $40
-		JR Ch2DutyCmd
+ChSetDuty25:	LD B, $40
+		JR ChDutyCmd
 
-Ch2SetDuty50:	LD B, $80
-		JR Ch2DutyCmd
+ChSetDuty50:	LD B, $80
+		JR ChDutyCmd
 
-Ch2SetDuty75:	LD B, $C0
-		JR Ch2DutyCmd
+ChSetDuty75:	LD B, $C0
+		JR ChDutyCmd
 
-Ch2SetSndLen:	CALL PopOpcode
+ChSetSndLen:	CALL PopOpcode
 		LD B, A
-		LD C, $16
+		LD A, [ChRegBase]
+		ADD 1		; sound length reg
+		LD C, A
 		LD A, [C]
 		AND $C0
 		OR B
 		LD [C], A
 		RET
 
-Ch2SetEnvCmd:	LD C, $17
+ChSetEnvCmd:	LD H, ChRealEnvs >> 8
+		LD A, [ChNum]
+		LD L, A
+		LD A, [ChRegBase]
+		ADD 2		; volume envelope reg
+		LD C, A
 		LD A, [C]
 		AND $07
 		OR B
 		LD [C], A
-		LD [Ch2RealEnv], A
+		LD [HL], A
 		RET
 
-Ch2SetEnv0:	LD B, $00
-		JR Ch2SetEnvCmd
+ChSetEnv0:	LD B, $00
+		JR ChSetEnvCmd
 
-Ch2SetEnv1:	LD B, $01
-		JR Ch2SetEnvCmd
+ChSetEnv1:	LD B, $01
+		JR ChSetEnvCmd
 
-Ch2SetEnv2:	LD B, $02
-		JR Ch2SetEnvCmd
+ChSetEnv2:	LD B, $02
+		JR ChSetEnvCmd
 
-Ch2SetEnv3:	LD B, $03
-		JR Ch2SetEnvCmd
+ChSetEnv3:	LD B, $03
+		JR ChSetEnvCmd
 
-Ch2SetEnv4:	LD B, $04
-		JR Ch2SetEnvCmd
+ChSetEnv4:	LD B, $04
+		JR ChSetEnvCmd
 
-Ch2SetEnv5:	LD B, $05
-		JR Ch2SetEnvCmd
+ChSetEnv5:	LD B, $05
+		JR ChSetEnvCmd
 
-Ch2SetEnv6:	LD B, $06
-		JR Ch2SetEnvCmd
+ChSetEnv6:	LD B, $06
+		JR ChSetEnvCmd
 
-Ch2SetEnv7:	LD B, $07
-		JR Ch2SetEnvCmd
+ChSetEnv7:	LD B, $07
+		JR ChSetEnvCmd
 
-Ch2SetEnvDec:	LD HL, $FF17
+ChSetEnvDec:	LD H, $FF
+		LD A, [ChRegBase]
+		ADD 2		; volume env reg
+		LD L, A
 		RES 3,[HL]
 		RET
 
-Ch2SetEnvInc:	LD HL, $FF17
+ChSetEnvInc:	LD H, $FF
+		LD A, [ChRegBase]
+		ADD 2		; volume env reg
+		LD L, A
 		SET 3,[HL]
-		LD HL, Ch2RealEnv
+		LD H, ChRealEnvs >> 8
+		LD A, [ChNum]
+		LD L, A
 		SET 3,[HL]
 		RET
 
-Ch2SetEnvVol:	CALL PopOpcode
+ChSetEnvVol:	CALL PopOpcode
 		LD B, A
-		LD C, $17
+		LD A, [ChRegBase]
+		ADD 2		; volume envelope reg
+		LD C, A
 		LD A, [C]
 		AND $0F
 		OR B
 		LD [C], A
-		LD HL, Ch2RealEnv
+		LD H, ChRealEnvs >> 8
+		LD A, [ChNum]
+		LD L, A
 		LD A, [HL]
 		AND $0F
 		OR B
 		LD [HL], A
 		RET
 
-Ch2VolInstr:	LD HL, Ch2InstrPtr
+ChVolInstr:	LD A, [ChRegBase]
+		ADD 2		; volume
+		LD C, A
+		LD H, ChInstrPtrs >> 8
+		LD A, [ChNum]
+		ADD A
+		LD L, A
 		CALL PopInstr
-		LDH [$17], A
+		LD [C], A
 		RET
 
-Ch2PitchInstr:	LD HL, Ch2InstrPtr
+ChPitchInstr:	LD H, ChInstrPtrs >> 8
+		LD A, [ChNum]
+		ADD A
+		LD L, A
 		CALL PopInstr
 		LD B, A
-		LD HL, Ch2Freq
+		LD A, [ChRegBase]
+		ADD 3		; freq reg 1
+		LD H, ChFreqs >> 8
+		LD A, [ChNum]
+		ADD A
+		LD L, A
 		LD A, [HL]
 		ADD B
 		LD [HLI], A
-		LDH [$18], A
+		LD [C], A
 		RET NC
-		LD A, [HL]
+		INC C		; freq reg 2
 		INC A
 		LD [HL], A
-		LDH [$19], A
+		LD [C], A
 		RET
 
-Ch2HPitchInstr:	LD HL, Ch2InstrPtr
-		CALL PopInstr
+ChHPitchInstr:	LD A, [ChRegBase]
+		ADD 3		; freq reg 1
 		LD C, A
+		LD H, ChInstrPtrs >> 8
+		LD A, [ChNum]
+		ADD A
+		LD L, A
+		CALL PopInstr
+		LD D, A
 		SWAP A
 		AND $F0
 		LD B, A
-		LD HL, Ch2Freq
+		LD H, ChFreqs >> 8
+		LD A, [ChNum]
+		ADD A
+		LD L, A
 		LD A, [HL]
-		BIT 7,C
+		BIT 7,D
 		JR NZ, .neg
 		ADD B
 		JR .hi
 .neg:		SUB B
 .hi:		LD [HLI], A
-		LDH [$18], A
-		SRA C
-		SRA C
-		SRA C
-		SRA C
+		LD [C], A
+		SRA D
+		SRA D
+		SRA D
+		SRA D
 		LD A, [HL]
-		ADD C
+		ADD D
 		LD [HL], A
-		LDH [$19], A
+		INC C		; freq reg 2
+		LD [C], A
 		RET
 
-Ch2DutyInstr:	LD C, $16
+ChDutyInstr:	LD A, [ChRegBase]
+		ADD 1		; duty reg
+		LD C, A
 		LD A, [C]
 		AND $3F
 		OR B
 		LD [C], A
 		RET
 
-Ch2DutyInstrLo: LD B, 0
-		JR Ch2DutyInstr
+ChDutyInstrLo:	LD B, 0
+		JR ChDutyInstr
 
-Ch2DutyInstr25:	LD B, $40
-		JR Ch2DutyInstr
+ChDutyInstr25:	LD B, $40
+		JR ChDutyInstr
 	
-Ch2DutyInstr50: LD B, $80
-		JR Ch2DutyInstr
+ChDutyInstr50:	LD B, $80
+		JR ChDutyInstr
 
-Ch2DutyInstr75:	LD B, $C0
-		JR Ch2DutyInstr
+ChDutyInstr75:	LD B, $C0
+		JR ChDutyInstr
 
-Ch2InstrMark:	LD HL, Ch2InstrPtr
+ChInstrMark:	LD H, ChInstrPtrs >> 8
+		LD A, [ChNum]
+		ADD A
+		LD L, A
 		LD A, [HLI]
-		LD [Ch2InstrMarker], A
-		LD A, [HL]
-		LD [Ch2InstrMarker+1], A
+		LD B, [HL]
+		INC H		; ChInstrMarkers
+		DEC L
+		LD [HLI], A
+		LD [HL], B
 		RET
 
-Ch2InstrLoop:	LD HL, Ch2InstrMarker
+ChInstrLoop:	LD H, ChInstrMarkers >> 8
+		LD A, [ChNum]
+		ADD A
+		LD L, A
 		LD A, [HLI]
-		LD [Ch2InstrPtr], A
-		LD A, [HL]
-		LD [Ch2InstrPtr+1], A
-		JP Ch2NOP
+		LD B, [HL]
+		DEC H		; ChInstrPtrs
+		DEC L
+		LD [HLI], A
+		LD [HL], B
+		JP ChNOP
 
-Ch2OctaveCmd:	LD HL, Ch2Octave
+ChOctaveCmd:	LD H, ChOctaves >> 8
+		LD A, [ChNum]
+		LD L, A
 		LD A, [HL]
 		ADD B
 		LD [HL], A
 		RET
 
-Ch2OctaveUp:	LD B, 12
-		JR Ch2OctaveCmd
+ChOctaveUp:	LD B, 12
+		JR ChOctaveCmd
 
-Ch2OctaveDown:	LD B, -12
-		JR Ch2OctaveCmd
+ChOctaveDown:	LD B, -12
+		JR ChOctaveCmd
 
-Ch2SetInstrCmd:	CALL PopOpcode
-		CALL Ch2SetInstr
-		JP Ch2RstInstr
+ChSetInstrCmd:	CALL PopOpcode
+		CALL ChSetInstr
+		JP ChRstInstr
 		
 
 ;;; assume HL = Instrument pointer
@@ -525,38 +674,38 @@ FreqTable:	DW 44, 156, 262, 363, 457, 547, 631, 710, 786, 854, 923, 986
 		DW 1923, 1930, 1936, 1943, 1949, 1954, 1959, 1964, 1969, 1974, 1978, 1982
 		DW 1985, 1988, 1992, 1995, 1998, 2001, 2004, 2006, 2009, 2011, 2013, 2015
 
-SECTION "InstrTable2", HOME[$7900]
-InstrTblCh2:	DW Ch2VolInstr
-		DW Ch2InstrMark
-		DW Ch2InstrLoop
-		DW Ch2PitchInstr
-		DW Ch2HPitchInstr
-		DW Ch2DutyInstrLo
-		DW Ch2DutyInstr25
-		DW Ch2DutyInstr50
-		DW Ch2DutyInstr75
+SECTION "InstrTable", HOME[$7900]
+InstrTblCh:	DW ChVolInstr
+		DW ChInstrMark
+		DW ChInstrLoop
+		DW ChPitchInstr
+		DW ChHPitchInstr
+		DW ChDutyInstrLo
+		DW ChDutyInstr25
+		DW ChDutyInstr50
+		DW ChDutyInstr75
 
-SECTION "CmdTable2", HOME[$7D00]
-CmdTblCh2:	DW Ch2KeyOff
-		DW Ch2SetDutyLo
-		DW Ch2SetDuty25
-		DW Ch2SetDuty50
-		DW Ch2SetDuty75
-		DW Ch2SetSndLen
-		DW Ch2SetEnvVol
-		DW Ch2SetEnvInc
-		DW Ch2SetEnvDec
-		DW Ch2SetEnv0
-		DW Ch2SetEnv1
-		DW Ch2SetEnv2
-		DW Ch2SetEnv3
-		DW Ch2SetEnv4
-		DW Ch2SetEnv5
-		DW Ch2SetEnv6
-		DW Ch2SetEnv7
-		DW Ch2OctaveUp
-		DW Ch2OctaveDown
-		DW Ch2SetInstrCmd
+SECTION "CmdTable", HOME[$7D00]
+CmdTblCh:	DW ChKeyOff
+		DW ChSetDutyLo
+		DW ChSetDuty25
+		DW ChSetDuty50
+		DW ChSetDuty75
+		DW ChSetSndLen
+		DW ChSetEnvVol
+		DW ChSetEnvInc
+		DW ChSetEnvDec
+		DW ChSetEnv0
+		DW ChSetEnv1
+		DW ChSetEnv2
+		DW ChSetEnv3
+		DW ChSetEnv4
+		DW ChSetEnv5
+		DW ChSetEnv6
+		DW ChSetEnv7
+		DW ChOctaveUp
+		DW ChOctaveDown
+		DW ChSetInstrCmd
 
 SECTION "CmdTblSongCtrl", HOME[$7700]
 CmdTblSongCtrl:	DW SongSetRate

@@ -1,46 +1,90 @@
 SECTION "MusicVars", BSS[$C000]
-SongPtr:	DS 2
-SeqPtr:		DS 2
+;;; pointer into the opcode stream
+SongPtr:	DS 2	;; musn't cross a page
+;;; the song is described as "sequence", a list of 8-bit numbers.
+;;; Each entry in the sequence is called a "frame".
+;;; Each frame contains an 8-bit pattern number
+;;; Pattern numbers are used to look up an entry in the pattern table
+;;; The pattern table contains pointers into the opcode stream
+;; TODO: make this only an offset into the sequence, as implied by SongJmpFrame
+SeqPtr:		DS 2	;; musn't cross a page
+;;; Boolean flag to indicate if we've hit the end of a pattern and need to load the next
 EndOfPat:	DS 1
-SongTimer:	DS 1
+;;; Each frame, SongTimer is incremented by SongRate; if it overflows, we run a music tick
 SongRate:	DS 1
+SongTimer:	DS 1 ;; must follow SongRate
+;;; Used to keep track of the current channel being updated
 ChNum:		DS 1
+;;; Used to keep track of the register base of the current channel being updated
+;;; On the GB, we can look at each channel being controlled by 5 registers
+;;; Channel 1 - FF10 - FF14
+;;; Channel 2 - FF15 - FF19
+;;; Channel 3 - FF1A - FF1E
+;;; Channel 4 - FF1F - FF23
+;;; While they don't perfectly map onto each other (e.g. FF15 and FF1F are unused,
+;;; volume envelopes work differently for each etc), they're similarly enough that
+;;; we can treat them uniformly.
 ChRegBase:	DS 1
 
+;;; An instrument is a stream of special opcodes that update a channel's output
+;;; parameters on a per note basis
 SECTION "ChInstrBases", BSS[$C100]
+;;; Pointer to the beginning of each channels instrument;
+;;; the corresponding ChInstrPtr is reset to this when the note changes
 ChInstrBases:	DS 4 * 2
 ;;; MUST BE TOGETHER
 SECTION "ChInstrPtrs", BSS[$C200]
 ChInstrPtrs:	DS 4 * 2
 ;;; MUST BE TOGETHER
 SECTION "ChInstrMarkers", BSS[$C300]
+;;; Instruments can contain an unbounded loop;
+;;; these contain pointers to each channel's instrument's loop point
 ChInstrMarkers:	DS 4 * 2
 
 SECTION "ChFreqs", BSS[$C400]
+;;; Stores the current frequency being output on each channel
 ChFreqs:	DS 4 * 2
 
 SECTION "ChCurNotes", BSS[$C500]
+;;; Stores the current note (offset into the note table) being output on each channel
 ChCurNotes:	DS 4
 ;;; MUST BE TOGETHER
 SECTION "ChOctaves", BSS[$C600]
+;;; stores an offset that's added to note lookup; used to change keys or octaves
 ChOctaves:	DS 4
 ;;; MUST BE TOGETHER
 SECTION "ChPitchAdjs", BSS[$C700]
+;;; allows for fine tuning the pitch (for slides, etc)
+;;; TODO: is this used?
+;;; TODO: should this be 16-bits per channel?
 ChPitchAdjs:	DS 4
 
 SECTION "ChRealDuties", BSS[$C800]
+;;; instruments can change the duty cycle; this stores the duty cycle that
+;;; we should reset to on each note
 ChRealDuties:	DS 4
 ;;; MUST BE TOGETHER
 SECTION "ChRealEnvs", BSS[$C900]
+;;; instruments can change the volume (envelope); this stores the volume that
+;;; we should reset to on each ntoe
 ChRealEnvs:	DS 4
 
+;;; when a VBlank interrupt is fired, the CPU immediately jumps to $0040
+;;; but this area is too packed (with other interrupt handlers)
+;;; to write our code here, so just jump to the real handler
 SECTION "VBlank", HOME[$40]
 		JP VBlank
 
+;;; when the firmware hands control over to our program, the PC is at $0100
+;;; but the header comes immediately after (at $0104), so there's no room for
+;;; code here; we just immediately jump to the real main program.
+;;; It's unclear why you NOP first, but tradition is that you do.
 SECTION "Boot", HOME[$0100]
 		NOP
 		JP Start
 
+;;; We leave the header blank in the code; the rgbfix program - as part of the build
+;;; procedure - fills this in.
 SECTION "Header", HOME[$0104]
 		REPT $4C
 		DB $F0
@@ -59,13 +103,17 @@ InitInterrupts:	LD A, 1				; enable vblank
 		LDH [$FF], A
 		XOR A				; clear pending IRQs
 		LDH [$0F], A
-		EI
+		EI				; enable interrupts
 		RET
 
+;;; Song initialization:
+;;; HL is mutated across function calls and consistently points
+;;; to the location in the song data we're working through
 InitSndEngine:	XOR A
 		LD [SongTimer], A
 		LD HL, Song
 		CALL InitSongCtrlCh
+		;; TODO: make this a loop
 		LD A, 0
 		LD [ChNum], A
 		LD A, $10
@@ -87,7 +135,10 @@ InitSongCtrlCh:	LD A, [HLI]			; volume config
 		LD [SongRate], A
 		RET
 
-;;; A - instrument number
+;;; The Instruments table contains a list of pointers to the start of each instrument
+;;; This just copies the requested instrument number's pointer into the instrument base
+;;; for the channel
+;;; A - instrument number (even numbers only)
 ChSetInstr:	PUSH HL
 		LD H, Instruments >> 8
 		LD L, A
@@ -96,10 +147,9 @@ ChSetInstr:	PUSH HL
 		ADD A
 		LD E, A
 		LD A, [HLI]
-		LD B, [HL]
 		LD [DE], A
 		INC E
-		LD A, B
+		LD A, [HL]
 		LD [DE], A
 		POP HL
 		RET
@@ -151,8 +201,8 @@ UpdateSndFrame:	LD HL, EndOfPat
 		XOR A
 		LD [HL], A
 		CALL NextPat
-.chkTick:	LD A, [SongRate]
-		LD HL, SongTimer
+.chkTick:	LD HL, SongRate
+		LD A, [HLI]
 		ADD [HL]
 		LD [HL], A
 		RET NC

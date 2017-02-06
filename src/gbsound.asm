@@ -635,7 +635,6 @@ ChOctaveDown:	LD B, -12
 ChSetInstrCmd:	CALL PopOpcode
 		CALL ChSetInstr
 		JP ChRstInstr
-		
 
 ;;; assume HL = Instrument pointer
 ;;; returns the next instrument byte in A and increments the instrument pointer
@@ -671,7 +670,7 @@ SongStop:	XOR A
 		LD [SongRate], A
 	;; a nasty bit of trickery - instead of returning and updating the sound channels
 	;; scrap the return address at the top of the stack, which escapes the interrupt handler
-		ADD SP, -2
+		ADD SP, 2
 		RET
 
 SongEndOfPat:	LD A, 1
@@ -683,7 +682,7 @@ SongJmpFrame:	CALL PopOpcode
 	;; another, similar nasty bit of trickery - instead of returning and updating the sound channels
 	;; scrap the return address and jump back to the beginning of the frame update code
 	;; so that the first song control byte isn't ignored
-		ADD SP,2
+		ADD SP, 2
 		LD A, 1
 		LD [EndOfPat], A
 		JP RunSndFrame

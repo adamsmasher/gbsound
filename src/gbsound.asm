@@ -163,7 +163,7 @@ InitCh:		LD D, ChRealDuties >> 8
 		INC D		; envelopes
 		LD A, [HLI]	; default envelope
 		LD [DE], A
-		LD A, [HLI]
+		LD A, [HLI]	; initial instrument
 		CALL ChSetInstr
 		XOR A
 		LD D, ChOctaves >> 8
@@ -195,20 +195,21 @@ VBlank:		PUSH AF
 ;;; if the timer wraps around, play the next note
 ;;; this allows tempos as fast as notes 60 per second
 ;;; or as slow as 1 every ~4s (256 frames at 60fps)
-UpdateSndFrame:	LD HL, EndOfPat
+UpdateSndFrame:	LD HL, EndOfPat	; test the current pattern over flag
 		LD A, [HL]
 		AND A
 		JR Z, .chkTick
-		XOR A
-		LD [HL], A
+		XOR A		; if so, clear that flag and move to the next
+		LD [HL], A	; and then update as normal
 		CALL NextPat
 .chkTick:	LD HL, SongRate
 		LD A, [HLI]
-		ADD [HL]
+		ADD [HL]	; update SongTimer
 		LD [HL], A
 		RET NC
 ;;; fall thru to...
 RunSndFrame:	CALL TickSongCtrl
+	;; TODO: make me a loop
 		LD A, 0
 		LD [ChNum], A
 		LD A, $10
@@ -221,6 +222,7 @@ RunSndFrame:	CALL TickSongCtrl
 		;; CALL TickCh4
 		RET
 
+;;; TODO: if we limit ourselves to 256 frames, we can make SeqPtr an 8-bit offset
 NextPat:	LD HL, SeqPtr
 		LD A, [HLI]
 		LD H, [HL]
@@ -242,9 +244,10 @@ LoadPat:	LD H, PatternTable >> 8
 		RET
 
 TickSongCtrl:	CALL PopOpcode
-;;; 0 is a NOP
+	;; 0 is a NOP
 		AND A
 		RET Z
+	;; SongOpcodes are then numbered 1, 3, ... in the stream
 		DEC A
 		LD H, CmdTblSongCtrl >> 8
 		LD L, A
@@ -253,22 +256,24 @@ TickSongCtrl:	CALL PopOpcode
 		LD L, A
 		JP [HL]
 
-TickCh:	CALL PopOpcode
-;;; 0 is a NOP
-	AND A
-	JP Z, ChNOP
-	DEC A
-;;; all commands have their LSB set to 0 (i.e., the first is 2, then 4...)
-;;; after shifting everything down by 1, that means they now have a 1 in the LSB
-	BIT 0,A
-	JP NZ, ChCmd
-	LD H, ChCurNotes >> 8
-	LD A, [ChNum]
-	LD L, A
-	LD [HL], A
-	JP ChNote
+TickCh:		CALL PopOpcode
+	;; 0 is a NOP
+		AND A
+		JP Z, ChNOP
+		DEC A
+	;; all commands have their LSB set to 0 (i.e., the first is 2, then 4...)
+	;; after shifting everything down by 1, that means they now have a 1 in the LSB
+		BIT 0,A
+		JP NZ, ChCmd
+		LD H, ChCurNotes >> 8
+		LD A, [ChNum]
+		LD L, A
+		LD [HL], A
+		JP ChNote
 
 ;;; If no event occurred, just apply the current instrument
+;;; The frequency register still needs to be rewritten, though
+;;; TODO: if the registers aren't "dirty", don't restart the note
 ChNOP:		CALL ApplyInstrCh
 TriggerCh:	LD H, ChFreqs >> 8
 		LD A, [ChNum]
@@ -299,6 +304,7 @@ ApplyInstrCh:	LD H, ChInstrPtrs >> 8
 		AND A
 		RET Z
 		LD B, A
+	;; write the new pointer back
 		LD A, L
 		LD [DE], A
 		INC E
@@ -373,7 +379,6 @@ ChCmd:		LD HL, TickCh	; put this on the stack so that we'll try to run the next 
 		LD H, [HL]
 		LD L, A
 		JP [HL]
-
 
 NullInstr:	DB 0
 

@@ -291,11 +291,11 @@ TriggerCh:	LD H, ChFreqs >> 8
 		RET
 
 ApplyInstrCh:	LD H, ChInstrPtrs >> 8
-		LD D, H
 		LD A, [ChNum]
 		ADD A
 		LD L, A
-		LD E, A
+		LD D, H
+		LD E, L
 		LD A, [HLI]
 		LD H, [HL]
 		LD L, A

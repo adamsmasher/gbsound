@@ -325,6 +325,7 @@ ApplyInstrCh:	LD H, ChInstrPtrs >> 8
 		LD L, A
 		JP [HL]
 
+;;; Called at the end of a note to reset the instrument
 ChRstInstr:	LD H, ChInstrBases >> 8
 		LD D, ChInstrPtrs >> 8
 		LD A, [ChNum]
@@ -340,7 +341,8 @@ ChRstInstr:	LD H, ChInstrBases >> 8
 		LD H, ChRealDuties >> 8
 		LD L, B
 		LD A, [ChRegBase]
-		ADD 1		; duty reg
+		LD C, A
+		INC C		; duty reg
 		LD A, [HL]
 		LD [C], A
 		INC H		; vol envelope

@@ -96,6 +96,7 @@ Start:		DI				; disable interrupts
 		LD SP, HL
 		CALL InitInterrupts
 		CALL InitSndEngine
+	;; the vblank interrupt is where all the action happens, so just HALT to wait for it
 .loop:		HALT
 		JR .loop
 	

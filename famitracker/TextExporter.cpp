@@ -485,7 +485,7 @@ static std::string ImportCellText(
     if (0 == strcasecmp(sVol.c_str(), VOL_TEXT[v])) break;
   if (v > 17) {
     errMsg << "Line " << t.line << " column " << t.getColumn() << ": unrecognized volume token '" << sVol << "'.";
-    return false;
+    goto error;
   }
   //Cell.Vol = v;
 

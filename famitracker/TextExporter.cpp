@@ -397,18 +397,18 @@ std::pair<int, int> getNoteAndOctave(const std::string& sNote) {
     errMsg << "Line " << t.line << " column " << t.getColumn() << ": note column should be 3 characters wide, '" << sNote << "' found.";
     throw errMsg.str();
   } else if (sNote == "...") {
-    return std::make_pair(0, 0); 
+    return {0, 0};
   } else if (sNote == "---") {
-    return std::make_pair(HALT, 0);
+    return {HALT, 0};
   } else if (sNote == "===") {
-    return std::make_pair(RELEASE, 0);
+    return {RELEASE, 0};
   } else if (channel == 3) { // noise
     int h = importHex(sNote.substr(0, 1), t.line, t.getColumn());
 
     // importer is very tolerant about the second and third characters
     // in a noise note, they can be anything
 
-    return std::make_pair(h % 12 + 1, h / 12);
+    return {h % 12 + 1, h / 12};
   } else {
     int n = 0;
     switch (sNote.at(0)) {
@@ -439,8 +439,11 @@ std::pair<int, int> getNoteAndOctave(const std::string& sNote) {
       errMsg << "Line " << t.line << " column " << t.getColumn() << ": unrecognized octave '" << sNote << "'.";
       throw errMsg.str();
     }
-    return std::make_pair(n + 1, o);
+
+    return { n + 1, o };
   }
+
+  throw "unreachable";
 }
 
 static void ImportCellText(

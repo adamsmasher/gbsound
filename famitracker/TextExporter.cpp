@@ -328,7 +328,7 @@ public:
   }
 
   const std::string *text;
-  int pos;
+  size_t pos;
   int line;
   int linestart;
 };
@@ -341,7 +341,7 @@ static std::string importHex(const std::string& sToken, int *i, int line, int co
 
   *i = 0;
 
-  for (int d = 0; d < sToken.size(); ++d) {
+  for (size_t d = 0; d < sToken.size(); ++d) {
     const char* HEX_TEXT[16] = {
       "0", "1", "2", "3", "4", "5", "6", "7",
       "8", "9", "A", "B", "C", "D", "E", "F"

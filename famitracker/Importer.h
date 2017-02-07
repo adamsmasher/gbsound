@@ -38,6 +38,7 @@ public:
   int getInstrumentId(const std::string& sInst) const;
   std::pair<int, int> getNoteAndOctave(const std::string& sNote) const;
   void importCellText(void);
+  Command getCommandEnum(const std::string& command) const;
 
   unsigned int track;
   unsigned int pattern;

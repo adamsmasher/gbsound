@@ -131,8 +131,7 @@ const char* HEX_TEXT[16] = {
   "8", "9", "A", "B", "C", "D", "E", "F"
 };
 
-// TODO: make me a class function
-static int importHex(const std::string& sToken, int line, int column) {
+int Importer::importHex(const std::string& sToken) {
   std::ostringstream errMsg;
 
   int i = 0;
@@ -149,7 +148,7 @@ static int importHex(const std::string& sToken, int line, int column) {
     }
 
     if (h >= 16) {
-      errMsg << "Line " << line << " column " << column << ": hexadecimal number expected, '" << sToken << "' found.";
+      errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": hexadecimal number expected, '" << sToken << "' found.";
       throw errMsg.str();
     }
 
@@ -194,7 +193,7 @@ int Importer::getInstrumentId(const std::string& sInst) const {
   } else if (sInst == "..") {
     return MAX_INSTRUMENTS;
   } else {
-    int h = importHex(sInst, t.getLine(), t.getColumn());
+    int h = importHex(sInst);
 
     if (h >= MAX_INSTRUMENTS) {
       errMsg << "Line " << t.getLine() << " column " << ": instrument '" << sInst << "' is out of bounds.";
@@ -218,7 +217,7 @@ std::pair<int, int> Importer::getNoteAndOctave(const std::string& sNote) const {
   } else if (sNote == "===") {
     return {RELEASE, 0};
   } else if (channel == 3) { // noise
-    int h = importHex(sNote.substr(0, 1), t.getLine(), t.getColumn());
+    int h = importHex(sNote.substr(0, 1));
 
     // importer is very tolerant about the second and third characters
     // in a noise note, they can be anything

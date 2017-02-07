@@ -5,7 +5,7 @@ build/gbsound.o
 
 FAMIDEPS=\
 famibuild/famiconv.o\
-famibuild/TextExporter.o\
+famibuild/Importer.o\
 famibuild/Tokenizer.o
 
 build/%.o: src/%.asm

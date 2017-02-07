@@ -863,7 +863,7 @@ void CTextExport::importFile(const char *fileName) {
             i = t.readInt(-128, 127);
             if (count >= MAX_SEQUENCE_ITEMS) {
               errMsg << "Line " << t.line << " column " << t.getColumn() << ": macro overflow, max size: " << MAX_SEQUENCE_ITEMS << ".";
-              goto error;
+	      throw errMsg.str();
             }
             //pSeq->SetItem(count, i);
             ++count;
@@ -945,7 +945,7 @@ void CTextExport::importFile(const char *fileName) {
       case CT_ROW: {
           if (track == 0) {
             errMsg << "Line " << t.line << " column " << t.getColumn() << ": no TRACK defined, cannot add ROW data.";
-            goto error;
+	    throw errMsg.str();
           }
 
           i = t.readHex(0, MAX_PATTERN_LENGTH - 1);

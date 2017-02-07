@@ -24,13 +24,12 @@
 
 #include "Tokenizer.h"
 
-// TODO: rename me
-class CTextExport {
+class Importer {
 public:
-  CTextExport(const std::string& text);
-  virtual ~CTextExport();
+  Importer(const std::string& text);
+  virtual ~Importer();
 
-  static CTextExport fromFile(const char *filename);
+  static Importer fromFile(const char *filename);
 
   void runImport();
  private:

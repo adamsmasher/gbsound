@@ -167,7 +167,7 @@ const char* VOL_TEXT[17] = {
   "."
 };
 
-int CTextExport::getVolId(const std::string& sVol) const {
+int Importer::getVolId(const std::string& sVol) const {
   std::stringstream errMsg;
   
   int v;  
@@ -185,7 +185,7 @@ int CTextExport::getVolId(const std::string& sVol) const {
   return v;
 }
 
-int CTextExport::getInstrumentId(const std::string& sInst) const {
+int Importer::getInstrumentId(const std::string& sInst) const {
   std::ostringstream errMsg;
   
   if (sInst.size() != 2) {
@@ -205,7 +205,7 @@ int CTextExport::getInstrumentId(const std::string& sInst) const {
   }
 }
 
-std::pair<int, int> CTextExport::getNoteAndOctave(const std::string& sNote) const {
+std::pair<int, int> Importer::getNoteAndOctave(const std::string& sNote) const {
   std::ostringstream errMsg;
   
   if (sNote.size() != 3) {
@@ -261,7 +261,7 @@ std::pair<int, int> CTextExport::getNoteAndOctave(const std::string& sNote) cons
   throw "unreachable";
 }
 
-void CTextExport::importCellText(void) {
+void Importer::importCellText(void) {
   std::ostringstream errMsg;
 
   // stChanNote Cell;
@@ -312,23 +312,22 @@ void CTextExport::importCellText(void) {
 
 // =============================================================================
 
-CTextExport::CTextExport(const std::string& text)
+Importer::Importer(const std::string& text)
   : t(text)
 {}
 
-CTextExport CTextExport::fromFile(const char *filename) {
+Importer Importer::fromFile(const char *filename) {
   // read file into "text"
   std::ifstream f(filename, std::ifstream::in);
   std::stringstream buffer;
   buffer << f.rdbuf();
   f.close();
 
-  return CTextExport(buffer.str());
+  return Importer(buffer.str());
 }
 
-CTextExport::~CTextExport()
-{
-}
+Importer::~Importer()
+{}
 
 // =============================================================================
 
@@ -344,7 +343,7 @@ CTextExport::~CTextExport()
 
 #define CHECK_COLON() CHECK_SYMBOL(":")
 
-void CTextExport::runImport(void) {
+void Importer::runImport(void) {
   std::ostringstream errMsg;
 
   /*// begin a new document

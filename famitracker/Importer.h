@@ -38,6 +38,7 @@ public:
   int getInstrumentId(const std::string& sInst) const;
   std::pair<int, int> getNoteAndOctave(const std::string& sNote) const;
   void importCellText(void);
+  int importHex(const std::string& node);
 
   unsigned int track;
   unsigned int pattern;

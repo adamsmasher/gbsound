@@ -122,7 +122,7 @@ static const char* CT[CT_COUNT] = {
   "ROW",
 };
 
-Command Importer::getCommandEnum(std::string command) const {
+Command Importer::getCommandEnum(const std::string& command) const {
   for (int c = 0; c < CT_COUNT; ++c) {
     if (0 == strcasecmp(command.c_str(), CT[c])) {
         return (Command)c;

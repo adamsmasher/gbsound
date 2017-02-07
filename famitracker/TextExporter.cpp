@@ -351,95 +351,12 @@ const char* VOL_TEXT[17] = {
   "8", "9", "A", "B", "C", "D", "E", "F",
   "."
 };
- 
-static void ImportCellText(
-  Tokenizer &t,
-  unsigned int track,
-  unsigned int pattern,
-  unsigned int channel,
-  unsigned int row)
-{
-  std::ostringstream errMsg;
-  // stChanNote Cell;
 
-  // empty Cell
-  // ::memset(&Cell, 0, sizeof(Cell));
-  // Cell.Instrument = MAX_INSTRUMENTS;
-  // Cell.Vol = 0x10;
-
-  std::string sNote = t.readToken();
-  if      (sNote == "...") { /*Cell.Note = 0;*/ }
-  else if (sNote == "---") { /* Cell.Note = HALT; */ }
-  else if (sNote == "===") { /* Cell.Note = RELEASE; */ }
-  else {
-    if (sNote.size() != 3) {
-      errMsg << "Line " << t.line << " column " << t.getColumn() << ": note column should be 3 characters wide, '" << sNote << "' found.";
-      throw errMsg.str();
-    }
-
-    if (channel == 3) { // noise
-       int h = importHex(sNote.substr(0, 1), t.line, t.getColumn());
-      //Cell.Note = (h % 12) + 1;
-      //Cell.Octave = h / 12;
-
-      // importer is very tolerant about the second and third characters
-      // in a noise note, they can be anything
-    }
-    else {
-      int n = 0;
-      switch (sNote.at(0)) {
-        case 'c': case 'C': n = 0; break;
-        case 'd': case 'D': n = 2; break;
-        case 'e': case 'E': n = 4; break;
-        case 'f': case 'F': n = 5; break;
-        case 'g': case 'G': n = 7; break;
-        case 'a': case 'A': n = 9; break;
-        case 'b': case 'B': n = 11; break;
-        default:
-          errMsg << "Line " << t.line << " column " << t.getColumn() << ": unrecognized note '" << sNote << "'.";
-	  throw errMsg.str();
-      }
-      switch (sNote.at(1)) {
-        case '-': case '.': break;
-        case '#': case '+': n += 1; break;
-        case 'b': case 'f': n -= 1; break;
-        default:
-          errMsg << "Line " << t.line << " column " << t.getColumn() << ": unrecognized note '" << sNote << "'.";
-	  throw errMsg.str();
-      }
-      while (n <   0) n += 12;
-      while (n >= 12) n -= 12;
-      //Cell.Note = n + 1;
-
-      int o = sNote.at(2) - '0';
-      if (o < 0 || o >= OCTAVE_RANGE) {
-        errMsg << "Line " << t.line << " column " << t.getColumn() << ": unrecognized octave '" << sNote << "'.";
-	throw errMsg.str();
-      }
-      //Cell.Octave = o;
-    }
-  }
-
-  std::string sInst = t.readToken();
-  if (sInst == "..") { /*Cell.Instrument = MAX_INSTRUMENTS;*/ }
-  else {
-    if (sInst.size() != 2) {
-      errMsg << "Line " << t.line << " column " << t.getColumn() << ": instrument column should be 2 characters wide, '" << sInst << "' found.";
-      throw errMsg.str();
-    }
-
-    int h = importHex(sInst, t.line, t.getColumn());
-
-    if (h >= MAX_INSTRUMENTS) {
-      errMsg << "Line " << t.line << " column " << ": instrument '" << sInst << "' is out of bounds.";
-      throw errMsg.str();
-    }
-    //Cell.Instrument = h;
-  }
-
-  std::string sVol = t.readToken();
-  int v = 0;
-  for (; v <= 17; ++v) {
+int getVolId(const std::string& sVol) {
+  std::stringstream errMsg;
+  
+  int v;  
+  for (v = 0; v <= 17; ++v) {
     if (0 == strcasecmp(sVol.c_str(), VOL_TEXT[v])) {
       break;
     }
@@ -449,7 +366,104 @@ static void ImportCellText(
     errMsg << "Line " << t.line << " column " << t.getColumn() << ": unrecognized volume token '" << sVol << "'.";
     throw errMsg.str();
   }
-  //Cell.Vol = v;
+
+  return v;
+}
+
+int getInstrumentId(const std::string& sInst) {
+  std::ostringstream errMsg;
+  
+  if (sInst.size() != 2) {
+    errMsg << "Line " << t.line << " column " << t.getColumn() << ": instrument column should be 2 characters wide, '" << sInst << "' found.";
+    throw errMsg.str();
+  } else if (sInst == "..") {
+    return MAX_INSTRUMENTS;
+  } else {
+    int h = importHex(sInst, t.line, t.getColumn());
+
+    if (h >= MAX_INSTRUMENTS) {
+      errMsg << "Line " << t.line << " column " << ": instrument '" << sInst << "' is out of bounds.";
+      throw errMsg.str();
+    }
+
+    return h;
+  }
+}
+
+std::pair<int, int> getNoteAndOctave(const std::string& sNote) {
+  std::ostringstream errMsg;
+  
+  if (sNote.size() != 3) {
+    errMsg << "Line " << t.line << " column " << t.getColumn() << ": note column should be 3 characters wide, '" << sNote << "' found.";
+    throw errMsg.str();
+  } else if (sNote == "...") {
+    return std::make_pair(0, 0); 
+  } else if (sNote == "---") {
+    return std::make_pair(HALT, 0);
+  } else if (sNote == "===") {
+    return std::make_pair(RELEASE, 0);
+  } else if (channel == 3) { // noise
+    int h = importHex(sNote.substr(0, 1), t.line, t.getColumn());
+
+    // importer is very tolerant about the second and third characters
+    // in a noise note, they can be anything
+
+    return std::make_pair(h % 12 + 1, h / 12);
+  } else {
+    int n = 0;
+    switch (sNote.at(0)) {
+    case 'c': case 'C': n = 0; break;
+    case 'd': case 'D': n = 2; break;
+    case 'e': case 'E': n = 4; break;
+    case 'f': case 'F': n = 5; break;
+    case 'g': case 'G': n = 7; break;
+    case 'a': case 'A': n = 9; break;
+    case 'b': case 'B': n = 11; break;
+    default:
+      errMsg << "Line " << t.line << " column " << t.getColumn() << ": unrecognized note '" << sNote << "'.";
+      throw errMsg.str();
+    }
+    switch (sNote.at(1)) {
+    case '-': case '.': break;
+    case '#': case '+': n += 1; break;
+    case 'b': case 'f': n -= 1; break;
+    default:
+      errMsg << "Line " << t.line << " column " << t.getColumn() << ": unrecognized note '" << sNote << "'.";
+      throw errMsg.str();
+    }
+    while (n <   0) n += 12;
+    while (n >= 12) n -= 12;
+    
+    int o = sNote.at(2) - '0';
+    if (o < 0 || o >= OCTAVE_RANGE) {
+      errMsg << "Line " << t.line << " column " << t.getColumn() << ": unrecognized octave '" << sNote << "'.";
+      throw errMsg.str();
+    }
+    return std::make_pair(n + 1, o);
+  }
+}
+
+static void ImportCellText(
+  Tokenizer &t,
+  unsigned int track,
+  unsigned int pattern,
+  unsigned int channel,
+  unsigned int row)
+{
+  std::ostringstream errMsg;
+
+  // stChanNote Cell;
+  // empty Cell
+  // ::memset(&Cell, 0, sizeof(Cell));
+
+  std::string sNote = t.readToken();
+  // Cell.Note, Cell.Octave = getNoteAndOctave(sNote);
+
+  std::string sInst = t.readToken();
+  // Cell.Instrument = getInstrumentId(sInst);
+
+  std::string sVol = t.readToken();
+  //Cell.Vol = getVolId(sVol);
 
 //  for (unsigned int e = 0; e <= pDoc->GetEffColumns(track, channel); ++e) {
 //    std::string sEff = t.readToken();

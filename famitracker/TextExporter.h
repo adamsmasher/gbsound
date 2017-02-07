@@ -20,12 +20,10 @@
 
 #pragma once
 
-#include <string>
-
-class CTextExport  {
+class CTextExport {
 public:
   CTextExport();
   virtual ~CTextExport();
 
-  std::string importFile(const char *fileName);
+  void importFile(const char *fileName);
 };

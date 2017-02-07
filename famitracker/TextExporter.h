@@ -20,10 +20,53 @@
 
 #pragma once
 
+#include <string>
+
+// TODO: put me in my own file
+class Tokenizer {
+ public:
+  Tokenizer(const std::string& text_);
+  virtual ~Tokenizer();
+
+  void reset(void);
+  
+  int getColumn(void) const;
+  bool finished(void) const;
+  int getLine(void) const;
+  
+  std::string readToken(void);
+  int readInt(int rangeMin, int rangeMax);
+  int readHex(int rangeMin, int rangeMax);
+  void readEOL(void);
+  bool isEOL(void);
+  void finishLine(void);
+ private:
+  void consumeSpace(void);
+
+  const std::string text;
+  size_t pos;
+  int line;
+  int linestart;
+};
+
+// TODO: rename me
 class CTextExport {
 public:
-  CTextExport();
+  CTextExport(const std::string& text);
   virtual ~CTextExport();
 
-  void importFile(const char *fileName);
+  static CTextExport fromFile(const char *filename);
+
+  void runImport();
+ private:
+  Tokenizer t;
+  int getVolId(const std::string& sVol) const;
+  int getInstrumentId(const std::string& sInst) const;
+  std::pair<int, int> getNoteAndOctave(const std::string& sNote) const;
+  void importCellText(void);
+
+  unsigned int track;
+  unsigned int pattern;
+  unsigned int channel;
+  unsigned int row;
 };

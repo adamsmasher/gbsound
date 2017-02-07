@@ -124,61 +124,64 @@ static const char* CT[CT_COUNT] = {
 
 // =============================================================================
 
-class Tokenizer {
-public:
-  Tokenizer(const std::string& text_)
-    : text(text_), pos(0), line(1), linestart(0)
-  {}
+Tokenizer::Tokenizer(const std::string& text_)
+  : text(text_), pos(0), line(1), linestart(0)
+{}
 
-  ~Tokenizer() {}
+Tokenizer::~Tokenizer() {}
 
-  void reset() {
-    pos = 0;
-    line = 1;
-    linestart = 0;
-  }
+void Tokenizer::reset(void) {
+  pos = 0;
+  line = 1;
+  linestart = 0;
+}
 
-  void consumeSpace() {
-    while (pos < text.size()) {
-      char c = text.at(pos);
-      if (c != ' ' && c != '\t') {
-        return;
-      }
-      ++pos;
+void Tokenizer::consumeSpace(void) {
+  while (pos < text.size()) {
+    char c = text.at(pos);
+    if (c != ' ' && c != '\t') {
+      return;
     }
+    ++pos;
+  }
+}
+
+void Tokenizer::finishLine(void) {
+  while (pos < text.size() && text.at(pos) != '\n') {
+    ++pos;
   }
 
-  void finishLine() {
-    while (pos < text.size() && text.at(pos) != '\n') {
-      ++pos;
+  if (pos < text.size()) ++pos; // skip newline
+  ++line;
+  linestart = pos;
+}
+
+int Tokenizer::getLine(void) const {
+  return line;
+}
+
+
+int Tokenizer::getColumn(void) const {
+  return 1 + pos - linestart;
+}
+
+bool Tokenizer::finished(void) const {
+  return pos >= text.size();
+}
+
+std::string Tokenizer::readToken() {
+  consumeSpace();
+  std::string t = "";
+
+  bool inQuote = false;
+  bool lastQuote = false; // for finding double-quotes
+  do {
+    if (pos >= text.size()) {
+      break;
     }
 
-    if (pos < text.size()) ++pos; // skip newline
-    ++line;
-    linestart = pos;
-  }
-
-  int getColumn() const {
-    return 1 + pos - linestart;
-  }
-
-  bool finished() const {
-    return pos >= text.size();
-  }
-
-  std::string readToken() {
-    consumeSpace();
-    std::string t = "";
-
-    bool inQuote = false;
-    bool lastQuote = false; // for finding double-quotes
-    do {
-      if (pos >= text.size()) {
-	break;
-      }
-
-      char c = text.at(pos);
-      if ((c == ' ' && !inQuote) ||
+    char c = text.at(pos);
+    if ((c == ' ' && !inQuote) ||
         c == '\t' ||
         c == '\r' ||
         c == '\n')
@@ -186,132 +189,126 @@ public:
         break;
       }
 
-      // quotes suppress space ending the token
-      if (c == '\"') {
-        if (!inQuote && t.size() == 0) { // first quote begins a quoted string
-          inQuote = true;
-        }
-        else {
-          if (lastQuote) { // convert "" to "
-            t += c;
-            lastQuote = false;
-          }
-          else {
-            lastQuote = true;
-          }
-        }
+    // quotes suppress space ending the token
+    if (c == '\"') {
+      if (!inQuote && t.size() == 0) { // first quote begins a quoted string
+	inQuote = true;
       }
       else {
-        lastQuote = false;
-        t += c;
+	if (lastQuote) { // convert "" to "
+	  t += c;
+	  lastQuote = false;
+	}
+	else {
+	  lastQuote = true;
+	}
       }
-
-      ++pos;
     }
-    while (true);
+    else {
+      lastQuote = false;
+      t += c;
+    }
 
-    return t;
+    ++pos;
+  }
+  while (true);
+
+  return t;
+}
+
+int Tokenizer::readInt(int rangeMin, int rangeMax) {
+  std::ostringstream errMsg;
+
+  std::string t = readToken();
+  int c = getColumn();
+
+  if (t.size() < 1) {
+    errMsg << "Line " << line << " column " << c << ": expected integer, no token found.";
+    throw errMsg.str();
   }
 
-  int readInt(int range_min, int range_max) {
-    std::ostringstream errMsg;
-
-    std::string t = readToken();
-    int c = getColumn();
-
-    if (t.size() < 1) {
-      errMsg << "Line " << line << " column " << c << ": expected integer, no token found.";
-      throw errMsg.str();
-    }
-
-    int i;
-    int result = ::sscanf(t.c_str(), "%d", &i);
-    if(result == EOF || result == 0) {
-      errMsg << "Line " << line << " column " << c << ": expected integer, '" << t << "' found.";
-      throw errMsg.str();
-    }
-
-    if (i < range_min || i > range_max) {
-      errMsg << "Line " << line << " column " << c << ": expected integer in range [" << range_min << "," << range_max << "], " << i << " found.";
-      throw errMsg.str();
-    }
-
-    return i;
+  int i;
+  int result = ::sscanf(t.c_str(), "%d", &i);
+  if(result == EOF || result == 0) {
+    errMsg << "Line " << line << " column " << c << ": expected integer, '" << t << "' found.";
+    throw errMsg.str();
   }
 
-  int readHex(int range_min, int range_max) {
-    std::ostringstream errMsg;
+  if (i < rangeMin || i > rangeMax) {
+    errMsg << "Line " << line << " column " << c << ": expected integer in range [" << rangeMin << "," << rangeMax << "], " << i << " found.";
+    throw errMsg.str();
+  }
 
-    std::string t = readToken();
-    int c = getColumn();
+  return i;
+}
 
-    if (t.size() < 1) {
-      errMsg << "Line " << line << " column " << c << ": expected hexadecimal, no token found.";
-      throw errMsg.str();
-    }
+int Tokenizer::readHex(int rangeMin, int rangeMax) {
+  std::ostringstream errMsg;
 
-    int i;
-    int result = ::sscanf(t.c_str(), "%x", &i);
-    if(result == EOF || result == 0) {
-      errMsg << "Line " << line << " column " << c << ": expected hexadecimal, '" << t << "' found.";
-      throw errMsg.str();
-    }
+  std::string t = readToken();
+  int c = getColumn();
 
-    if (i < range_min || i > range_max) {
-      errMsg << "Line " << line << " column " << c << ": expected hexadecimal in range [" << range_min << "," << range_max << "], " << i << " found.";
-      throw errMsg.str();
-    }
+  if (t.size() < 1) {
+    errMsg << "Line " << line << " column " << c << ": expected hexadecimal, no token found.";
+    throw errMsg.str();
+  }
+
+  int i;
+  int result = ::sscanf(t.c_str(), "%x", &i);
+  if(result == EOF || result == 0) {
+    errMsg << "Line " << line << " column " << c << ": expected hexadecimal, '" << t << "' found.";
+    throw errMsg.str();
+  }
+
+  if (i < rangeMin || i > rangeMax) {
+    errMsg << "Line " << line << " column " << c << ": expected hexadecimal in range [" << rangeMin << "," << rangeMax << "], " << i << " found.";
+    throw errMsg.str();
+  }
    
-    return i;
+  return i;
+}
+
+// note: finishes line if found
+void Tokenizer::readEOL(void) {
+  std::ostringstream errMsg;
+
+  int c = getColumn();
+  consumeSpace();
+
+  std::string s = readToken();
+  if (s.size() > 0) {
+    errMsg << "Line " << line << " column " << c << ": expected end of line, '" << s << "' found.";
+    throw errMsg.str();
   }
 
-  // note: finishes line if found
-  void readEOL(void) {
-    std::ostringstream errMsg;
+  if (finished()) {
+    return;
+  }
 
-    int c = getColumn();
-    consumeSpace();
+  char eol = text.at(pos);
+  if (eol != '\r' && eol != '\n') {
+    errMsg << "Line " << line << " column " << c << ": expected end of line, '" << eol << "' found.";
+    throw errMsg.str();
+  }
 
-    std::string s = readToken();
-    if (s.size() > 0) {
-      errMsg << "Line " << line << " column " << c << ": expected end of line, '" << s << "' found.";
-      throw errMsg.str();
-    }
+  finishLine();
+}
 
-    if (finished()) {
-      return;
-    }
+// note: finishes line if found
+bool Tokenizer::isEOL(void) {
+  consumeSpace();
+  if (finished()) {
+    return true;
+  }
 
-    char eol = text.at(pos);
-    if (eol != '\r' && eol != '\n') {
-      errMsg << "Line " << line << " column " << c << ": expected end of line, '" << eol << "' found.";
-      throw errMsg.str();
-    }
-
+  char eol = text.at(pos);
+  if (eol == '\r' || eol == '\n') {
     finishLine();
+    return true;
   }
 
-  // note: finishes line if found
-  bool isEOL() {
-    consumeSpace();
-    if (finished()) {
-      return true;
-    }
-
-    char eol = text.at(pos);
-    if (eol == '\r' || eol == '\n') {
-      finishLine();
-      return true;
-    }
-
-    return false;
-  }
-
-  const std::string text;
-  size_t pos;
-  int line;
-  int linestart;
-};
+  return false;
+}
 
 // =============================================================================
 
@@ -355,7 +352,7 @@ const char* VOL_TEXT[17] = {
   "."
 };
 
-int getVolId(const std::string& sVol) {
+int CTextExport::getVolId(const std::string& sVol) const {
   std::stringstream errMsg;
   
   int v;  
@@ -366,26 +363,26 @@ int getVolId(const std::string& sVol) {
   }
   
   if (v > 17) {
-    errMsg << "Line " << t.line << " column " << t.getColumn() << ": unrecognized volume token '" << sVol << "'.";
+    errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": unrecognized volume token '" << sVol << "'.";
     throw errMsg.str();
   }
 
   return v;
 }
 
-int getInstrumentId(const std::string& sInst) {
+int CTextExport::getInstrumentId(const std::string& sInst) const {
   std::ostringstream errMsg;
   
   if (sInst.size() != 2) {
-    errMsg << "Line " << t.line << " column " << t.getColumn() << ": instrument column should be 2 characters wide, '" << sInst << "' found.";
+    errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": instrument column should be 2 characters wide, '" << sInst << "' found.";
     throw errMsg.str();
   } else if (sInst == "..") {
     return MAX_INSTRUMENTS;
   } else {
-    int h = importHex(sInst, t.line, t.getColumn());
+    int h = importHex(sInst, t.getLine(), t.getColumn());
 
     if (h >= MAX_INSTRUMENTS) {
-      errMsg << "Line " << t.line << " column " << ": instrument '" << sInst << "' is out of bounds.";
+      errMsg << "Line " << t.getLine() << " column " << ": instrument '" << sInst << "' is out of bounds.";
       throw errMsg.str();
     }
 
@@ -393,11 +390,11 @@ int getInstrumentId(const std::string& sInst) {
   }
 }
 
-std::pair<int, int> getNoteAndOctave(const std::string& sNote) {
+std::pair<int, int> CTextExport::getNoteAndOctave(const std::string& sNote) const {
   std::ostringstream errMsg;
   
   if (sNote.size() != 3) {
-    errMsg << "Line " << t.line << " column " << t.getColumn() << ": note column should be 3 characters wide, '" << sNote << "' found.";
+    errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": note column should be 3 characters wide, '" << sNote << "' found.";
     throw errMsg.str();
   } else if (sNote == "...") {
     return {0, 0};
@@ -406,7 +403,7 @@ std::pair<int, int> getNoteAndOctave(const std::string& sNote) {
   } else if (sNote == "===") {
     return {RELEASE, 0};
   } else if (channel == 3) { // noise
-    int h = importHex(sNote.substr(0, 1), t.line, t.getColumn());
+    int h = importHex(sNote.substr(0, 1), t.getLine(), t.getColumn());
 
     // importer is very tolerant about the second and third characters
     // in a noise note, they can be anything
@@ -423,7 +420,7 @@ std::pair<int, int> getNoteAndOctave(const std::string& sNote) {
     case 'a': case 'A': n = 9; break;
     case 'b': case 'B': n = 11; break;
     default:
-      errMsg << "Line " << t.line << " column " << t.getColumn() << ": unrecognized note '" << sNote << "'.";
+      errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": unrecognized note '" << sNote << "'.";
       throw errMsg.str();
     }
     switch (sNote.at(1)) {
@@ -431,7 +428,7 @@ std::pair<int, int> getNoteAndOctave(const std::string& sNote) {
     case '#': case '+': n += 1; break;
     case 'b': case 'f': n -= 1; break;
     default:
-      errMsg << "Line " << t.line << " column " << t.getColumn() << ": unrecognized note '" << sNote << "'.";
+      errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": unrecognized note '" << sNote << "'.";
       throw errMsg.str();
     }
     while (n <   0) n += 12;
@@ -439,7 +436,7 @@ std::pair<int, int> getNoteAndOctave(const std::string& sNote) {
     
     int o = sNote.at(2) - '0';
     if (o < 0 || o >= OCTAVE_RANGE) {
-      errMsg << "Line " << t.line << " column " << t.getColumn() << ": unrecognized octave '" << sNote << "'.";
+      errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": unrecognized octave '" << sNote << "'.";
       throw errMsg.str();
     }
 
@@ -449,13 +446,7 @@ std::pair<int, int> getNoteAndOctave(const std::string& sNote) {
   throw "unreachable";
 }
 
-static void ImportCellText(
-  Tokenizer &t,
-  unsigned int track,
-  unsigned int pattern,
-  unsigned int channel,
-  unsigned int row)
-{
+void CTextExport::importCellText(void) {
   std::ostringstream errMsg;
 
   // stChanNote Cell;
@@ -475,7 +466,7 @@ static void ImportCellText(
 //    std::string sEff = t.readToken();
 //    if (sEff != "...") {
 //      if (sEff.size() != 3) {
-//        errMsg << "Line " << t.line << " column " << t.getColumn() << ": effect column should be 3 characters wide, '" << sEff << "' found.";
+//        errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": effect column should be 3 characters wide, '" << sEff << "' found.";
 //        goto error;
 //      }
 //
@@ -485,14 +476,14 @@ static void ImportCellText(
 //      for (; p < EF_COUNT; ++p)
 //        if (EFF_CHAR[p] == pC) break;
 //      if (p >= EF_COUNT) {
-//        errMsg << "Line " << t.line << " column " << t.getColumn() << ": unrecognized effect '" << sEff << "'.";
+//        errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": unrecognized effect '" << sEff << "'.";
 //        goto error;
 //      }
 //      // Cell.EffNumber[e] = p+1;
 //
 //      int h;
 //      bool err;
-//      std::string importHexErr = importHex(sEff.substr(sEff.size() - 2), &h, t.line, t.getColumn(), &err);
+//      std::string importHexErr = importHex(sEff.substr(sEff.size() - 2), &h, t.getLine(), t.getColumn(), &err);
 //      if (err) {
 //        errMsg << importHexErr;
 //        goto error;
@@ -506,8 +497,18 @@ static void ImportCellText(
 
 // =============================================================================
 
-CTextExport::CTextExport()
-{
+CTextExport::CTextExport(const std::string& text)
+  : t(text)
+{}
+
+CTextExport CTextExport::fromFile(const char *filename) {
+  // read file into "text"
+  std::ifstream f(filename, std::ifstream::in);
+  std::stringstream buffer;
+  buffer << f.rdbuf();
+  f.close();
+
+  return CTextExport(buffer.str());
 }
 
 CTextExport::~CTextExport()
@@ -521,21 +522,15 @@ CTextExport::~CTextExport()
     std::string symbol_ = t.readToken(); \
     if (symbol_ != (x)) \
     { \
-      errMsg << "Line " << t.line << " column " << t.getColumn() << ": expected '" << (x) << "', '" << symbol_ << "' found."; \
+      errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": expected '" << (x) << "', '" << symbol_ << "' found."; \
       throw errMsg.str();						\
     } \
   }
 
 #define CHECK_COLON() CHECK_SYMBOL(":")
 
-void CTextExport::importFile(const char *fileName) {
+void CTextExport::runImport(void) {
   std::ostringstream errMsg;
-
-  // read file into "text"
-  std::ifstream f(fileName, std::ifstream::in);
-  std::stringstream buffer;
-  buffer << f.rdbuf();
-  f.close();
 
   /*// begin a new document
   if (!pDoc->OnNewDocument())
@@ -545,12 +540,9 @@ void CTextExport::importFile(const char *fileName) {
   }*/
 
   // parse the file
-  Tokenizer t(buffer.str());
   int i; // generic integer for reading
   unsigned int dpcm_index = 0;
   unsigned int dpcm_pos = 0;
-  unsigned int track = 0;
-  unsigned int pattern = 0;
   while (!t.finished()) {
     // read first token on line
     if (t.isEOL()) {
@@ -645,7 +637,7 @@ void CTextExport::importFile(const char *fileName) {
           while (!t.isEOL()) {
             i = t.readInt(-128, 127);
             if (count >= MAX_SEQUENCE_ITEMS) {
-              errMsg << "Line " << t.line << " column " << t.getColumn() << ": macro overflow, max size: " << MAX_SEQUENCE_ITEMS << ".";
+              errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": macro overflow, max size: " << MAX_SEQUENCE_ITEMS << ".";
 	      throw errMsg.str();
             }
             //pSeq->SetItem(count, i);
@@ -675,7 +667,7 @@ void CTextExport::importFile(const char *fileName) {
             i = t.readHex(0x00, 0xFF);
 //            if (dpcm_pos >= pSample->GetSize())
 //            {
-//              sResult.Format(_T("Line %d column %d: DPCM sample %d overflow, increase size used in %s."), t.line, t.GetColumn(), dpcm_index, CT[CT_DPCMDEF]);
+//              sResult.Format(_T("Line %d column %d: DPCM sample %d overflow, increase size used in %s."), t.getLine(), t.GetColumn(), dpcm_index, CT[CT_DPCMDEF]);
 //              return sResult;
 //            }
 //            *(pSample->GetData() + dpcm_pos) = (char)(i);
@@ -774,7 +766,7 @@ void CTextExport::importFile(const char *fileName) {
       case CT_KEYDPCM: {
           i = t.readInt(0, MAX_INSTRUMENTS - 1);
 //          if (pDoc->GetInstrumentType(i) != INST_2A03) {
-//            sResult.Format(_T("Line %d column %d: instrument %d is not defined as a 2A03 instrument."), t.line, t.GetColumn(), i);
+//            sResult.Format(_T("Line %d column %d: instrument %d is not defined as a 2A03 instrument."), t.getLine(), t.GetColumn(), i);
 //            return sResult;
 //          }
 //          CInstrument2A03* pInst = (CInstrument2A03*)pDoc->GetInstrument(i);
@@ -800,7 +792,7 @@ void CTextExport::importFile(const char *fileName) {
           i = t.readInt(0, MAX_INSTRUMENTS - 1);
 //          if (pDoc->GetInstrumentType(i) != INST_FDS)
 //          {
-//            sResult.Format(_T("Line %d column %d: instrument %d is not defined as an FDS instrument."), t.line, t.GetColumn(), i);
+//            sResult.Format(_T("Line %d column %d: instrument %d is not defined as an FDS instrument."), t.getLine(), t.GetColumn(), i);
 //            return sResult;
 //          }
 //          CInstrumentFDS* pInst = (CInstrumentFDS*)pDoc->GetInstrument(i);
@@ -817,7 +809,7 @@ void CTextExport::importFile(const char *fileName) {
           i = t.readInt(0, MAX_INSTRUMENTS - 1);
 //          if (pDoc->GetInstrumentType(i) != INST_FDS)
 //          {
-//            sResult.Format(_T("Line %d column %d: instrument %d is not defined as an FDS instrument."), t.line, t.GetColumn(), i);
+//            sResult.Format(_T("Line %d column %d: instrument %d is not defined as an FDS instrument."), t.getLine(), t.GetColumn(), i);
 //            return sResult;
 //          }
 //          CInstrumentFDS* pInst = (CInstrumentFDS*)pDoc->GetInstrument(i);
@@ -834,7 +826,7 @@ void CTextExport::importFile(const char *fileName) {
           i = t.readInt(0, MAX_INSTRUMENTS - 1);
 //          if (pDoc->GetInstrumentType(i) != INST_FDS)
 //          {
-//            sResult.Format(_T("Line %d column %d: instrument %d is not defined as an FDS instrument."), t.line, t.GetColumn(), i);
+//            sResult.Format(_T("Line %d column %d: instrument %d is not defined as an FDS instrument."), t.getLine(), t.GetColumn(), i);
 //            return sResult;
 //          }
 //          CInstrumentFDS* pInst = (CInstrumentFDS*)pDoc->GetInstrument(i);
@@ -852,7 +844,7 @@ void CTextExport::importFile(const char *fileName) {
               //pSeq = pInst->GetPitchSeq();
               break;
             default:
-              errMsg << "Line " << t.line << " column " << t.getColumn() << ": unexpected error.";
+              errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": unexpected error.";
 	      throw errMsg.str();
           }
           i = t.readInt(-1, MAX_SEQUENCE_ITEMS);
@@ -868,7 +860,7 @@ void CTextExport::importFile(const char *fileName) {
           while (!t.isEOL()) {
             i = t.readInt(-128, 127);
             if (count >= MAX_SEQUENCE_ITEMS) {
-              errMsg << "Line " << t.line << " column " << t.getColumn() << ": macro overflow, max size: " << MAX_SEQUENCE_ITEMS << ".";
+              errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": macro overflow, max size: " << MAX_SEQUENCE_ITEMS << ".";
 	      throw errMsg.str();
             }
             //pSeq->SetItem(count, i);
@@ -881,7 +873,7 @@ void CTextExport::importFile(const char *fileName) {
           i = t.readInt(0, MAX_INSTRUMENTS - 1);
 //          if (pDoc->GetInstrumentType(i) != INST_N163)
 //          {
-//            sResult.Format(_T("Line %d column %d: instrument %d is not defined as an N163 instrument."), t.line, t.GetColumn(), i);
+//            sResult.Format(_T("Line %d column %d: instrument %d is not defined as an N163 instrument."), t.getLine(), t.GetColumn(), i);
 //            return sResult;
 //          }
 //          CInstrumentN163* pInst = (CInstrumentN163*)pDoc->GetInstrument(i);
@@ -900,7 +892,7 @@ void CTextExport::importFile(const char *fileName) {
       case CT_TRACK: {
           if (track != 0) {
 //            if(pDoc->AddTrack() == -1) {
-//              sResult.Format(_T("Line %d column %d: unable to add new track."), t.line, t.GetColumn());
+//              sResult.Format(_T("Line %d column %d: unable to add new track."), t.getLine(), t.GetColumn());
 //              return sResult;
 //            }
           }
@@ -949,7 +941,7 @@ void CTextExport::importFile(const char *fileName) {
         break;
       case CT_ROW: {
           if (track == 0) {
-            errMsg << "Line " << t.line << " column " << t.getColumn() << ": no TRACK defined, cannot add ROW data.";
+            errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": no TRACK defined, cannot add ROW data.";
 	    throw errMsg.str();
           }
 
@@ -965,7 +957,7 @@ void CTextExport::importFile(const char *fileName) {
         break;
       case CT_COUNT:
       default:
-        errMsg << "Unrecognized command at line " << t.line << ": '" << command << "'.";
+        errMsg << "Unrecognized command at line " << t.getLine() << ": '" << command << "'.";
 	throw errMsg.str();
     }
   }

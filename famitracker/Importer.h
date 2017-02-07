@@ -22,6 +22,7 @@
 
 #include <string>
 
+#include "Command.h"
 #include "Tokenizer.h"
 
 class Importer {

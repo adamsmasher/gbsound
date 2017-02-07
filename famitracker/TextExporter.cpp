@@ -925,8 +925,7 @@ void CTextExport::importFile(const char *fileName) {
         }
         break;
       case CT_ORDER: {
-          int ifr;
-          CHECK(t.readHex(ifr, 0, MAX_FRAMES - 1);
+          int ifr = t.readHex(0, MAX_FRAMES - 1);
 //          if (ifr >= (int)pDoc->GetFrameCount(track-1)) // expand to accept frames
 //          {
 //            pDoc->SetFrameCount(track-1,ifr+1);

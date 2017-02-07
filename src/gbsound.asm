@@ -1,3 +1,10 @@
+;;; TODO: implement sweep
+;;; TODO: implement wave RAM
+;;; TODO: implement arpeggios
+;;; TODO: implement effects?
+;;; TODO: converter for famitracker
+;;; TODO: document/test
+
 SECTION "MusicVars", BSS[$C000]
 ;;; pointer into the opcode stream
 SongPtr:	DS 2	;; musn't cross a page
@@ -400,8 +407,8 @@ ChKeyOff:	LD A, [ChRegBase]
 		RET
 
 ChDutyCmd:	LD A, [ChRegBase]
-		ADD 1		; duty reg
 		LD C, A
+		INC C		; duty reg
 		LD A, [C]
 		AND $3F
 		OR B
@@ -423,8 +430,8 @@ ChSetDuty75:	LD B, $C0
 ChSetSndLen:	CALL PopOpcode
 		LD B, A
 		LD A, [ChRegBase]
-		ADD 1		; sound length reg
 		LD C, A
+		INC C		; sound length reg
 		LD A, [C]
 		AND $C0
 		OR B
@@ -573,9 +580,10 @@ ChHPitchInstr:	LD A, [ChRegBase]
 		LD [C], A
 		RET
 
+;;; B - duty bits (OR'd onto register)
 ChDutyInstr:	LD A, [ChRegBase]
-		ADD 1		; duty reg
 		LD C, A
+		INC C		; duty reg
 		LD A, [C]
 		AND $3F
 		OR B
@@ -618,6 +626,7 @@ ChInstrLoop:	LD H, ChInstrMarkers >> 8
 		LD [HL], B
 		JP ChNOP
 
+;;; B - amount to add to the octave
 ChOctaveCmd:	LD H, ChOctaves >> 8
 		LD A, [ChNum]
 		LD L, A
@@ -691,6 +700,7 @@ SongSetRate:	CALL PopOpcode
 		LD [SongRate], A
 		RET
 
+;;; TODO: move/copy this into RAM
 SECTION "Song", HOME[$6000]
 PatternTable:	DW Pattern1
 Song:		DB $77		; master volume config
@@ -715,11 +725,13 @@ Pattern1:
 		DB 0, 0
 		DB 7, 0		; goto frame 0
 
+;;; TODO: move/copy this into RAM
 SECTION "Instruments", HOME[$6100]
 Instruments:	DW .instr1
 .instr1:	DB 2, $F0, 1
 		DB 2, $00, 0
 
+;;; TODO: move/copy this into RAM
 SECTION "Sequence", HOME[$6200]
 Sequence:	DB 0
 

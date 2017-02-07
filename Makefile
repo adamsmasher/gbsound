@@ -5,7 +5,8 @@ build/gbsound.o
 
 FAMIDEPS=\
 famibuild/famiconv.o\
-famibuild/TextExporter.o
+famibuild/TextExporter.o\
+famibuild/Tokenizer.o
 
 build/%.o: src/%.asm
 	rgbasm -o $@ $< > /dev/null

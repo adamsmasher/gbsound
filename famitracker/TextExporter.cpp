@@ -20,6 +20,9 @@
 
 #include "TextExporter.h"
 
+#include "APUTypes.h"
+#include "FamiTrackerTypes.h"
+
 #include <cstdio>
 #include <fstream>
 #include <strings.h>

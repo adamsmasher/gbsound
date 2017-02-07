@@ -29,7 +29,7 @@
 #include <sstream>
 
 // command tokens
-enum {
+enum Command {
   CT_COMMENTLINE,    // anything may follow
   // song info
   CT_TITLE,          // string
@@ -121,6 +121,17 @@ static const char* CT[CT_COUNT] = {
   "PATTERN",
   "ROW",
 };
+
+Command Importer::getCommandEnum(std::string command) {
+  for (int c = 0; c < CT_COUNT; ++c) {
+    if (0 == strcasecmp(command.c_str(), CT[c])) {
+        return (Command)c;
+    }
+  }
+  
+  errMsg << "Unrecognized command at line " << t.getLine() << ": '" << command << "'.";
+	throw errMsg.str();
+}
 
 // =============================================================================
 
@@ -364,13 +375,7 @@ void Importer::runImport(void) {
     }
     
     std::string command = t.readToken();
-
-    int c = 0;
-    for (; c < CT_COUNT; ++c) {
-      if (0 == strcasecmp(command.c_str(), CT[c])) {
-	break;
-      }
-    }
+    Command c = getCommandEnum(command);
 
     switch (c) {
       case CT_COMMENTLINE:
@@ -769,10 +774,6 @@ void Importer::runImport(void) {
           t.readEOL();
         }
         break;
-      case CT_COUNT:
-      default:
-        errMsg << "Unrecognized command at line " << t.getLine() << ": '" << command << "'.";
-	throw errMsg.str();
     }
   }
 }

@@ -298,12 +298,12 @@ void Importer::checkColon(void) {
   checkSymbol(":");
 }
 
-void Importer::importMacro(void) {
+void Importer::importMacro(int chip) {
   std::ostringstream errMsg;
   
   int mt = t.readInt(0, SEQ_COUNT - 1);
   int i = t.readInt(0, MAX_SEQUENCES - 1);
-  //CSequence* pSeq = pDoc->GetSequence(CHIP_MACRO[SNDCHIP_NONE], i, mt);
+  //CSequence* pSeq = pDoc->GetSequence(chip, i, mt);
 
   i = t.readInt(-1, MAX_SEQUENCE_ITEMS);
   //pSeq->SetLoopPoint(i);
@@ -325,6 +325,10 @@ void Importer::importMacro(void) {
     ++count;
     //pSeq->SetItemCount(count);
   }
+}
+
+void Importer::importStandardMacro(void) {
+  importMacro(SNDCHIP_NONE);
 }
 
 void Importer::importStandardInstrument(void) {
@@ -443,6 +447,56 @@ void Importer::importExpansion(void) {
   t.readEOL();
 }
 
+void Importer::importN163Macro(void) {
+  importMacro(SNDCHIP_N63);
+}
+
+void Importer::importN163Instrument(void) {
+  int i = t.readInt(0, MAX_INSTRUMENTS - 1);
+￼  //CInstrumentN163* pInst = (CInstrumentN163*)pDoc->CreateInstrument(INST_N163);
+￼  //pDoc->AddInstrument(pInst, i);
+￼  for (int s=0; s < SEQ_COUNT; ++s) {
+￼    i = t.readInt(-1, MAX_SEQUENCES - 1);
+￼    //pInst->SetSeqEnable(s, (i == -1) ? 0 : 1);
+    //pInst->SetSeqIndex(s, (i == -1) ? 0 : i);
+  }
+￼  //CHECK(t.readInt(i,0,CInstrumentN163::MAX_WAVE_SIZE,&sResult));
+￼  //pInst->SetWaveSize(i);
+￼  i = t.readInt(0, 127);
+￼  //pInst->SetWavePos(i);
+￼  //i = t.readInt(0, CInstrumentN163::MAX_WAVE_COUNT,&sResult));
+￼  //pInst->SetWaveCount(i);
+￼  //pInst->SetName(Charify(t.readToken()));
+￼  t.readEOL();
+}
+
+void Importer::importN163Wave(void) {
+  int i = t.readInt(0, MAX_INSTRUMENTS - 1);
+  //          if (pDoc->GetInstrumentType(i) != INST_N163)
+￼  //          {
+￼  //            sResult.Format(_T("Line %d column %d: instrument %d is not defined as an N163 instrument."), t.getLine(), t.GetColumn(), i);
+  //            return sResult;
+￼  //          }
+￼  //          CInstrumentN163* pInst = (CInstrumentN163*)pDoc->GetInstrument(i);
+￼
+￼  int iw;
+￼  //CHECK(t.readInt(iw, 0, CInstrumentN163::MAX_WAVE_COUNT - 1);
+￼  CHECK_COLON();
+￼  //          for (int s=0; s < pInst->GetWaveSize(); ++s)
+￼  //          {
+￼  //            CHECK(t.readInt(i,0,15,&sResult));
+￼  //            pInst->SetSample(iw, s, i);
+￼  //          }
+  t.readEOL();
+}
+
+void Importer::importN163Channels(void) {
+  int i = t.readInt(1, 8);
+￼  //pDoc->SetNamcoChannels(i);
+￼  //pDoc->SelectExpansionChip(pDoc->GetExpansionChip());
+  t.readEOL();
+}
+
 void Importer::importCommand(Command c) {
   switch (c) {
   case CT_COMMENTLINE:
@@ -503,10 +557,16 @@ void Importer::importCommand(Command c) {
   case CT_MACROS5B:
     throw "S5B not supported on the Game Boy.";
   case CT_INSTN163:
+    importN163Instrument();
+    return;
   case CT_N163WAVE:
+    importN163Wave();
+    return;
   case CT_MACRON163:
+    importN163Macro();
+    return;
   case CT_N163CHANNELS:
-    // TODO: restore the implementation of these, although we can only use one
+    importN163Channels();
     return;
   case CT_TRACK:
     importTrack();

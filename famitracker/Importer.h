@@ -42,6 +42,16 @@ public:
   int importHex(const std::string& sToken) const;
   Command getCommandEnum(const std::string& command) const;
   void importCommand(Command c);
+  void importMacro(void);
+  void importStandardInstrument(void);
+  void importFDSInstrument(void);
+  void importFDSWave(void);
+  void importFDSMacro(void);
+  void importFDSMod(void);
+  void importTrack(void);
+  void importColumns(void);
+  void importOrder(void);
+  void importRow(void);
 
   unsigned int track;
   unsigned int pattern;

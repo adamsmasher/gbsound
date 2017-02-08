@@ -25,6 +25,7 @@
 
 #include <cstdio>
 #include <fstream>
+#include <iostream>
 #include <strings.h>
 #include <sstream>
 
@@ -301,6 +302,218 @@ Importer::~Importer()
 
 #define CHECK_COLON() CHECK_SYMBOL(":")
 
+void Importer::importMacro(void) {
+  std::ostringstream errMsg;
+  
+  int mt = t.readInt(0, SEQ_COUNT - 1);
+  int i = t.readInt(0, MAX_SEQUENCES - 1);
+  //CSequence* pSeq = pDoc->GetSequence(CHIP_MACRO[SNDCHIP_NONE], i, mt);
+
+  i = t.readInt(-1, MAX_SEQUENCE_ITEMS);
+  //pSeq->SetLoopPoint(i);
+  i = t.readInt(-1, MAX_SEQUENCE_ITEMS);
+  //pSeq->SetReleasePoint(i);
+  i = t.readInt(0, 255);
+  //pSeq->SetSetting(i);
+
+  CHECK_COLON();
+
+  int count = 0;
+  while (!t.isEOL()) {
+    i = t.readInt(-128, 127);
+    if (count >= MAX_SEQUENCE_ITEMS) {
+      errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": macro overflow, max size: " << MAX_SEQUENCE_ITEMS << ".";
+      throw errMsg.str();
+    }
+    //pSeq->SetItem(count, i);
+    ++count;
+    //pSeq->SetItemCount(count);
+  }
+}
+
+void Importer::importStandardInstrument(void) {
+  int i = t.readInt(0, MAX_INSTRUMENTS - 1);
+  //CInstrument2A03* pInst = (CInstrument2A03*)pDoc->CreateInstrument(INST_2A03);
+  //pDoc->AddInstrument(pInst, i);
+  for (int s = 0; s < SEQ_COUNT; ++s) {
+    i = t.readInt(-1, MAX_SEQUENCES - 1);
+    //pInst->SetSeqEnable(s, (i == -1) ? 0 : 1);
+    //pInst->SetSeqIndex(s, (i == -1) ? 0 : i);
+  }
+  //pInst->SetName(Charify(t.readToken()));
+  t.readEOL();
+}
+
+void Importer::importFDSInstrument(void) {
+  int i = t.readInt(0, MAX_INSTRUMENTS - 1);
+  //CInstrumentFDS* pInst = (CInstrumentFDS*)pDoc->CreateInstrument(INST_FDS);
+  //pDoc->AddInstrument(pInst, i);
+  i = t.readInt(0, 1);
+  //pInst->SetModulationEnable(i==1);
+  i = t.readInt(0, 4095);
+  //pInst->SetModulationSpeed(i);
+  i = t.readInt(0, 63);
+  //pInst->SetModulationDepth(i);
+  i = t.readInt(0, 255);
+  //pInst->SetModulationDelay(i);
+  //pInst->SetName(Charify(t.readToken()));
+  t.readEOL();
+}
+
+void Importer::importFDSWave(void) {
+  std::ostringstream errMsg;
+  
+  int i = t.readInt(0, MAX_INSTRUMENTS - 1);
+  //          if (pDoc->GetInstrumentType(i) != INST_FDS)
+  //          {
+  //            sResult.Format(_T("Line %d column %d: instrument %d is not defined as an FDS instrument."), t.getLine(), t.GetColumn(), i);
+  //            return sResult;
+  //          }
+  //          CInstrumentFDS* pInst = (CInstrumentFDS*)pDoc->GetInstrument(i);
+  CHECK_COLON();
+  //          for (int s = 0; s < CInstrumentFDS::WAVE_SIZE; ++s)
+  //          {
+  //            CHECK(t.readInt(i,0,63,&sResult));
+  //            pInst->SetSample(s, i);
+  //          }
+  t.readEOL();
+}
+
+void Importer::importFDSMacro(void) {
+  std::ostringstream errMsg;
+  
+  int i = t.readInt(0, MAX_INSTRUMENTS - 1);
+  //          if (pDoc->GetInstrumentType(i) != INST_FDS)
+  //          {
+  //            sResult.Format(_T("Line %d column %d: instrument %d is not defined as an FDS instrument."), t.getLine(), t.GetColumn(), i);
+  //            return sResult;
+  //          }
+  //          CInstrumentFDS* pInst = (CInstrumentFDS*)pDoc->GetInstrument(i);
+
+  i = t.readInt(0, 2);
+  //CSequence * pSeq = NULL;
+  switch(i) {
+  case 0:
+    //pSeq = pInst->GetVolumeSeq();
+    break;
+  case 1:
+    //pSeq = pInst->GetArpSeq();
+    break;
+  case 2:
+    //pSeq = pInst->GetPitchSeq();
+    break;
+  default:
+    errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": unexpected error.";
+    throw errMsg.str();
+  }
+  i = t.readInt(-1, MAX_SEQUENCE_ITEMS);
+  //pSeq->SetLoopPoint(i);
+  i = t.readInt(-1, MAX_SEQUENCE_ITEMS);
+  //pSeq->SetReleasePoint(i);
+  i = t.readInt(0, 255);
+  //pSeq->SetSetting(i);
+
+  CHECK_COLON();
+
+  int count = 0;
+  while (!t.isEOL()) {
+    i = t.readInt(-128, 127);
+    if (count >= MAX_SEQUENCE_ITEMS) {
+      errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": macro overflow, max size: " << MAX_SEQUENCE_ITEMS << ".";
+      throw errMsg.str();
+    }
+    //pSeq->SetItem(count, i);
+    ++count;
+  }
+  //pSeq->SetItemCount(count);
+}
+
+void Importer::importFDSMod(void) {
+  std::ostringstream errMsg;
+  
+  int i = t.readInt(0, MAX_INSTRUMENTS - 1);
+  //          if (pDoc->GetInstrumentType(i) != INST_FDS)
+  //          {
+  //            sResult.Format(_T("Line %d column %d: instrument %d is not defined as an FDS instrument."), t.getLine(), t.GetColumn(), i);
+  //            return sResult;
+  //          }
+  //          CInstrumentFDS* pInst = (CInstrumentFDS*)pDoc->GetInstrument(i);
+  CHECK_COLON();
+  //          for (int s = 0; s < CInstrumentFDS::MOD_SIZE; ++s)
+  //          {
+  //            CHECK(t.readInt(i,0,7,&sResult));
+  //            pInst->SetModulation(s, i);
+  //          }
+  t.readEOL();
+}
+
+void Importer::importTrack(void) {
+  if (track != 0) {
+    //            if(pDoc->AddTrack() == -1) {
+    //              sResult.Format(_T("Line %d column %d: unable to add new track."), t.getLine(), t.GetColumn());
+    //              return sResult;
+    //            }
+  }
+
+  int i = t.readInt(0, MAX_PATTERN_LENGTH);
+  //pDoc->SetPatternLength(track, i);
+  i = t.readInt(0, MAX_TEMPO);
+  //pDoc->SetSongSpeed(track, i);
+  i = t.readInt(0, MAX_TEMPO);
+  //pDoc->SetSongTempo(track, i);
+  //pDoc->SetTrackTitle(track, t.readToken());
+
+  t.readEOL();
+  ++track;
+}
+
+void Importer::importColumns(void) {
+  std::ostringstream errMsg;
+  
+  CHECK_COLON();
+  //          for (int c = 0; c < pDoc->GetChannelCount(); ++c)
+  //          {
+  //            CHECK(t.readInt(i,1,MAX_EFFECT_COLUMNS,&sResult));
+  //            pDoc->SetEffColumns(track-1,c,i-1);
+  //          }
+  t.readEOL();
+}
+
+void Importer::importOrder(void) {
+  std::ostringstream errMsg;
+  
+  int ifr = t.readHex(0, MAX_FRAMES - 1);
+  //          if (ifr >= (int)pDoc->GetFrameCount(track-1)) // expand to accept frames
+  //          {
+  //            pDoc->SetFrameCount(track-1,ifr+1);
+  //          }
+  CHECK_COLON();
+  //          for (int c = 0; c < pDoc->GetChannelCount(); ++c)
+  //          {
+  //            i = t.readHex(0, MAX_PATTERN - 1, &sResult));
+  //            pDoc->SetPatternAtFrame(track - 1, ifr, c, i);
+  //          }
+  t.readEOL();
+}
+
+void Importer::importRow(void) {
+  std::ostringstream errMsg;
+  
+  if (track == 0) {
+    errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": no TRACK defined, cannot add ROW data.";
+    throw errMsg.str();
+  }
+
+  int i = t.readHex(0, MAX_PATTERN_LENGTH - 1);
+  //          for (int c=0; c < pDoc->GetChannelCount(); ++c) {
+  //            CHECK_COLON();
+  //            if (!ImportCellText(pDoc, t, track-1, pattern, c, i, sResult)) {
+  //              return sResult;
+  //            }
+  //          }
+  t.readEOL();
+}
+
 void Importer::importCommand(Command c) {
   std::ostringstream errMsg;
 
@@ -311,19 +524,19 @@ void Importer::importCommand(Command c) {
   switch (c) {
   case CT_COMMENTLINE:
     t.finishLine();
-    break;
+    return;
   case CT_TITLE:
-    //pDoc->SetSongName(Charify(t.readToken()));
+    std::cout << "Title: " << t.readToken() << std::endl;
     t.readEOL();
-    break;
+    return;
   case CT_AUTHOR:
-    //pDoc->SetSongArtist(Charify(t.readToken()));
+    std::cout << "Author: " << t.readToken() << std::endl;
     t.readEOL();
-    break;
+    return;
   case CT_COPYRIGHT:
-    //pDoc->SetSongCopyright(Charify(t.readToken()));
+    std::cout << "Copyright: " << t.readToken() << std::endl;
     t.readEOL();
-    break;
+    return;
   case CT_COMMENT:
     /*CString sComment = pDoc->GetComment();
       if (sComment.GetLength() > 0)
@@ -334,9 +547,12 @@ void Importer::importCommand(Command c) {
     break;
   case CT_MACHINE:
     i = t.readInt(0, PAL);
-    //pDoc->SetMachine(i);
+    if(i == PAL) {
+      errMsg << "The Game Boy always runs at 60Hz. PAL songs are not supported.";
+      throw errMsg.str();
+    }
     t.readEOL();
-    break;
+    return;
   case CT_FRAMERATE:
     i = t.readInt(0, 800);
     //pDoc->SetEngineSpeed(i);
@@ -357,354 +573,58 @@ void Importer::importCommand(Command c) {
     //pDoc->SetSpeedSplitPoint(i);
     t.readEOL();
     break;
-  case CT_N163CHANNELS:
-    i = t.readInt(1, 8);
-    //pDoc->SetNamcoChannels(i);
-    //pDoc->SelectExpansionChip(pDoc->GetExpansionChip());
-    t.readEOL();
-    break;
   case CT_MACRO:
+    importMacro();
+    return;
+  case CT_INST2A03:
+    importStandardInstrument();
+    return;
+  case CT_INSTFDS:
+    importFDSInstrument();
+    return;
+  case CT_FDSWAVE:
+    importFDSWave();
+    return;
+  case CT_FDSMOD:
+    importFDSMod();
+    return;
+  case CT_FDSMACRO:
+    importFDSMacro();
+    return;
+  case CT_KEYDPCM:
+  case CT_DPCMDEF:
+  case CT_DPCM:
+    throw "DPCM not supported on the Game Boy.";
+  case CT_INSTVRC6:
   case CT_MACROVRC6:
+    throw "VRC6 not supported on the Game Boy.";
+  case CT_INSTVRC7:
+    throw "VRC7 not supported on the Game Boy.";
+  case CT_INSTS5B:
+  case CT_MACROS5B:
+    throw "S5B not supported on the Game Boy.";
+  case CT_INSTN163:
+  case CT_N163WAVE:
   case CT_MACRON163:
-  case CT_MACROS5B: {
-    const int CHIP_MACRO[4] = { SNDCHIP_NONE, SNDCHIP_VRC6, SNDCHIP_N163, SNDCHIP_S5B };
-    int chip = c - CT_MACRO;
-
-    int mt = t.readInt(0, SEQ_COUNT - 1);
-    i = t.readInt(0, MAX_SEQUENCES - 1);
-    //CSequence* pSeq = pDoc->GetSequence(CHIP_MACRO[chip], i, mt);
-
-    i = t.readInt(-1, MAX_SEQUENCE_ITEMS);
-    //pSeq->SetLoopPoint(i);
-    i = t.readInt(-1, MAX_SEQUENCE_ITEMS);
-    //pSeq->SetReleasePoint(i);
-    i = t.readInt(0, 255);
-    //pSeq->SetSetting(i);
-
-    CHECK_COLON();
-
-    int count = 0;
-    while (!t.isEOL()) {
-      i = t.readInt(-128, 127);
-      if (count >= MAX_SEQUENCE_ITEMS) {
-	errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": macro overflow, max size: " << MAX_SEQUENCE_ITEMS << ".";
-	throw errMsg.str();
-      }
-      //pSeq->SetItem(count, i);
-      ++count;
-    }
-    //pSeq->SetItemCount(count);
-  }
-    break;
-  case CT_DPCMDEF: {
-    i = t.readInt(0, MAX_DSAMPLES - 1);
-    dpcm_index = i;
-    dpcm_pos = 0;
-
-    //CHECK(t.readInt(i,0,CDSample::MAX_SIZE,&err));
-    //CDSample* pSample = pDoc->GetSample(dpcm_index);
-    //pSample->Allocate(i, NULL);
-    //::memset(pSample->GetData(), 0, i);
-    //pSample->SetName(Charify(t.readToken()));
-
-    t.readEOL();
-  }
-    break;
-  case CT_DPCM: {
-    //CDSample* pSample = pDoc->GetSample(dpcm_index);
-    CHECK_COLON();
-    while (!t.isEOL()) {
-      i = t.readHex(0x00, 0xFF);
-      //            if (dpcm_pos >= pSample->GetSize())
-      //            {
-      //              sResult.Format(_T("Line %d column %d: DPCM sample %d overflow, increase size used in %s."), t.getLine(), t.GetColumn(), dpcm_index, CT[CT_DPCMDEF]);
-      //              return sResult;
-      //            }
-      //            *(pSample->GetData() + dpcm_pos) = (char)(i);
-      ++dpcm_pos;
-    }
-  }
-    break;
-  case CT_INST2A03: {
-    i = t.readInt(0, MAX_INSTRUMENTS - 1);
-    //CInstrument2A03* pInst = (CInstrument2A03*)pDoc->CreateInstrument(INST_2A03);
-    //pDoc->AddInstrument(pInst, i);
-    for (int s = 0; s < SEQ_COUNT; ++s) {
-      i = t.readInt(-1, MAX_SEQUENCES - 1);
-      //pInst->SetSeqEnable(s, (i == -1) ? 0 : 1);
-      //pInst->SetSeqIndex(s, (i == -1) ? 0 : i);
-    }
-    //pInst->SetName(Charify(t.readToken()));
-    t.readEOL();
-  }
-    break;
-  case CT_INSTVRC6: {
-    i = t.readInt(0, MAX_INSTRUMENTS - 1);
-    //CInstrumentVRC6* pInst = (CInstrumentVRC6*)pDoc->CreateInstrument(INST_VRC6);
-    //pDoc->AddInstrument(pInst, i);
-    for (int s = 0; s < SEQ_COUNT; ++s) {
-      i = t.readInt(-1, MAX_SEQUENCES - 1);
-      //            pInst->SetSeqEnable(s, (i == -1) ? 0 : 1);
-      //            pInst->SetSeqIndex(s, (i == -1) ? 0 : i);
-    }
-    //          pInst->SetName(Charify(t.readToken()));
-    t.readEOL();
-  }
-    break;
-  case CT_INSTVRC7: {
-    i = t.readInt(0, MAX_INSTRUMENTS - 1);
-    //CInstrumentVRC7* pInst = (CInstrumentVRC7*)pDoc->CreateInstrument(INST_VRC7);
-    //pDoc->AddInstrument(pInst, i);
-    i = t.readInt(0, 15);
-    //pInst->SetPatch(i);
-    for (int r = 0; r < 8; ++r) {
-      i = t.readHex(0x00, 0xFF);
-      //pInst->SetCustomReg(r, i);
-    }
-    //pInst->SetName(Charify(t.readToken()));
-    t.readEOL();
-  }
-    break;
-  case CT_INSTFDS: {
-    i = t.readInt(0, MAX_INSTRUMENTS - 1);
-    //CInstrumentFDS* pInst = (CInstrumentFDS*)pDoc->CreateInstrument(INST_FDS);
-    //pDoc->AddInstrument(pInst, i);
-    i = t.readInt(0, 1);
-    //pInst->SetModulationEnable(i==1);
-    i = t.readInt(0, 4095);
-    //pInst->SetModulationSpeed(i);
-    i = t.readInt(0, 63);
-    //pInst->SetModulationDepth(i);
-    i = t.readInt(0, 255);
-    //pInst->SetModulationDelay(i);
-    //pInst->SetName(Charify(t.readToken()));
-    t.readEOL();
-  }
-    break;
-  case CT_INSTN163: {
-    i = t.readInt(0, MAX_INSTRUMENTS - 1);
-    //CInstrumentN163* pInst = (CInstrumentN163*)pDoc->CreateInstrument(INST_N163);
-    //pDoc->AddInstrument(pInst, i);
-    for (int s=0; s < SEQ_COUNT; ++s) {
-      i = t.readInt(-1, MAX_SEQUENCES - 1);
-      //pInst->SetSeqEnable(s, (i == -1) ? 0 : 1);
-      //pInst->SetSeqIndex(s, (i == -1) ? 0 : i);
-    }
-    //CHECK(t.readInt(i,0,CInstrumentN163::MAX_WAVE_SIZE,&sResult));
-    //pInst->SetWaveSize(i);
-    i = t.readInt(0, 127);
-    //pInst->SetWavePos(i);
-    //i = t.readInt(0, CInstrumentN163::MAX_WAVE_COUNT,&sResult));
-    //pInst->SetWaveCount(i);
-    //pInst->SetName(Charify(t.readToken()));
-    t.readEOL();
-  }
-    break;
-  case CT_INSTS5B: {
-    i = t.readInt(0, MAX_INSTRUMENTS - 1);
-    //CInstrumentS5B* pInst = (CInstrumentS5B*)pDoc->CreateInstrument(INST_S5B);
-    //pDoc->AddInstrument(pInst, i);
-    for (int s=0; s < SEQ_COUNT; ++s) {
-      i = t.readInt(-1, MAX_SEQUENCES - 1);
-      //pInst->SetSeqEnable(s, (i == -1) ? 0 : 1);
-      //pInst->SetSeqIndex(s, (i == -1) ? 0 : i);
-    }
-    //pInst->SetName(Charify(t.readToken()));
-    t.readEOL();
-  }
-    break;
-  case CT_KEYDPCM: {
-    i = t.readInt(0, MAX_INSTRUMENTS - 1);
-    //          if (pDoc->GetInstrumentType(i) != INST_2A03) {
-    //            sResult.Format(_T("Line %d column %d: instrument %d is not defined as a 2A03 instrument."), t.getLine(), t.GetColumn(), i);
-    //            return sResult;
-    //          }
-    //          CInstrument2A03* pInst = (CInstrument2A03*)pDoc->GetInstrument(i);
-
-    int io = t.readInt(0, OCTAVE_RANGE);
-    int in = t.readInt(0, 12);
-
-    i = t.readInt(0, MAX_DSAMPLES - 1);
-    //pInst->SetSample(io, in, i + 1);
-    i = t.readInt(0, 15);
-    //pInst->SetSamplePitch(io, in, i);
-    i = t.readInt(0, 1);
-    //pInst->SetSampleLoop(io, in, i==1);
-    i = t.readInt(0, 255);
-    //pInst->SetSampleLoopOffset(io, in, i);
-    i = t.readInt(-1, 127);
-    //pInst->SetSampleDeltaValue(io, in, i);
-
-    t.readEOL();
-  }
-    break;
-  case CT_FDSWAVE: {
-    i = t.readInt(0, MAX_INSTRUMENTS - 1);
-    //          if (pDoc->GetInstrumentType(i) != INST_FDS)
-    //          {
-    //            sResult.Format(_T("Line %d column %d: instrument %d is not defined as an FDS instrument."), t.getLine(), t.GetColumn(), i);
-    //            return sResult;
-    //          }
-    //          CInstrumentFDS* pInst = (CInstrumentFDS*)pDoc->GetInstrument(i);
-    CHECK_COLON();
-    //          for (int s = 0; s < CInstrumentFDS::WAVE_SIZE; ++s)
-    //          {
-    //            CHECK(t.readInt(i,0,63,&sResult));
-    //            pInst->SetSample(s, i);
-    //          }
-    t.readEOL();
-  }
-    break;
-  case CT_FDSMOD: {
-    i = t.readInt(0, MAX_INSTRUMENTS - 1);
-    //          if (pDoc->GetInstrumentType(i) != INST_FDS)
-    //          {
-    //            sResult.Format(_T("Line %d column %d: instrument %d is not defined as an FDS instrument."), t.getLine(), t.GetColumn(), i);
-    //            return sResult;
-    //          }
-    //          CInstrumentFDS* pInst = (CInstrumentFDS*)pDoc->GetInstrument(i);
-    CHECK_COLON();
-    //          for (int s = 0; s < CInstrumentFDS::MOD_SIZE; ++s)
-    //          {
-    //            CHECK(t.readInt(i,0,7,&sResult));
-    //            pInst->SetModulation(s, i);
-    //          }
-    t.readEOL();
-  }
-    break;
-  case CT_FDSMACRO: {
-    i = t.readInt(0, MAX_INSTRUMENTS - 1);
-    //          if (pDoc->GetInstrumentType(i) != INST_FDS)
-    //          {
-    //            sResult.Format(_T("Line %d column %d: instrument %d is not defined as an FDS instrument."), t.getLine(), t.GetColumn(), i);
-    //            return sResult;
-    //          }
-    //          CInstrumentFDS* pInst = (CInstrumentFDS*)pDoc->GetInstrument(i);
-
-    i = t.readInt(0, 2);
-    //CSequence * pSeq = NULL;
-    switch(i) {
-    case 0:
-      //pSeq = pInst->GetVolumeSeq();
-      break;
-    case 1:
-      //pSeq = pInst->GetArpSeq();
-      break;
-    case 2:
-      //pSeq = pInst->GetPitchSeq();
-      break;
-    default:
-      errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": unexpected error.";
-      throw errMsg.str();
-    }
-    i = t.readInt(-1, MAX_SEQUENCE_ITEMS);
-    //pSeq->SetLoopPoint(i);
-    i = t.readInt(-1, MAX_SEQUENCE_ITEMS);
-    //pSeq->SetReleasePoint(i);
-    i = t.readInt(0, 255);
-    //pSeq->SetSetting(i);
-
-    CHECK_COLON();
-
-    int count = 0;
-    while (!t.isEOL()) {
-      i = t.readInt(-128, 127);
-      if (count >= MAX_SEQUENCE_ITEMS) {
-	errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": macro overflow, max size: " << MAX_SEQUENCE_ITEMS << ".";
-	throw errMsg.str();
-      }
-      //pSeq->SetItem(count, i);
-      ++count;
-    }
-    //pSeq->SetItemCount(count);
-  }
-    break;
-  case CT_N163WAVE: {
-    i = t.readInt(0, MAX_INSTRUMENTS - 1);
-    //          if (pDoc->GetInstrumentType(i) != INST_N163)
-    //          {
-    //            sResult.Format(_T("Line %d column %d: instrument %d is not defined as an N163 instrument."), t.getLine(), t.GetColumn(), i);
-    //            return sResult;
-    //          }
-    //          CInstrumentN163* pInst = (CInstrumentN163*)pDoc->GetInstrument(i);
-
-    int iw;
-    //CHECK(t.readInt(iw, 0, CInstrumentN163::MAX_WAVE_COUNT - 1);
-    CHECK_COLON();
-    //          for (int s=0; s < pInst->GetWaveSize(); ++s)
-    //          {
-    //            CHECK(t.readInt(i,0,15,&sResult));
-    //            pInst->SetSample(iw, s, i);
-    //          }
-    t.readEOL();
-  }
-    break;
-  case CT_TRACK: {
-    if (track != 0) {
-      //            if(pDoc->AddTrack() == -1) {
-      //              sResult.Format(_T("Line %d column %d: unable to add new track."), t.getLine(), t.GetColumn());
-      //              return sResult;
-      //            }
-    }
-
-    i = t.readInt(0, MAX_PATTERN_LENGTH);
-    //pDoc->SetPatternLength(track, i);
-    i = t.readInt(0, MAX_TEMPO);
-    //pDoc->SetSongSpeed(track, i);
-    i = t.readInt(0, MAX_TEMPO);
-    //pDoc->SetSongTempo(track, i);
-    //pDoc->SetTrackTitle(track, t.readToken());
-
-    t.readEOL();
-    ++track;
-  }
-    break;
-  case CT_COLUMNS: {
-    CHECK_COLON();
-    //          for (int c = 0; c < pDoc->GetChannelCount(); ++c)
-    //          {
-    //            CHECK(t.readInt(i,1,MAX_EFFECT_COLUMNS,&sResult));
-    //            pDoc->SetEffColumns(track-1,c,i-1);
-    //          }
-    t.readEOL();
-  }
-    break;
-  case CT_ORDER: {
-    int ifr = t.readHex(0, MAX_FRAMES - 1);
-    //          if (ifr >= (int)pDoc->GetFrameCount(track-1)) // expand to accept frames
-    //          {
-    //            pDoc->SetFrameCount(track-1,ifr+1);
-    //          }
-    CHECK_COLON();
-    //          for (int c = 0; c < pDoc->GetChannelCount(); ++c)
-    //          {
-    //            i = t.readHex(0, MAX_PATTERN - 1, &sResult));
-    //            pDoc->SetPatternAtFrame(track - 1, ifr, c, i);
-    //          }
-    t.readEOL();
-  }
-    break;
+  case CT_N163CHANNELS:
+    throw "Namco 163 not supported on the Game Boy.";
+  case CT_TRACK:
+    importTrack();
+    return;
+  case CT_COLUMNS:
+    importColumns();
+    return;
+  case CT_ORDER:
+    importOrder();
+    return;
   case CT_PATTERN:
     i = t.readHex(0, MAX_PATTERN - 1);
     pattern = i;
     t.readEOL();
-    break;
-  case CT_ROW: {
-    if (track == 0) {
-      errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": no TRACK defined, cannot add ROW data.";
-      throw errMsg.str();
-    }
-
-    i = t.readHex(0, MAX_PATTERN_LENGTH - 1);
-    //          for (int c=0; c < pDoc->GetChannelCount(); ++c) {
-    //            CHECK_COLON();
-    //            if (!ImportCellText(pDoc, t, track-1, pattern, c, i, sResult)) {
-    //              return sResult;
-    //            }
-    //          }
-    t.readEOL();
-  }
-    break;
+    return;
+  case CT_ROW:
+    importRow();
+    return;
   }
 }
 

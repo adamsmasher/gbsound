@@ -221,8 +221,6 @@ std::pair<int, int> Importer::getNoteAndOctave(const std::string& sNote) const {
 }
 
 void Importer::importCellText(void) {
-  std::ostringstream errMsg;
-
   // stChanNote Cell;
   // empty Cell
   // ::memset(&Cell, 0, sizeof(Cell));
@@ -359,8 +357,6 @@ void Importer::importFDSInstrument(void) {
 }
 
 void Importer::importFDSWave(void) {
-  std::ostringstream errMsg;
-  
   int i = t.readInt(0, MAX_INSTRUMENTS - 1);
   //          if (pDoc->GetInstrumentType(i) != INST_FDS)
   //          {
@@ -427,8 +423,6 @@ void Importer::importFDSMacro(void) {
 }
 
 void Importer::importFDSMod(void) {
-  std::ostringstream errMsg;
-  
   int i = t.readInt(0, MAX_INSTRUMENTS - 1);
   //          if (pDoc->GetInstrumentType(i) != INST_FDS)
   //          {
@@ -466,8 +460,6 @@ void Importer::importTrack(void) {
 }
 
 void Importer::importColumns(void) {
-  std::ostringstream errMsg;
-  
   checkColon();
   //          for (int c = 0; c < pDoc->GetChannelCount(); ++c)
   //          {
@@ -478,8 +470,6 @@ void Importer::importColumns(void) {
 }
 
 void Importer::importOrder(void) {
-  std::ostringstream errMsg;
-  
   int ifr = t.readHex(0, MAX_FRAMES - 1);
   //          if (ifr >= (int)pDoc->GetFrameCount(track-1)) // expand to accept frames
   //          {

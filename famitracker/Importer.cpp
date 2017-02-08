@@ -269,8 +269,6 @@ void Importer::importCellText(void) {
   //pDoc->SetDataAtPattern(track,pattern,channel,row,&Cell);
 }
 
-// =============================================================================
-
 Importer::Importer(const std::string& text)
   : t(text)
 {}
@@ -287,8 +285,6 @@ Importer Importer::fromFile(const char *filename) {
 
 Importer::~Importer()
 {}
-
-// =============================================================================
 
 #define CHECK_SYMBOL(x) \
   { \
@@ -505,22 +501,54 @@ void Importer::importRow(void) {
   }
 
   int i = t.readHex(0, MAX_PATTERN_LENGTH - 1);
-  //          for (int c=0; c < pDoc->GetChannelCount(); ++c) {
-  //            CHECK_COLON();
-  //            if (!ImportCellText(pDoc, t, track-1, pattern, c, i, sResult)) {
-  //              return sResult;
-  //            }
-  //          }
+  // for (int c = 0; c < pDoc->GetChannelCount(); ++c) {
+  //   CHECK_COLON();
+  //   if (!ImportCellText(pDoc, t, track-1, pattern, c, i, sResult)) {
+  //     return sResult;
+  //   }
+  // }
+  t.readEOL();
+}
+
+void Importer::importMachine(void) {
+  int i = t.readInt(0, PAL);
+  if(i == PAL) {
+    throw "The Game Boy always runs at 60Hz. PAL songs are not supported.";
+  }
+  t.readEOL();
+}
+
+void Importer::importVibrato(void) {
+  int i = t.readInt(0, VIBRATO_NEW);
+  //pDoc->SetVibratoStyle((vibrato_t)i);
+  t.readEOL();
+}
+
+void Importer::importSplit(void) {
+  int i = t.readInt(0, 255);
+  //pDoc->SetSpeedSplitPoint(i);
+  t.readEOL();
+}
+
+void Importer::importFramerate(void) {
+  int i = t.readInt(0, 800);
+  //pDoc->SetEngineSpeed(i);
+  t.readEOL();
+}
+
+void Importer::importPattern(void) {
+  int i = t.readHex(0, MAX_PATTERN - 1);
+  pattern = i;
+  t.readEOL();
+}
+
+void Importer::importExpansion(void) {
+  int i = t.readInt(0, 255);
+  //pDoc->SelectExpansionChip(i);
   t.readEOL();
 }
 
 void Importer::importCommand(Command c) {
-  std::ostringstream errMsg;
-
-  int i; // generic integer for reading
-  unsigned int dpcm_index = 0;
-  unsigned int dpcm_pos = 0;
-  
   switch (c) {
   case CT_COMMENTLINE:
     t.finishLine();
@@ -546,33 +574,20 @@ void Importer::importCommand(Command c) {
     t.readEOL();
     break;
   case CT_MACHINE:
-    i = t.readInt(0, PAL);
-    if(i == PAL) {
-      errMsg << "The Game Boy always runs at 60Hz. PAL songs are not supported.";
-      throw errMsg.str();
-    }
-    t.readEOL();
+    importMachine();
     return;
   case CT_FRAMERATE:
-    i = t.readInt(0, 800);
-    //pDoc->SetEngineSpeed(i);
-    t.readEOL();
-    break;
+    importFramerate();
+    return;
   case CT_EXPANSION:
-    i = t.readInt(0, 255);
-    //pDoc->SelectExpansionChip(i);
-    t.readEOL();
-    break;
+    importExpansion();
+    return;
   case CT_VIBRATO:
-    i = t.readInt(0, VIBRATO_NEW);
-    //pDoc->SetVibratoStyle((vibrato_t)i);
-    t.readEOL();
-    break;
+    importVibrato();
+    return;
   case CT_SPLIT:
-    i = t.readInt(0, 255);
-    //pDoc->SetSpeedSplitPoint(i);
-    t.readEOL();
-    break;
+    importSplit();
+    return;
   case CT_MACRO:
     importMacro();
     return;
@@ -618,9 +633,7 @@ void Importer::importCommand(Command c) {
     importOrder();
     return;
   case CT_PATTERN:
-    i = t.readHex(0, MAX_PATTERN - 1);
-    pattern = i;
-    t.readEOL();
+    importPattern();
     return;
   case CT_ROW:
     importRow();

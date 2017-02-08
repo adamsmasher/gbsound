@@ -52,6 +52,12 @@ public:
   void importColumns(void);
   void importOrder(void);
   void importRow(void);
+  void importMachine(void);
+  void importVibrato(void);
+  void importSplit(void);
+  void importFramerate(void);
+  void importPattern(void);
+  void importExpansion(void);
 
   unsigned int track;
   unsigned int pattern;

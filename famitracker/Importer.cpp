@@ -28,7 +28,7 @@
 #include <strings.h>
 #include <sstream>
 
-static const char* CT[CT_COUNT] = {
+static const char* CT[CT_LAST + 1] = {
   // comment
   "#",
   // song info
@@ -75,7 +75,9 @@ static const char* CT[CT_COUNT] = {
 };
 
 Command Importer::getCommandEnum(const std::string& command) const {
-  for (int c = 0; c < CT_COUNT; ++c) {
+  std::ostringstream errMsg;
+  
+  for (int c = 0; c <= CT_LAST; ++c) {
     if (0 == strcasecmp(command.c_str(), CT[c])) {
         return (Command)c;
     }

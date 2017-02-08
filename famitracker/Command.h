@@ -64,5 +64,5 @@ enum Command {
   CT_PATTERN,        // hex (pattern)
   CT_ROW,            // row data
   // end of command list
-  CT_COUNT
+  CT_LAST = CT_ROW
 };

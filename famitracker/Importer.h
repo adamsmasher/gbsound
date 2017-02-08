@@ -22,6 +22,7 @@
 
 #include <string>
 
+#include "Command.h"
 #include "Tokenizer.h"
 
 class Importer {
@@ -39,6 +40,7 @@ public:
   std::pair<int, int> getNoteAndOctave(const std::string& sNote) const;
   void importCellText(void);
   int importHex(const std::string& sToken) const;
+  Command getCommandEnum(const std::string& command) const;
 
   unsigned int track;
   unsigned int pattern;

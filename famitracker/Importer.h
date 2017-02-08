@@ -41,6 +41,7 @@ public:
   void importCellText(void);
   int importHex(const std::string& sToken) const;
   Command getCommandEnum(const std::string& command) const;
+  void importCommand(Command c);
 
   unsigned int track;
   unsigned int pattern;

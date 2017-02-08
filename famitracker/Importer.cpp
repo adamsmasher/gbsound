@@ -286,17 +286,19 @@ Importer Importer::fromFile(const char *filename) {
 Importer::~Importer()
 {}
 
-#define CHECK_SYMBOL(x) \
-  { \
-    std::string symbol_ = t.readToken(); \
-    if (symbol_ != (x)) \
-    { \
-      errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": expected '" << (x) << "', '" << symbol_ << "' found."; \
-      throw errMsg.str();						\
-    } \
+void Importer::checkSymbol(const std::string& x) {
+  std::ostringstream errMsg;
+  
+  std::string symbol = t.readToken();
+  if (symbol != x) {
+    errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": expected '" << x << "', '" << symbol << "' found.";
+    throw errMsg.str();
   }
+}
 
-#define CHECK_COLON() CHECK_SYMBOL(":")
+void Importer::checkColon(void) {
+  checkSymbol(":");
+}
 
 void Importer::importMacro(void) {
   std::ostringstream errMsg;
@@ -312,7 +314,7 @@ void Importer::importMacro(void) {
   i = t.readInt(0, 255);
   //pSeq->SetSetting(i);
 
-  CHECK_COLON();
+  checkColon();
 
   int count = 0;
   while (!t.isEOL()) {
@@ -366,7 +368,7 @@ void Importer::importFDSWave(void) {
   //            return sResult;
   //          }
   //          CInstrumentFDS* pInst = (CInstrumentFDS*)pDoc->GetInstrument(i);
-  CHECK_COLON();
+  checkColon();
   //          for (int s = 0; s < CInstrumentFDS::WAVE_SIZE; ++s)
   //          {
   //            CHECK(t.readInt(i,0,63,&sResult));
@@ -409,7 +411,7 @@ void Importer::importFDSMacro(void) {
   i = t.readInt(0, 255);
   //pSeq->SetSetting(i);
 
-  CHECK_COLON();
+  checkColon();
 
   int count = 0;
   while (!t.isEOL()) {
@@ -434,7 +436,7 @@ void Importer::importFDSMod(void) {
   //            return sResult;
   //          }
   //          CInstrumentFDS* pInst = (CInstrumentFDS*)pDoc->GetInstrument(i);
-  CHECK_COLON();
+  checkColon();
   //          for (int s = 0; s < CInstrumentFDS::MOD_SIZE; ++s)
   //          {
   //            CHECK(t.readInt(i,0,7,&sResult));
@@ -466,7 +468,7 @@ void Importer::importTrack(void) {
 void Importer::importColumns(void) {
   std::ostringstream errMsg;
   
-  CHECK_COLON();
+  checkColon();
   //          for (int c = 0; c < pDoc->GetChannelCount(); ++c)
   //          {
   //            CHECK(t.readInt(i,1,MAX_EFFECT_COLUMNS,&sResult));
@@ -483,7 +485,7 @@ void Importer::importOrder(void) {
   //          {
   //            pDoc->SetFrameCount(track-1,ifr+1);
   //          }
-  CHECK_COLON();
+  checkColon();
   //          for (int c = 0; c < pDoc->GetChannelCount(); ++c)
   //          {
   //            i = t.readHex(0, MAX_PATTERN - 1, &sResult));

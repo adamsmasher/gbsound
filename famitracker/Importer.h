@@ -41,7 +41,7 @@ public:
   void importCellText(void);
   int importHex(const std::string& sToken) const;
   Command getCommandEnum(const std::string& command) const;
-  void importCommand(Command c);
+  void importCommand(Command);
   void importMacro(void);
   void importStandardInstrument(void);
   void importFDSInstrument(void);
@@ -58,6 +58,8 @@ public:
   void importFramerate(void);
   void importPattern(void);
   void importExpansion(void);
+  void checkColon(void);
+  void checkSymbol(const std::string&);
 
   unsigned int track;
   unsigned int pattern;

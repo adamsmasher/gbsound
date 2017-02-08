@@ -536,7 +536,9 @@ void Importer::importPattern(void) {
 
 void Importer::importExpansion(void) {
   int i = t.readInt(0, 255);
-  //pDoc->SelectExpansionChip(i);
+  if(i != SNDCHIP_NONE && i != SNDCHIP_FDS) {
+    throw "Unsupported expansion.";
+  }
   t.readEOL();
 }
 

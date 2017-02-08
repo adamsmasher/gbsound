@@ -558,11 +558,7 @@ void Importer::importCommand(Command c) {
     t.readEOL();
     return;
   case CT_COMMENT:
-    /*CString sComment = pDoc->GetComment();
-      if (sComment.GetLength() > 0)
-      sComment = sComment + _T("\r\n");
-      sComment += t.readToken();
-      pDoc->SetComment(sComment, pDoc->ShowCommentOnOpen()); */
+    std::cout << "Comment: " << t.readToken() << std::endl;
     t.readEOL();
     break;
   case CT_MACHINE:

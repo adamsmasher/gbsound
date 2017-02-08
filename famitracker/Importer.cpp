@@ -131,18 +131,18 @@ const char* HEX_TEXT[16] = {
   "8", "9", "A", "B", "C", "D", "E", "F"
 };
 
-int Importer::importHex(const std::string& sToken) {
+int Importer::importHex(const std::string& sToken) const {
   std::ostringstream errMsg;
 
   int i = 0;
 
   for (size_t d = 0; d < sToken.size(); ++d) {
     i <<= 4;
-    std::string t = sToken.substr(d, 1);
+    std::string token = sToken.substr(d, 1);
 
     int h = 0;
     for (h = 0; h < 16; ++h) {
-      if (0 == strcasecmp(t.c_str(), HEX_TEXT[h])) {
+      if (0 == strcasecmp(token.c_str(), HEX_TEXT[h])) {
 	break;
       }
     }

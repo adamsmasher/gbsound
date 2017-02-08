@@ -42,12 +42,9 @@ public:
   int importHex(const std::string& sToken) const;
   Command getCommandEnum(const std::string& command) const;
   void importCommand(Command);
-  void importMacro(void);
+  void importMacro(int chip);
+  void importStandardMacro(void);
   void importStandardInstrument(void);
-  void importFDSInstrument(void);
-  void importFDSWave(void);
-  void importFDSMacro(void);
-  void importFDSMod(void);
   void importTrack(void);
   void importColumns(void);
   void importOrder(void);
@@ -60,6 +57,10 @@ public:
   void importExpansion(void);
   void checkColon(void);
   void checkSymbol(const std::string&);
+  void importN163Wave(void);
+  void importN163Channels(void);
+  void importN163Instrument(void);
+  void importN163Macro(void);
 
   unsigned int track;
   unsigned int pattern;

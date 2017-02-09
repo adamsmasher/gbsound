@@ -450,7 +450,7 @@ void Importer::importExpansion(void) {
 }
 
 void Importer::importN163Macro(void) {
-  importMacro(SNDCHIP_N63);
+  importMacro(SNDCHIP_N163);
 }
 
 void Importer::importN163Instrument(void) {

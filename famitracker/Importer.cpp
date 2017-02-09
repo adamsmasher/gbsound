@@ -492,8 +492,9 @@ void Importer::importN163Wave(void) {
 
 void Importer::importN163Channels(void) {
   int i = t.readInt(1, 8);
-  //pDoc->SetNamcoChannels(i);
-  //pDoc->SelectExpansionChip(pDoc->GetExpansionChip());
+  if(i > 1) {
+    throw "Only 1 N163 wave channel is supported.";
+  }
   t.readEOL();
 }
 

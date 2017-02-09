@@ -416,8 +416,8 @@ void Importer::importMachine(void) {
 }
 
 void Importer::importVibrato(void) {
-  int i = t.readInt(0, VIBRATO_NEW);
-  //pDoc->SetVibratoStyle((vibrato_t)i);
+  t.readInt(0, VIBRATO_NEW);
+  std::cout << "Warning: ignoring vibrato command." << std::endl;
   t.readEOL();
 }
 

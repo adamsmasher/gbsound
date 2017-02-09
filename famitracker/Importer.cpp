@@ -453,47 +453,47 @@ void Importer::importN163Macro(void) {
 
 void Importer::importN163Instrument(void) {
   int i = t.readInt(0, MAX_INSTRUMENTS - 1);
-￼  //CInstrumentN163* pInst = (CInstrumentN163*)pDoc->CreateInstrument(INST_N163);
-￼  //pDoc->AddInstrument(pInst, i);
-￼  for (int s=0; s < SEQ_COUNT; ++s) {
-￼    i = t.readInt(-1, MAX_SEQUENCES - 1);
-￼    //pInst->SetSeqEnable(s, (i == -1) ? 0 : 1);
+  //CInstrumentN163* pInst = (CInstrumentN163*)pDoc->CreateInstrument(INST_N163);
+  //pDoc->AddInstrument(pInst, i);
+  for (int s=0; s < SEQ_COUNT; ++s) {
+    i = t.readInt(-1, MAX_SEQUENCES - 1);
+    //pInst->SetSeqEnable(s, (i == -1) ? 0 : 1);
     //pInst->SetSeqIndex(s, (i == -1) ? 0 : i);
   }
-￼  //CHECK(t.readInt(i,0,CInstrumentN163::MAX_WAVE_SIZE,&sResult));
-￼  //pInst->SetWaveSize(i);
-￼  i = t.readInt(0, 127);
-￼  //pInst->SetWavePos(i);
-￼  //i = t.readInt(0, CInstrumentN163::MAX_WAVE_COUNT,&sResult));
-￼  //pInst->SetWaveCount(i);
-￼  //pInst->SetName(Charify(t.readToken()));
-￼  t.readEOL();
+  //CHECK(t.readInt(i,0,CInstrumentN163::MAX_WAVE_SIZE,&sResult));
+  //pInst->SetWaveSize(i);
+  i = t.readInt(0, 127);
+  //pInst->SetWavePos(i);
+  //i = t.readInt(0, CInstrumentN163::MAX_WAVE_COUNT,&sResult));
+  //pInst->SetWaveCount(i);
+  //pInst->SetName(Charify(t.readToken()));
+  t.readEOL();
 }
 
 void Importer::importN163Wave(void) {
   int i = t.readInt(0, MAX_INSTRUMENTS - 1);
   //          if (pDoc->GetInstrumentType(i) != INST_N163)
-￼  //          {
-￼  //            sResult.Format(_T("Line %d column %d: instrument %d is not defined as an N163 instrument."), t.getLine(), t.GetColumn(), i);
+  //          {
+  //            sResult.Format(_T("Line %d column %d: instrument %d is not defined as an N163 instrument."), t.getLine(), t.GetColumn(), i);
   //            return sResult;
-￼  //          }
-￼  //          CInstrumentN163* pInst = (CInstrumentN163*)pDoc->GetInstrument(i);
-￼
-￼  int iw;
-￼  //CHECK(t.readInt(iw, 0, CInstrumentN163::MAX_WAVE_COUNT - 1);
-￼  CHECK_COLON();
-￼  //          for (int s=0; s < pInst->GetWaveSize(); ++s)
-￼  //          {
-￼  //            CHECK(t.readInt(i,0,15,&sResult));
-￼  //            pInst->SetSample(iw, s, i);
-￼  //          }
+  //          }
+  //          CInstrumentN163* pInst = (CInstrumentN163*)pDoc->GetInstrument(i);
+
+  int iw;
+  //CHECK(t.readInt(iw, 0, CInstrumentN163::MAX_WAVE_COUNT - 1);
+  checkColon();
+  //          for (int s=0; s < pInst->GetWaveSize(); ++s)
+  //          {
+  //            CHECK(t.readInt(i,0,15,&sResult));
+  //            pInst->SetSample(iw, s, i);
+  //          }
   t.readEOL();
 }
 
 void Importer::importN163Channels(void) {
   int i = t.readInt(1, 8);
-￼  //pDoc->SetNamcoChannels(i);
-￼  //pDoc->SelectExpansionChip(pDoc->GetExpansionChip());
+  //pDoc->SetNamcoChannels(i);
+  //pDoc->SelectExpansionChip(pDoc->GetExpansionChip());
   t.readEOL();
 }
 
@@ -534,7 +534,7 @@ void Importer::importCommand(Command c) {
     importSplit();
     return;
   case CT_MACRO:
-    importMacro();
+    importStandardMacro();
     return;
   case CT_INST2A03:
     importStandardInstrument();

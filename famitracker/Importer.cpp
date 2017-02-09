@@ -429,7 +429,9 @@ void Importer::importSplit(void) {
 
 void Importer::importFramerate(void) {
   int i = t.readInt(0, 800);
-  //pDoc->SetEngineSpeed(i);
+  if(i != 0 || i != 60) {
+    throw "Engine speed must be 60Hz.";
+  }
   t.readEOL();
 }
 

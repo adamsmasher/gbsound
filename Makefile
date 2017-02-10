@@ -1,3 +1,4 @@
+# todo: make this recursive to split up the make file
 all: gbsound.gb famiconv
 
 DEPS=\
@@ -23,6 +24,7 @@ famiconv: $(FAMIDEPS)
 
 .PHONY: clean
 
+# TODO: make this handle famibuild
 clean:
 	find build -mindepth 1 -not -name README | xargs rm -rf
 	rm -f gbsound.gb

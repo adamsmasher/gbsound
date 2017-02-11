@@ -22,6 +22,17 @@
 
 #pragma once
 
+class Sequence {
+public:
+  typedef std::pair<int, int> Index;
+
+  void setLoopPoint(int loopPoint);
+  void setReleasePoint(int releasePoint);
+  void setArpeggioType(int arpeggioType);
+  void pushBack(int i);
+  // TODO
+};
+
 class Instrument {
   // TODO
 };
@@ -57,6 +68,7 @@ class PatternNumber {
 class Song {
  public:
   void addInstrument(int volumeSeq, int arpeggioSeq, int pitchSeq, int hiPitchSeq, int dutyCycleSeq);
+  void addSequence(Sequence::Index index, const Sequence& sequence);
  private:
   std::vector<Instrument> instruments;
   SongMasterConfig songMasterConfig;

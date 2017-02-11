@@ -298,33 +298,33 @@ void Importer::checkColon(void) {
   checkSymbol(":");
 }
 
+// TODO: wait you're not using chip
 void Importer::importMacro(int chip) {
   std::ostringstream errMsg;
-  
-  int mt = t.readInt(0, SEQ_COUNT - 1);
-  int i = t.readInt(0, MAX_SEQUENCES - 1);
-  //CSequence* pSeq = pDoc->GetSequence(chip, i, mt);
 
-  i = t.readInt(-1, MAX_SEQUENCE_ITEMS);
-  //pSeq->SetLoopPoint(i);
-  i = t.readInt(-1, MAX_SEQUENCE_ITEMS);
-  //pSeq->SetReleasePoint(i);
-  i = t.readInt(0, 255);
-  //pSeq->SetSetting(i);
+  Sequence sequence;
+  
+  int sequenceType = t.readInt(0, SEQ_COUNT - 1);
+  int sequenceNum = t.readInt(0, MAX_SEQUENCES - 1);
+
+  int loopPoint    = t.readInt(-1, MAX_SEQUENCE_ITEMS);
+  int releasePoint = t.readInt(-1, MAX_SEQUENCE_ITEMS);
+
+  // TODO: maybe validate the sequence type here - this is only meaningful for arpeggio sequences
+  int arpeggioType = t.readInt(0, 255);
+  sequence.setArpeggioType(arpeggioType);
 
   checkColon();
 
-  int count = 0;
   while (!t.isEOL()) {
-    i = t.readInt(-128, 127);
-    if (count >= MAX_SEQUENCE_ITEMS) {
-      errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": macro overflow, max size: " << MAX_SEQUENCE_ITEMS << ".";
-      throw errMsg.str();
-    }
-    //pSeq->SetItem(count, i);
-    ++count;
-    //pSeq->SetItemCount(count);
+    int i = t.readInt(-128, 127);
+    sequence.pushBack(i);
   }
+
+  sequence.setLoopPoint(loopPoint);
+  sequence.setReleasePoint(releasePoint);
+
+  song.addSequence({sequenceType, sequenceNum}, sequence);
 }
 
 void Importer::importStandardMacro(void) {

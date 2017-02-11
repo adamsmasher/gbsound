@@ -23,8 +23,10 @@
 #include <string>
 
 #include "Command.h"
+#include "Song.h"
 #include "Tokenizer.h"
 
+// TODO: add a flag that invalidates this after use
 class Importer {
 public:
   Importer(const std::string& text);
@@ -32,7 +34,7 @@ public:
 
   static Importer fromFile(const char *filename);
 
-  void runImport();
+  Song runImport();
  private:
   Tokenizer t;
   int getVolId(const std::string& sVol) const;
@@ -66,4 +68,6 @@ public:
   unsigned int pattern;
   unsigned int channel;
   unsigned int row;
+
+  Song song;
 };

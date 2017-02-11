@@ -589,7 +589,7 @@ void Importer::importCommand(Command c) {
   }
 }
 
-void Importer::runImport(void) {
+Song Importer::runImport(void) {
   /*// begin a new document
   if (!pDoc->OnNewDocument())
   {
@@ -609,4 +609,6 @@ void Importer::runImport(void) {
 
     importCommand(c);
   }
+
+  return song;
 }

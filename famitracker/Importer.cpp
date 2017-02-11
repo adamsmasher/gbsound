@@ -470,7 +470,7 @@ void Importer::importN163Instrument(void) {
   int i = t.readInt(0, MAX_INSTRUMENTS - 1);
   //CInstrumentN163* pInst = (CInstrumentN163*)pDoc->CreateInstrument(INST_N163);
   //pDoc->AddInstrument(pInst, i);
-  for (int s=0; s < SEQ_COUNT; ++s) {
+  for (int s = 0; s < SEQ_COUNT; ++s) {
     i = t.readInt(-1, MAX_SEQUENCES - 1);
     //pInst->SetSeqEnable(s, (i == -1) ? 0 : 1);
     //pInst->SetSeqIndex(s, (i == -1) ? 0 : i);

@@ -63,6 +63,9 @@ public:
   void importN163Channels(void);
   void importN163Instrument(void);
   void importN163Macro(void);
+  void skipInstrumentName(void);
+  void skipInstrumentNumber(void);
+  int readSequenceNumber(void);
 
   unsigned int track;
   unsigned int pattern;

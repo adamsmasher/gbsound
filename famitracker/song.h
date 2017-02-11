@@ -55,6 +55,9 @@ class PatternNumber {
 };
 
 class Song {
+ public:
+  void addInstrument(int volumeSeq, int arpeggioSeq, int pitchSeq, int hiPitchSeq, int dutyCycleSeq);
+ private:
   std::vector<Instrument> instruments;
   SongMasterConfig songMasterConfig;
   Channel1Config channel1Config;

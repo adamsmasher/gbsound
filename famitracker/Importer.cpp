@@ -331,16 +331,29 @@ void Importer::importStandardMacro(void) {
   importMacro(SNDCHIP_NONE);
 }
 
+void Importer::skipInstrumentName(void) {
+  t.readToken();
+}
+
+void Importer::skipInstrumentNumber(void) {
+  t.readInt(0, MAX_INSTRUMENTS - 1);
+}
+
+int Importer::readSequenceNumber(void) {
+  return t.readInt(-1, MAX_SEQUENCES - 1);
+}
+
 void Importer::importStandardInstrument(void) {
-  int i = t.readInt(0, MAX_INSTRUMENTS - 1);
-  //CInstrument2A03* pInst = (CInstrument2A03*)pDoc->CreateInstrument(INST_2A03);
-  //pDoc->AddInstrument(pInst, i);
-  for (int s = 0; s < SEQ_COUNT; ++s) {
-    i = t.readInt(-1, MAX_SEQUENCES - 1);
-    //pInst->SetSeqEnable(s, (i == -1) ? 0 : 1);
-    //pInst->SetSeqIndex(s, (i == -1) ? 0 : i);
-  }
-  //pInst->SetName(Charify(t.readToken()));
+  skipInstrumentNumber();
+  
+  int volume = readSequenceNumber();
+  int arpeggio = readSequenceNumber();
+  int pitch = readSequenceNumber();
+  int hiPitch = readSequenceNumber();
+  int dutyCycle = readSequenceNumber();
+  song.addInstrument(volume, arpeggio, pitch, hiPitch, dutyCycle);
+  
+  skipInstrumentName();
   t.readEOL();
 }
 

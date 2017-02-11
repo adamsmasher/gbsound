@@ -22,6 +22,38 @@
 
 #pragma once
 
+class Instrument {
+  // TODO
+};
+
+class SongMasterConfig {
+  // TODO
+};
+
+class Channel1Config {
+  // TODO
+};
+
+class Channel2Config {
+  // TODO
+};
+
+class Channel3Config {
+  // TODO
+};
+
+class Channel4Config {
+  // TODO
+};
+
+class Pattern {
+  // TODO
+};
+
+class PatternNumber {
+  // TODO
+};
+
 class Song {
   std::vector<Instrument> instruments;
   SongMasterConfig songMasterConfig;

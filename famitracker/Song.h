@@ -1,5 +1,3 @@
-// TODO: capitalize me
-
 /*
 ** FamiTracker - NES/Famicom sound tracker
 ** Copyright (C) 2005-2014  Jonathan Liss

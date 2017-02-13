@@ -367,10 +367,11 @@ void Importer::importTrack(void) {
   }
 
   int patternLength = t.readInt(0, MAX_PATTERN_LENGTH);
+  setPatternLength(patternLength);
+    
   int speed = t.readInt(0, MAX_TEMPO);
   int tempo = t.readInt(0, MAX_TEMPO);
-
-  // TODO: do something with all this
+  song.setTempo(computeTempo(speed, tempo));
 
   skipTrackTitle();
   t.readEOL();
@@ -391,13 +392,13 @@ int Importer::readPatternNumber(void) {
   return t.readHex(0, MAX_PATTERN - 1);
 }
 
-void Importer::importOrder(void) {
-  int ifr = t.readHex(0, MAX_FRAMES - 1);
-  // expand to accept frames
-  if (ifr >= (int)pDoc->GetFrameCount(track-1)) {
-    pDoc->SetFrameCount(track-1,ifr+1);
-  }
+void Importer::skipFrameNumber(void) {
+  t.readHex(0, MAX_FRAMES - 1);
   checkColon();
+}
+
+void Importer::importOrder(void) {
+  skipFrameNumber();
 
   int pattern = readPatternNumber();
 

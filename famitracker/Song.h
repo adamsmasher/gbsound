@@ -57,6 +57,7 @@ class PatternNumber {
 class Song {
  public:
   void addInstrument(const Instrument&);
+  void setTempo(uint8_t tempo);
  private:
   std::vector<Instrument> instruments;
   SongMasterConfig songMasterConfig;

@@ -83,6 +83,9 @@ public:
   int readPatternNumber(void);
   Instrument buildInstrument(int volumeSeq, int arpeggioSeq, int pitchSeq, int hiPitchSeq, int dutyCycleSeq);
   int getChannelCount(void);
+  void setPatternLength(int patternLength);
+  uint8_t computeTempo(int speed, int tempo);
+  void skipFrameNumber(void);
 
   unsigned int track;
   unsigned int pattern;

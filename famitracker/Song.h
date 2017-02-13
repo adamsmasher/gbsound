@@ -19,6 +19,7 @@
 */
 
 #include <vector>
+#include <iostream>
 
 #pragma once
 
@@ -68,3 +69,5 @@ class Song {
   std::vector<Pattern> patterns;
   std::vector<PatternNumber> sequence;
 };
+
+std::ostream& operator<<(std::ostream& output, const Song& song);

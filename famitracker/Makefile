@@ -1,11 +1,17 @@
 all: ../famiconv
 
 DEPS=\
-build/famiconv.o\
 build/Importer.o\
+build/famiconv.o\
 build/Tokenizer.o
 
-build/%.o: %.cpp %.h
+HEADERS=\
+Command.h\
+Importer.h\
+Song.h\
+Tokenizer.h
+
+build/%.o: %.cpp $(HEADERS)
 	g++ -std=c++17 -Wall -O2 -Werror -c -o $@ $<
 
 ../famiconv: $(DEPS)

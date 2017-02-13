@@ -1,11 +1,11 @@
 all: ../famiconv
 
 DEPS=\
-../famibuild/famiconv.o\
-../famibuild/Importer.o\
-../famibuild/Tokenizer.o
+build/famiconv.o\
+build/Importer.o\
+build/Tokenizer.o
 
-../famibuild/%.o: %.cpp %.h
+build/%.o: %.cpp %.h
 	g++ -std=c++17 -Wall -O2 -Werror -c -o $@ $<
 
 ../famiconv: $(DEPS)
@@ -14,5 +14,5 @@ DEPS=\
 .PHONY: clean
 
 clean:
-	find ../famibuild -mindepth 1 -not -name README | xargs rm -rf
+	find build -mindepth 1 -not -name README | xargs rm -rf
 	rm -f ../famiconv

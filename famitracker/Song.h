@@ -22,20 +22,6 @@
 
 #pragma once
 
-// TODO: type
-// TODO: make Sequence and Instrument the same thing, this
-// should reflect the GB engine, not the Famitracker format
-class Sequence {
-public:
-  typedef std::pair<int, int> Index;
-
-  void setLoopPoint(int loopPoint);
-  void setReleasePoint(int releasePoint);
-  void setArpeggioType(int arpeggioType);
-  void pushBack(int i);
-  // TODO
-};
-
 class Instrument {
   // TODO
 };
@@ -70,9 +56,7 @@ class PatternNumber {
 
 class Song {
  public:
-  void addInstrument(int volumeSeq, int arpeggioSeq, int pitchSeq, int hiPitchSeq, int dutyCycleSeq);
-  void addSequence(Sequence::Index index, const Sequence& sequence);
-  int getChannelCount(void);
+  void addInstrument(const Instrument&);
  private:
   std::vector<Instrument> instruments;
   SongMasterConfig songMasterConfig;

@@ -28,6 +28,7 @@
 #include <iostream>
 #include <strings.h>
 #include <sstream>
+#include <tuple>
 
 static const char* CT[CT_LAST + 1] = {
   // comment
@@ -298,7 +299,6 @@ void Importer::checkColon(void) {
   checkSymbol(":");
 }
 
-// TODO: wait you're not using chip
 void Importer::importMacro(int chip) {
   std::ostringstream errMsg;
 
@@ -324,7 +324,7 @@ void Importer::importMacro(int chip) {
   sequence.setLoopPoint(loopPoint);
   sequence.setReleasePoint(releasePoint);
 
-  song.addSequence({sequenceType, sequenceNum}, sequence);
+  addSequence(std::make_tuple(chip, sequenceType, sequenceNum), sequence);
 }
 
 void Importer::importStandardMacro(void) {
@@ -351,7 +351,7 @@ void Importer::importStandardInstrument(void) {
   int pitch = readSequenceNumber();
   int hiPitch = readSequenceNumber();
   int dutyCycle = readSequenceNumber();
-  song.addInstrument(volume, arpeggio, pitch, hiPitch, dutyCycle);
+  song.addInstrument(buildInstrument(volume, arpeggio, pitch, hiPitch, dutyCycle));
   
   skipInstrumentName();
   t.readEOL();
@@ -379,7 +379,7 @@ void Importer::importTrack(void) {
 
 void Importer::importColumns(void) {
   checkColon();
-  for (int c = 0; c < song.getChannelCount(); ++c) {
+  for (int c = 0; c < getChannelCount(); ++c) {
     int i = t.readInt(1, MAX_EFFECT_COLUMNS);
     // TODO: what does this do?
     //pDoc->SetEffColumns(track-1,c,i-1);
@@ -403,7 +403,7 @@ void Importer::importOrder(void) {
 
   // unlike in Famitracker, in our driver there's only one
   // pattern per frame
-  for (int c = 1; c < song.getChannelCount(); ++c) {
+  for (int c = 1; c < getChannelCount(); ++c) {
     int pattern_ = readPatternNumber();
     if(pattern != pattern_) {
       // TODO: better error
@@ -424,7 +424,7 @@ void Importer::importRow(void) {
   }
 
   int i = t.readHex(0, MAX_PATTERN_LENGTH - 1);
-  for (int c = 0; c < song.getChannelCount(); ++c) {
+  for (int c = 0; c < getChannelCount(); ++c) {
     checkColon();
     importCellText();
   }

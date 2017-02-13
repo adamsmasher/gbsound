@@ -26,6 +26,18 @@
 #include "Song.h"
 #include "Tokenizer.h"
 
+class Sequence {
+ public:
+  typedef int Chip;
+  typedef int SeqType;
+  typedef std::tuple<Chip, SeqType, int> Index;
+
+  void setLoopPoint(int loopPoint);
+  void setReleasePoint(int releasePoint);
+  void setArpeggioType(int arpeggioType);
+  void pushBack(int i);
+};
+
 // TODO: add a flag that invalidates this after use
 class Importer {
 public:
@@ -35,6 +47,7 @@ public:
   static Importer fromFile(const char *filename);
 
   Song runImport();
+  void addSequence(Sequence::Index index, const Sequence& sequence);
  private:
   Tokenizer t;
   int getVolId(const std::string& sVol) const;
@@ -68,6 +81,8 @@ public:
   int readSequenceNumber(void);
   void skipTrackTitle(void);
   int readPatternNumber(void);
+  Instrument buildInstrument(int volumeSeq, int arpeggioSeq, int pitchSeq, int hiPitchSeq, int dutyCycleSeq);
+  int getChannelCount(void);
 
   unsigned int track;
   unsigned int pattern;

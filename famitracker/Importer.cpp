@@ -357,48 +357,61 @@ void Importer::importStandardInstrument(void) {
   t.readEOL();
 }
 
+void Importer::skipTrackTitle(void) {
+  t.readToken();
+}
+
 void Importer::importTrack(void) {
   if (track != 0) {
-    //            if(pDoc->AddTrack() == -1) {
-    //              sResult.Format(_T("Line %d column %d: unable to add new track."), t.getLine(), t.GetColumn());
-    //              return sResult;
-    //            }
+    throw "Multiple tracks not supported";
   }
 
-  int i = t.readInt(0, MAX_PATTERN_LENGTH);
-  //pDoc->SetPatternLength(track, i);
-  i = t.readInt(0, MAX_TEMPO);
-  //pDoc->SetSongSpeed(track, i);
-  i = t.readInt(0, MAX_TEMPO);
-  //pDoc->SetSongTempo(track, i);
-  //pDoc->SetTrackTitle(track, t.readToken());
+  int patternLength = t.readInt(0, MAX_PATTERN_LENGTH);
+  int speed = t.readInt(0, MAX_TEMPO);
+  int tempo = t.readInt(0, MAX_TEMPO);
 
+  // TODO: do something with all this
+
+  skipTrackTitle();
   t.readEOL();
   ++track;
 }
 
 void Importer::importColumns(void) {
   checkColon();
-  //          for (int c = 0; c < pDoc->GetChannelCount(); ++c)
-  //          {
-  //            CHECK(t.readInt(i,1,MAX_EFFECT_COLUMNS,&sResult));
-  //            pDoc->SetEffColumns(track-1,c,i-1);
-  //          }
+  for (int c = 0; c < song.getChannelCount(); ++c) {
+    int i = t.readInt(1, MAX_EFFECT_COLUMNS);
+    // TODO: what does this do?
+    //pDoc->SetEffColumns(track-1,c,i-1);
+  }
   t.readEOL();
+}
+
+int Importer::readPatternNumber(void) {
+  return t.readHex(0, MAX_PATTERN - 1);
 }
 
 void Importer::importOrder(void) {
   int ifr = t.readHex(0, MAX_FRAMES - 1);
-  //          if (ifr >= (int)pDoc->GetFrameCount(track-1)) // expand to accept frames
-  //          {
-  //            pDoc->SetFrameCount(track-1,ifr+1);
-  //          }
+  // expand to accept frames
+  if (ifr >= (int)pDoc->GetFrameCount(track-1)) {
+    pDoc->SetFrameCount(track-1,ifr+1);
+  }
   checkColon();
-  //          for (int c = 0; c < pDoc->GetChannelCount(); ++c)
-  //          {
-  //            i = t.readHex(0, MAX_PATTERN - 1, &sResult));
-  //            pDoc->SetPatternAtFrame(track - 1, ifr, c, i);
-  //          }
+
+  int pattern = readPatternNumber();
+
+  // unlike in Famitracker, in our driver there's only one
+  // pattern per frame
+  for (int c = 1; c < song.getChannelCount(); ++c) {
+    int pattern_ = readPatternNumber();
+    if(pattern != pattern_) {
+      // TODO: better error
+      throw "Mismatched pattern number";
+    }
+    // TODO: implement
+    //pDoc->SetPatternAtFrame(track - 1, ifr, c, i);
+  }
   t.readEOL();
 }
 
@@ -411,12 +424,10 @@ void Importer::importRow(void) {
   }
 
   int i = t.readHex(0, MAX_PATTERN_LENGTH - 1);
-  // for (int c = 0; c < pDoc->GetChannelCount(); ++c) {
-  //   CHECK_COLON();
-  //   if (!ImportCellText(pDoc, t, track-1, pattern, c, i, sResult)) {
-  //     return sResult;
-  //   }
-  // }
+  for (int c = 0; c < song.getChannelCount(); ++c) {
+    checkColon();
+    importCellText();
+  }
   t.readEOL();
 }
 

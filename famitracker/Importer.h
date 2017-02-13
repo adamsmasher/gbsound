@@ -66,6 +66,8 @@ public:
   void skipInstrumentName(void);
   void skipInstrumentNumber(void);
   int readSequenceNumber(void);
+  void skipTrackTitle(void);
+  int readPatternNumber(void);
 
   unsigned int track;
   unsigned int pattern;

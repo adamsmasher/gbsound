@@ -1,3 +1,5 @@
+// TODO: capitalize me
+
 /*
 ** FamiTracker - NES/Famicom sound tracker
 ** Copyright (C) 2005-2014  Jonathan Liss
@@ -22,6 +24,9 @@
 
 #pragma once
 
+// TODO: type
+// TODO: make Sequence and Instrument the same thing, this
+// should reflect the GB engine, not the Famitracker format
 class Sequence {
 public:
   typedef std::pair<int, int> Index;
@@ -69,6 +74,7 @@ class Song {
  public:
   void addInstrument(int volumeSeq, int arpeggioSeq, int pitchSeq, int hiPitchSeq, int dutyCycleSeq);
   void addSequence(Sequence::Index index, const Sequence& sequence);
+  int getChannelCount(void);
  private:
   std::vector<Instrument> instruments;
   SongMasterConfig songMasterConfig;

@@ -28,7 +28,10 @@ class Instrument {
 };
 
 class SongMasterConfig {
-  // TODO
+ public:
+  void setTempo(uint8_t tempo);
+ private:
+  uint8_t tempo;
 };
 
 class Channel1Config {

@@ -26,6 +26,7 @@
 #include <cstdio>
 #include <fstream>
 #include <iostream>
+#include <math.h>
 #include <strings.h>
 #include <sstream>
 #include <tuple>
@@ -636,6 +637,14 @@ Song Importer::runImport(void) {
   }
 
   return song;
+}
+
+uint8_t Importer::computeTempo(int speed, int tempo) {
+  double bpm = (tempo * 6.0)/speed;
+  double rowsPerMinute = bpm * 4;
+  double rowsPerSecond = rowsPerMinute/60;
+  double ticksPerRow = 60/rowsPerSecond;
+  return (uint8_t)ceil(256/ticksPerRow);
 }
 
 void Sequence::setLoopPoint(int loopPoint) {

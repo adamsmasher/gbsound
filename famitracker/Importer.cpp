@@ -637,3 +637,21 @@ Song Importer::runImport(void) {
 
   return song;
 }
+
+void Sequence::setLoopPoint(int loopPoint) {
+  if(loopPoint >= 0 && (unsigned)loopPoint > sequence.size()) {
+    throw "Loop point out of range";
+  }
+  this->loopPoint = loopPoint;
+}
+
+void Sequence::setReleasePoint(int releasePoint) {
+  if(releasePoint >= 0 && (unsigned)releasePoint > sequence.size()) {
+    throw "Release point out of range";
+  }
+  this->releasePoint = releasePoint;
+}
+
+void Sequence::pushBack(int i) {
+  sequence.push_back(i);
+}

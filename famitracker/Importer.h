@@ -36,6 +36,10 @@ class Sequence {
   void setReleasePoint(int releasePoint);
   void setArpeggioType(int arpeggioType);
   void pushBack(int i);
+ private:
+  std::vector<int> sequence;
+  int loopPoint;
+  int releasePoint;
 };
 
 // TODO: add a flag that invalidates this after use

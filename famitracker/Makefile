@@ -3,6 +3,7 @@ all: ../famiconv
 DEPS=\
 build/Importer.o\
 build/famiconv.o\
+build/Song.o\
 build/Tokenizer.o
 
 HEADERS=\

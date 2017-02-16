@@ -69,7 +69,7 @@ std::ostream& operator<<(std::ostream&, const std::vector<Pattern>&);
 
 class PatternNumber {
  public:
-  PatternNumber(uint8_t);
+  explicit PatternNumber(uint8_t);
   friend std::ostream& operator<<(std::ostream&, const PatternNumber&);
  private:
   uint8_t patternNumber;

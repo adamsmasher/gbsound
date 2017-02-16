@@ -32,6 +32,8 @@ void Song::addInstrument(const Instrument& instrument) {
   instruments.push_back(instrument);
 }
 
+PatternNumber::PatternNumber(uint8_t n) : patternNumber(n) {}
+
 std::ostream& operator<<(std::ostream& ostream, const Song& song) {
   ostream
     << song.songMasterConfig

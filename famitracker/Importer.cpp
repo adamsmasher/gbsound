@@ -270,7 +270,7 @@ void Importer::importCellText(void) {
 }
 
 Importer::Importer(const std::string& text)
-  : t(text)
+  : isExpired(false), t(text)
 {}
 
 Importer Importer::fromFile(const char *filename) {
@@ -616,6 +616,10 @@ void Importer::importCommand(Command c) {
 }
 
 Song Importer::runImport(void) {
+  if(isExpired) {
+    throw "Cannot run the same Importer multiple times";
+  }
+  isExpired = true;
   /*// begin a new document
   if (!pDoc->OnNewDocument())
   {

@@ -42,10 +42,9 @@ class Sequence {
   int releasePoint;
 };
 
-// TODO: add a flag that invalidates this after use
 class Importer {
 public:
-  Importer(const std::string& text);
+  explicit Importer(const std::string& text);
   virtual ~Importer();
 
   static Importer fromFile(const char *filename);
@@ -53,6 +52,7 @@ public:
   Song runImport();
   void addSequence(Sequence::Index index, const Sequence& sequence);
  private:
+  bool isExpired;;
   Tokenizer t;
   int getVolId(const std::string& sVol) const;
   int getInstrumentId(const std::string& sInst) const;

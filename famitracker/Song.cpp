@@ -31,3 +31,42 @@ void Song::setTempo(uint8_t tempo) {
 void Song::addInstrument(const Instrument& instrument) {
   instruments.push_back(instrument);
 }
+
+std::ostream& operator<<(std::ostream& ostream, const Song& song) {
+  ostream
+    << song.songMasterConfig
+    << song.channel1Config
+    << song.channel2Config
+    << song.channel3Config
+    << song.channel4Config
+    << song.patterns
+    << song.sequence
+    << song.instruments;
+  return ostream;
+}
+
+std::ostream& operator<<(std::ostream& ostream, const std::vector<Pattern>& patterns) {
+  for(auto i = patterns.begin(); i != patterns.end(); ++i) {
+    ostream << *i;
+  }
+  return ostream;
+}
+
+std::ostream& operator<<(std::ostream& ostream, const std::vector<PatternNumber>& patternNumbers) {
+  for(auto i = patternNumbers.begin(); i != patternNumbers.end(); ++i) {
+    ostream << *i;
+  }
+  return ostream;
+}
+
+std::ostream& operator<<(std::ostream& ostream, const std::vector<Instrument>& instruments) {
+  for(auto i = instruments.begin(); i != instruments.end(); ++i) {
+    ostream << *i;
+  }
+  return ostream;
+}
+
+std::ostream& operator<<(std::ostream& ostream, const PatternNumber& patternNumber) {
+  ostream << patternNumber.patternNumber;
+  return ostream;
+}

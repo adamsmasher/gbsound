@@ -24,44 +24,63 @@
 #pragma once
 
 class Instrument {
-  // TODO
+ public:
+  friend std::ostream& operator<<(std::ostream&, const Instrument&);
 };
+std::ostream& operator<<(std::ostream&, const std::vector<Instrument>&);
 
 class SongMasterConfig {
  public:
   void setTempo(uint8_t tempo);
+  friend std::ostream& operator<<(std::ostream&, const SongMasterConfig&);
  private:
   uint8_t tempo;
 };
 
 class Channel1Config {
+ public:
+  friend std::ostream& operator<<(std::ostream&, const Channel1Config&);
   // TODO
 };
 
 class Channel2Config {
+ public:
+  friend std::ostream& operator<<(std::ostream&, const Channel2Config&);
   // TODO
 };
 
 class Channel3Config {
+ public:
+  friend std::ostream& operator<<(std::ostream&, const Channel3Config&);
   // TODO
 };
 
 class Channel4Config {
+ public:
+  friend std::ostream& operator<<(std::ostream&, const Channel4Config&);
   // TODO
 };
 
 class Pattern {
-  // TODO
+ public:
+  friend std::ostream& operator<<(std::ostream&, const Pattern&);
 };
+std::ostream& operator<<(std::ostream&, const std::vector<Pattern>&);
 
 class PatternNumber {
-  // TODO
+ public:
+  PatternNumber(uint8_t);
+  friend std::ostream& operator<<(std::ostream&, const PatternNumber&);
+ private:
+  uint8_t patternNumber;
 };
+std::ostream& operator<<(std::ostream&, const std::vector<PatternNumber>&);
 
 class Song {
  public:
   void addInstrument(const Instrument&);
   void setTempo(uint8_t tempo);
+  friend std::ostream& operator<<(std::ostream&, const Song&);
  private:
   std::vector<Instrument> instruments;
   SongMasterConfig songMasterConfig;
@@ -72,5 +91,3 @@ class Song {
   std::vector<Pattern> patterns;
   std::vector<PatternNumber> sequence;
 };
-
-std::ostream& operator<<(std::ostream& output, const Song& song);

@@ -20,12 +20,34 @@
 
 #include <vector>
 #include <iostream>
+#include <experimental/optional>
+
+using namespace std::experimental;
 
 #pragma once
 
+class Sequence {
+ public:
+  void setLoopPoint(int loopPoint);
+  void setReleasePoint(int releasePoint);
+  void setArpeggioType(int arpeggioType);
+  void pushBack(int i);
+ private:
+  std::vector<int> sequence;
+  int loopPoint;
+  int releasePoint;
+};
+
 class Instrument {
  public:
+  Instrument(uint8_t volumeSeq, uint8_t arpeggioSeq, uint8_t pitchSeq, uint8_t hiPitchSeq, uint8_t dutyCycleSeq);
   friend std::ostream& operator<<(std::ostream&, const Instrument&);
+ private:
+  uint8_t volumeSeq;
+  uint8_t arpeggioSeq;
+  uint8_t pitchSeq;
+  uint8_t hiPitchSeq;
+  uint8_t dutyCycleSeq;
 };
 std::ostream& operator<<(std::ostream&, const std::vector<Instrument>&);
 
@@ -78,10 +100,12 @@ std::ostream& operator<<(std::ostream&, const std::vector<PatternNumber>&);
 
 class Song {
  public:
-  void addInstrument(const Instrument&);
+  void addInstrument(uint8_t volumeSeq, uint8_t arpeggioSeq, uint8_t pitchSeq, uint8_t hiPitchSeq, uint8_t dutyCycleSeq);
+  uint8_t addSequence(const Sequence&);
   void setTempo(uint8_t tempo);
   friend std::ostream& operator<<(std::ostream&, const Song&);
  private:
+  std::vector<Sequence> sequences;
   std::vector<Instrument> instruments;
   SongMasterConfig songMasterConfig;
   Channel1Config channel1Config;

@@ -20,6 +20,14 @@
 
 #include "Song.h"
 
+Instrument::Instrument(uint8_t volumeSeq, uint8_t arpeggioSeq, uint8_t pitchSeq, uint8_t hiPitchSeq, uint8_t dutyCycleSeq) :
+  volumeSeq(volumeSeq),
+  arpeggioSeq(arpeggioSeq),
+  pitchSeq(pitchSeq),
+  hiPitchSeq(hiPitchSeq),
+  dutyCycleSeq(dutyCycleSeq)
+{}
+
 void SongMasterConfig::setTempo(uint8_t tempo) {
   this->tempo = tempo;
 }
@@ -28,8 +36,14 @@ void Song::setTempo(uint8_t tempo) {
   songMasterConfig.setTempo(tempo);
 }
 
-void Song::addInstrument(const Instrument& instrument) {
-  instruments.push_back(instrument);
+uint8_t Song::addSequence(const Sequence& sequence) {
+  sequences.push_back(sequence);
+  return sequences.size() - 1;
+}
+
+void Song::addInstrument(uint8_t volumeSeq, uint8_t arpeggioSeq, uint8_t pitchSeq, uint8_t hiPitchSeq, uint8_t dutyCycleSeq) {
+  // TODO: validate that the sequences exist
+  instruments.push_back(Instrument(volumeSeq, arpeggioSeq, pitchSeq, hiPitchSeq, dutyCycleSeq));
 }
 
 PatternNumber::PatternNumber(uint8_t n) : patternNumber(n) {}

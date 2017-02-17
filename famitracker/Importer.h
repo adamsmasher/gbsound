@@ -21,26 +21,34 @@
 #pragma once
 
 #include <string>
+#include <unordered_map>
 
 #include "Command.h"
 #include "Song.h"
 #include "Tokenizer.h"
 
-class Sequence {
- public:
-  typedef int Chip;
-  typedef int SeqType;
-  typedef std::tuple<Chip, SeqType, int> Index;
+// TODO: put this internal stuff in the .cpp
+typedef uint8_t Chip;
 
-  void setLoopPoint(int loopPoint);
-  void setReleasePoint(int releasePoint);
-  void setArpeggioType(int arpeggioType);
-  void pushBack(int i);
+class SequenceIndex {
+ public:
+  typedef int SeqType;
+
+  SequenceIndex(Chip, SeqType, int num);
+  Chip getChip() const;
+  SeqType getType() const;
+  int getNum() const;
+  
+  friend bool operator==(const SequenceIndex&, const SequenceIndex&);
  private:
-  std::vector<int> sequence;
-  int loopPoint;
-  int releasePoint;
+  std::tuple<Chip, SeqType, int> index;
 };
+
+namespace std {
+  template <> struct hash<SequenceIndex> {
+    size_t operator()(const SequenceIndex&) const;
+  };
+}
 
 class Importer {
 public:
@@ -50,9 +58,8 @@ public:
   static Importer fromFile(const char *filename);
 
   Song runImport();
-  void addSequence(Sequence::Index index, const Sequence& sequence);
  private:
-  bool isExpired;;
+  bool isExpired;
   Tokenizer t;
   int getVolId(const std::string& sVol) const;
   int getInstrumentId(const std::string& sInst) const;
@@ -61,7 +68,7 @@ public:
   int importHex(const std::string& sToken) const;
   Command getCommandEnum(const std::string& command) const;
   void importCommand(Command);
-  void importMacro(int chip);
+  void importMacro(Chip);
   void importStandardMacro(void);
   void importStandardInstrument(void);
   void importTrack(void);
@@ -85,16 +92,20 @@ public:
   int readSequenceNumber(void);
   void skipTrackTitle(void);
   int readPatternNumber(void);
-  Instrument buildInstrument(int volumeSeq, int arpeggioSeq, int pitchSeq, int hiPitchSeq, int dutyCycleSeq);
+  void addInstrument(Chip, int volumeSeqFt, int arpeggioSeqFt, int pitchSeqFt, int hiPitchSeqFt, int dutyCycleSeqFt);
   int getChannelCount(void);
   void setPatternLength(int patternLength);
   uint8_t computeTempo(int speed, int tempo);
   void skipFrameNumber(void);
+  void addSequence(SequenceIndex index, const Sequence& sequence);
+  uint8_t getSequence(SequenceIndex index);
 
   unsigned int track;
   unsigned int pattern;
   unsigned int channel;
   unsigned int row;
+
+  std::unordered_map<SequenceIndex, int> sequenceTable;
 
   Song song;
 };

@@ -300,7 +300,12 @@ void Importer::checkColon(void) {
   checkSymbol(":");
 }
 
-void Importer::importMacro(int chip) {
+void Importer::addSequence(SequenceIndex sequenceIndex, const Sequence& sequence) {
+  uint8_t i = song.addSequence(sequence);
+  sequenceTable[sequenceIndex] = i;
+}
+
+void Importer::importMacro(Chip chip) {
   std::ostringstream errMsg;
 
   Sequence sequence;
@@ -325,7 +330,7 @@ void Importer::importMacro(int chip) {
   sequence.setLoopPoint(loopPoint);
   sequence.setReleasePoint(releasePoint);
 
-  addSequence(std::make_tuple(chip, sequenceType, sequenceNum), sequence);
+  addSequence(SequenceIndex(chip, sequenceType, sequenceNum), sequence);
 }
 
 void Importer::importStandardMacro(void) {
@@ -347,12 +352,12 @@ int Importer::readSequenceNumber(void) {
 void Importer::importStandardInstrument(void) {
   skipInstrumentNumber();
   
-  int volume = readSequenceNumber();
-  int arpeggio = readSequenceNumber();
-  int pitch = readSequenceNumber();
-  int hiPitch = readSequenceNumber();
+  int volume    = readSequenceNumber();
+  int arpeggio  = readSequenceNumber();
+  int pitch     = readSequenceNumber();
+  int hiPitch   = readSequenceNumber();
   int dutyCycle = readSequenceNumber();
-  song.addInstrument(buildInstrument(volume, arpeggio, pitch, hiPitch, dutyCycle));
+  addInstrument(SNDCHIP_NONE, volume, arpeggio, pitch, hiPitch, dutyCycle);
   
   skipInstrumentName();
   t.readEOL();
@@ -649,6 +654,45 @@ uint8_t Importer::computeTempo(int speed, int tempo) {
   double rowsPerSecond = rowsPerMinute/60;
   double ticksPerRow = 60/rowsPerSecond;
   return (uint8_t)ceil(256/ticksPerRow);
+}
+
+uint8_t Importer::getSequence(SequenceIndex i) {
+  // TODO: handle non existent
+  return sequenceTable.at(i);
+}
+
+Chip SequenceIndex::getChip() const {
+  return std::get<0>(index);
+}
+
+SequenceIndex::SeqType SequenceIndex::getType() const {
+  return std::get<1>(index);
+}
+
+int SequenceIndex::getNum() const {
+  return std::get<2>(index);
+}
+
+SequenceIndex::SequenceIndex(Chip chip, SequenceIndex::SeqType seqType, int num) :
+  index(std::make_tuple(chip, seqType, num))
+{}
+
+// TODO: better hash
+size_t std::hash<SequenceIndex>::operator()(const SequenceIndex& sequenceIndex) const {
+  return sequenceIndex.getChip() + sequenceIndex.getType() + sequenceIndex.getNum();
+}
+
+bool operator==(const SequenceIndex& sequenceIndex, const SequenceIndex& sequenceIndex_) {
+  return sequenceIndex.index == sequenceIndex_.index;
+}
+
+void Importer::addInstrument(Chip chip, int volumeFt, int arpeggioFt, int pitchFt, int hiPitchFt, int dutyCycleFt) {
+  uint8_t volumeGb    = getSequence(SequenceIndex(chip, SEQ_VOLUME,    volumeFt));
+  uint8_t arpeggioGb  = getSequence(SequenceIndex(chip, SEQ_ARPEGGIO,  arpeggioFt));
+  uint8_t pitchGb     = getSequence(SequenceIndex(chip, SEQ_PITCH,     pitchFt));
+  uint8_t hiPitchGb   = getSequence(SequenceIndex(chip, SEQ_HIPITCH,   hiPitchFt));
+  uint8_t dutyCycleGb = getSequence(SequenceIndex(chip, SEQ_DUTYCYCLE, dutyCycleFt));
+  song.addInstrument(volumeGb, arpeggioGb, pitchGb, hiPitchGb, dutyCycleGb);
 }
 
 void Sequence::setLoopPoint(int loopPoint) {

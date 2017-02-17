@@ -78,14 +78,13 @@ static const char* CT[CT_LAST + 1] = {
 };
 
 Command Importer::getCommandEnum(const std::string& command) const {
-  std::ostringstream errMsg;
-  
   for (int c = 0; c <= CT_LAST; ++c) {
     if (0 == strcasecmp(command.c_str(), CT[c])) {
         return (Command)c;
     }
   }
   
+  std::ostringstream errMsg;
   errMsg << "Unrecognized command at line " << t.getLine() << ": '" << command << "'.";
   throw errMsg.str();
 }
@@ -129,21 +128,15 @@ const char* VOL_TEXT[17] = {
 };
 
 int Importer::getVolId(const std::string& sVol) const {
-  std::stringstream errMsg;
-  
-  int v;  
-  for (v = 0; v <= 17; ++v) {
+  for (int v = 0; v <= 17; ++v) {
     if (0 == strcasecmp(sVol.c_str(), VOL_TEXT[v])) {
-      break;
+      return v;
     }
   }
-  
-  if (v > 17) {
-    errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": unrecognized volume token '" << sVol << "'.";
-    throw errMsg.str();
-  }
 
-  return v;
+  std::stringstream errMsg;
+  errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": unrecognized volume token '" << sVol << "'.";
+  throw errMsg.str();
 }
 
 int Importer::getInstrumentId(const std::string& sInst) const {
@@ -166,6 +159,7 @@ int Importer::getInstrumentId(const std::string& sInst) const {
   }
 }
 
+// Make the types here better - create a "Note" class, etc.
 std::pair<int, int> Importer::getNoteAndOctave(const std::string& sNote) const {
   std::ostringstream errMsg;
   
@@ -269,12 +263,12 @@ void Importer::importCellText(void) {
   //pDoc->SetDataAtPattern(track,pattern,channel,row,&Cell);
 }
 
+// TODO: initialize everything?
 Importer::Importer(const std::string& text)
   : isExpired(false), t(text)
 {}
 
 Importer Importer::fromFile(const char *filename) {
-  // read file into "text"
   std::ifstream f(filename, std::ifstream::in);
   std::stringstream buffer;
   buffer << f.rdbuf();
@@ -287,10 +281,9 @@ Importer::~Importer()
 {}
 
 void Importer::checkSymbol(const std::string& x) {
-  std::ostringstream errMsg;
-  
   std::string symbol = t.readToken();
   if (symbol != x) {
+    std::ostringstream errMsg;
     errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": expected '" << x << "', '" << symbol << "' found.";
     throw errMsg.str();
   }
@@ -423,9 +416,8 @@ void Importer::importOrder(void) {
 }
 
 void Importer::importRow(void) {
-  std::ostringstream errMsg;
-  
   if (track == 0) {
+    std::ostringstream errMsg;
     errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": no TRACK defined, cannot add ROW data.";
     throw errMsg.str();
   }
@@ -446,6 +438,7 @@ void Importer::importMachine(void) {
   t.readEOL();
 }
 
+// TODO: wait what
 void Importer::importVibrato(void) {
   t.readInt(0, VIBRATO_NEW);
   std::cout << "Warning: ignoring vibrato command." << std::endl;
@@ -454,6 +447,7 @@ void Importer::importVibrato(void) {
 
 void Importer::importSplit(void) {
   int i = t.readInt(0, 255);
+  // TODO: what does this do
   //pDoc->SetSpeedSplitPoint(i);
   t.readEOL();
 }
@@ -625,12 +619,6 @@ Song Importer::runImport(void) {
     throw "Cannot run the same Importer multiple times";
   }
   isExpired = true;
-  /*// begin a new document
-  if (!pDoc->OnNewDocument())
-  {
-    sResult = _T("Unable to create new Famitracker document.");
-    return sResult;
-  }*/
 
   // parse the file
   while (!t.finished()) {
@@ -648,12 +636,14 @@ Song Importer::runImport(void) {
   return song;
 }
 
+// TODO: 
 uint8_t Importer::computeTempo(int speed, int tempo) {
-  double bpm = (tempo * 6.0)/speed;
+  /*double bpm = (tempo * 6.0)/speed;
   double rowsPerMinute = bpm * 4;
   double rowsPerSecond = rowsPerMinute/60;
   double ticksPerRow = 60/rowsPerSecond;
-  return (uint8_t)ceil(256/ticksPerRow);
+  return (uint8_t)ceil(256/ticksPerRow);*/
+  return (150 * speed)/t;
 }
 
 uint8_t Importer::getSequence(SequenceIndex i) {

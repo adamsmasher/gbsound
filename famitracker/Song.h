@@ -64,12 +64,14 @@ class SongMasterConfig {
 };
 
 enum ChannelCommandType {
-  NO_COMMAND,
+  NO_CHANNEL_COMMAND,
   CHANGE_INSTRUMENT
 };
 
 struct ChangeInstrument {
-  int newInstrument;
+  uint8_t newInstrument;
+
+  void writeGb(std::ostream&) const;
 };
 
 struct ChannelCommand {
@@ -77,15 +79,26 @@ struct ChannelCommand {
   union {
     ChangeInstrument changeInstrument;
   };
+
+  void writeGb(std::ostream&) const;
 };
 
-enum EngineCommand {
+enum EngineCommandType {
+  NO_ENGINE_COMMAND
+};
+
+struct EngineCommand {
+  EngineCommandType type;
+  
+  void writeGb(std::ostream&) const;
 };
 
 class GbNote {
  public:
   GbNote();
   GbNote(const ChannelCommand&, uint8_t pitch);
+
+  void writeGb(std::ostream&) const;
  private:
   ChannelCommand command;
   uint8_t pitch;
@@ -94,6 +107,7 @@ class GbNote {
 class Row {
  public:
   void setNote(int, GbNote);
+  void writeGb(std::ostream&) const;
  private:
   std::vector<EngineCommand> engineCommands;
   GbNote notes[4];

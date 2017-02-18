@@ -586,7 +586,7 @@ private:
       Cell cell = importCell();
       // TODO: handle effects
       ChannelCommand command;
-      command.type = NO_COMMAND;
+      command.type = NO_CHANNEL_COMMAND;
       int instrument = cell.getInstrumentId();
       if(cell.getInstrumentId() != currentInstruments[channel]) {
 	command.type = CHANGE_INSTRUMENT;

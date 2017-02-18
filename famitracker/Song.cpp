@@ -195,5 +195,44 @@ int PatternNumber::toInt() const {
 
 void Pattern::pushBack(const Row& row) {
   rows.push_back(row);
+}
 
+void Pattern::writeGb(std::ostream& ostream) const {
+  for(auto i = rows.begin(); i != rows.end(); ++i) {
+    i->writeGb(ostream);
+  }
+}
+
+void Row::writeGb(std::ostream& ostream) const {
+  for(auto i = engineCommands.begin(); i != engineCommands.end(); ++i) {
+    i->writeGb(ostream);
+  }
+  // end engine commands
+  ostream.put(0);
+
+  for(int i = 0; i < 4; i++) {
+    notes[i].writeGb(ostream);    
+  }
+}
+
+void EngineCommand::writeGb(std::ostream& ostream) const {
+  ostream.put(type);
+}
+
+void GbNote::writeGb(std::ostream& ostream) const {
+  command.writeGb(ostream);
+  ostream.put(pitch);
+}
+
+// TODO: replace all write(_, 1) with put
+void ChannelCommand::writeGb(std::ostream& ostream) const {
+  ostream.put(type);
+  switch(type) {
+  case NO_CHANNEL_COMMAND: break;
+  case CHANGE_INSTRUMENT: changeInstrument.writeGb(ostream);
+  }      
+}
+
+void ChangeInstrument::writeGb(std::ostream& ostream) const {
+  ostream.put(newInstrument);
 }

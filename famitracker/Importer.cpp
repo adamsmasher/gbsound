@@ -327,35 +327,31 @@ private:
     addCell(note, instrumentId, volId, effect, effectParam);
   }
 
-  int importHex(const std::string& sToken) const {
-    const char* HEX_TEXT[16] = {
-      "0", "1", "2", "3", "4", "5", "6", "7",
-      "8", "9", "A", "B", "C", "D", "E", "F"
+  int hexCharVal(char c) const {
+    const char HEX_TEXT[16] = {
+      '0', '1', '2', '3', '4', '5', '6', '7',
+      '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'
     };
 
-    int i = 0;
-
-    for (size_t d = 0; d < sToken.size(); ++d) {
-      i <<= 4;
-      std::string token = sToken.substr(d, 1);
-
-      int h = 0;
-      for (h = 0; h < 16; ++h) {
-	if (0 == strcasecmp(token.c_str(), HEX_TEXT[h])) {
-	  break;
-	}
+    for (int i = 0; i < 16; i++) {
+      if (toupper(c) == HEX_TEXT[i]) {
+	return i;
       }
-
-      if (h >= 16) {
-	std::ostringstream errMsg;
-	errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": hexadecimal number expected, '" << sToken << "' found.";
-	throw errMsg.str();
-      }
-
-      i += h;
     }
 
-    return i;
+    std::ostringstream errMsg;
+    errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": hexadecimal char expected, '" << c << "' found.";
+    throw errMsg.str();
+  }
+
+  int importHex(const std::string& sToken) const {
+    int n = 0;
+    for (size_t i = 0; i < sToken.size(); i++) {
+      n <<= 4;
+      n += hexCharVal(sToken.at(i));
+    }
+
+    return n;
   }
   
   Command getCommandEnum(const std::string& command) const {

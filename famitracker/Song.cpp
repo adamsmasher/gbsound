@@ -65,6 +65,10 @@ void Song::addInstrument(uint8_t volumeSeq, uint8_t arpeggioSeq, uint8_t pitchSe
   instruments.push_back(Instrument(volumeSeq, arpeggioSeq, pitchSeq, hiPitchSeq, dutyCycleSeq));
 }
 
+void Song::pushNextPattern(PatternNumber patternNumber) {
+  sequence.push_back(patternNumber);
+}
+
 PatternNumber::PatternNumber(uint8_t n) : patternNumber(n) {}
 
 std::ostream& operator<<(std::ostream& ostream, const Song& song) {

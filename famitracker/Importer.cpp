@@ -546,8 +546,7 @@ private:
 	errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": Mismatched pattern number, expected " << pattern << " got " << pattern_;
 	throw errMsg.str();
       }
-      // TODO: implement
-      //pDoc->SetPatternAtFrame(track - 1, ifr, c, i);
+      song.pushNextPattern(PatternNumber(pattern));
     }
     t.readEOL();
   }

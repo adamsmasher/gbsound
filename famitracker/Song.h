@@ -104,6 +104,7 @@ class Song {
   void addInstrument(uint8_t volumeSeq, uint8_t arpeggioSeq, uint8_t pitchSeq, uint8_t hiPitchSeq, uint8_t dutyCycleSeq);
   uint8_t addInstrSequence(const InstrSequence&);
   void setTempo(uint8_t tempo);
+  void pushNextPattern(PatternNumber patternNumber);
   friend std::ostream& operator<<(std::ostream&, const Song&);
  private:
   bool isValidInstrSequence(uint8_t) const;

@@ -498,14 +498,19 @@ private:
     skipInstrumentName();
     t.readEOL();
   }
-    
+
+  // thanks to the magic of std::vector, we don't need to know the pattern length
+  // in advance
+  void ignorePatternLength(void) {
+    t.readInt(0, MAX_PATTERN_LENGTH);
+  }
+
   void importTrack(void) {
     if (track != 0) {
       throw "Multiple tracks not supported";
     }
 
-    int patternLength = t.readInt(0, MAX_PATTERN_LENGTH);
-    setPatternLength(patternLength);
+    ignorePatternLength();
     
     int speed = t.readInt(0, MAX_TEMPO);
     int tempo = t.readInt(0, MAX_TEMPO);
@@ -709,8 +714,6 @@ private:
     }
   }
 
-  void setPatternLength(int patternLength);
-  
   void skipFrameNumber(void) {
     t.readHex(0, MAX_FRAMES - 1);
     checkColon();

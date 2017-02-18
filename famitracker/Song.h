@@ -51,7 +51,6 @@ class Instrument {
   uint8_t hiPitchSeq;
   uint8_t dutyCycleSeq;
 };
-std::ostream& operator<<(std::ostream&, const std::vector<Instrument>&);
 
 class SongMasterConfig {
  public:

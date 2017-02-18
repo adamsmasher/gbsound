@@ -542,8 +542,9 @@ private:
     for (int c = 1; c < getChannelCount(); ++c) {
       int pattern_ = readPatternNumber();
       if(pattern != pattern_) {
-	// TODO: better error
-	throw "Mismatched pattern number";
+	std::ostringstream errMsg;
+	errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": Mismatched pattern number, expected " << pattern << " got " << pattern_;
+	throw errMsg.str();
       }
       // TODO: implement
       //pDoc->SetPatternAtFrame(track - 1, ifr, c, i);

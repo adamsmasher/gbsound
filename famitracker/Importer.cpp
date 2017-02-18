@@ -271,52 +271,50 @@ private:
       return { n + 1, o };
     }
   }
-  
+
+  std::string readEffectColumn(void) {
+    std::string effectColumn = t.readToken();
+    
+    if (effectColumn.size() != 3) {
+      std::ostringstream errMsg;
+      errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": effect column should be 3 characters wide, '" << effectColumn << "' found.";
+      throw errMsg.str();
+    }
+
+    return effectColumn;
+  }
+
+  int getEffect(const std::string& effectColumn) const {
+    char c = toupper(effectColumn.at(0));
+    for (int i = 0; i < EF_COUNT; i++) {
+      if (EFF_CHAR[i] == c) {
+	return i;
+      }
+    }
+
+    std::ostringstream errMsg;
+    errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": unrecognized effect '" << effectColumn << "'.";
+    throw errMsg.str();
+  }
+
+  // TODO: improve the types!
+  void addCell(std::pair<int, int> noteAndOctave, int instrumentId, int volId, int effect, int effectParam);
+
   void importCellText(void) {
-    // stChanNote Cell;
-    // empty Cell
-    // ::memset(&Cell, 0, sizeof(Cell));
+    std::pair<int, int> noteAndOctave = getNoteAndOctave(t.readToken());
+    int instrumentId = getInstrumentId(t.readToken());
+    int volId = getVolId(t.readToken());
 
-    std::string sNote = t.readToken();
-    // Cell.Note, Cell.Octave = getNoteAndOctave(sNote);
+    // only one effect column per channel is allowed
+    std::string effectColumn = readEffectColumn();
+    int effect = 0;
+    int effectParam = 0;
+    if (effectColumn != "...") {
+      effect = getEffect(effectColumn) + 1;
+      effectParam = importHex(effectColumn.substr(effectColumn.size() - 2));
+    }
 
-    std::string sInst = t.readToken();
-    // Cell.Instrument = getInstrumentId(sInst);
-
-    std::string sVol = t.readToken();
-    //Cell.Vol = getVolId(sVol);
-
-    //  for (unsigned int e = 0; e <= pDoc->GetEffColumns(track, channel); ++e) {
-    //    std::string sEff = t.readToken();
-    //    if (sEff != "...") {
-    //      if (sEff.size() != 3) {
-    //        errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": effect column should be 3 characters wide, '" << sEff << "' found.";
-    //        goto error;
-    //      }
-    //
-    //      int p = 0;
-    //      char pC = sEff.at(0);
-    //      if (pC >= 'a' && pC <= 'z') pC += 'A' - 'a';
-    //      for (; p < EF_COUNT; ++p)
-    //        if (EFF_CHAR[p] == pC) break;
-    //      if (p >= EF_COUNT) {
-    //        errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": unrecognized effect '" << sEff << "'.";
-    //        goto error;
-    //      }
-    //      // Cell.EffNumber[e] = p+1;
-    //
-    //      int h;
-    //      bool err;
-    //      std::string importHexErr = importHex(sEff.substr(sEff.size() - 2), &h, t.getLine(), t.getColumn(), &err);
-    //      if (err) {
-    //        errMsg << importHexErr;
-    //        goto error;
-    //      }
-    //      //Cell.EffParam[e] = h;
-    //    }
-    //  }
-
-    //pDoc->SetDataAtPattern(track,pattern,channel,row,&Cell);
+    addCell(noteAndOctave, instrumentId, volId, effect, effectParam);
   }
 
   int importHex(const std::string& sToken) const {

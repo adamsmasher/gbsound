@@ -98,23 +98,18 @@ class PatternNumber {
 };
 std::ostream& operator<<(std::ostream&, const std::vector<PatternNumber>&);
 
-// TODO: pimpl this, etc., so that the header is nice
+struct SongImpl;
+
 class Song {
  public:
+  Song();
+  ~Song();
+  
   void addInstrument(uint8_t volumeSeq, uint8_t arpeggioSeq, uint8_t pitchSeq, uint8_t hiPitchSeq, uint8_t dutyCycleSeq);
   uint8_t addInstrSequence(const InstrSequence&);
   void setTempo(uint8_t tempo);
   void pushNextPattern(PatternNumber patternNumber);
   friend std::ostream& operator<<(std::ostream&, const Song&);
  private:
-  bool isValidInstrSequence(uint8_t) const;
-  std::vector<InstrSequence> instrSequences;
-  std::vector<Instrument> instruments;
-  SongMasterConfig songMasterConfig;
-  Channel1Config channel1Config;
-  Channel2Config channel2Config;
-  Channel3Config channel3Config;
-  Channel4Config channel4Config;
-  std::vector<Pattern> patterns;
-  std::vector<PatternNumber> sequence;
+  SongImpl *impl;
 };

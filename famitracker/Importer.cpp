@@ -520,8 +520,9 @@ private:
     checkColon();
     for (int c = 0; c < getChannelCount(); ++c) {
       int i = t.readInt(1, MAX_EFFECT_COLUMNS);
-      // TODO: what does this do?
-      //pDoc->SetEffColumns(track-1,c,i-1);
+      if(i != 1) {
+	throw "All channels must have 1 effect column.";
+      }
     }
     t.readEOL();
   }

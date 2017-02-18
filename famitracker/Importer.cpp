@@ -215,8 +215,7 @@ private:
       return h;
     }
   }
-  
-  // TODO: Make the types here better - create a "Note" class, etc.
+
   std::pair<int, int> getNoteAndOctave(const std::string& sNote) const {
     std::ostringstream errMsg;
   
@@ -229,7 +228,7 @@ private:
       return {HALT, 0};
     } else if (sNote == "===") {
       return {RELEASE, 0};
-    } else if (channel == 3) { // noise
+    } else if (channel == 3) { // noise // TODO: make a constant
       int h = importHex(sNote.substr(0, 1));
 
       // importer is very tolerant about the second and third characters
@@ -237,7 +236,7 @@ private:
 
       return {h % 12 + 1, h / 12};
     } else {
-      int n = 0;
+      int n;
       switch (sNote.at(0)) {
       case 'c': case 'C': n = 0; break;
       case 'd': case 'D': n = 2; break;
@@ -250,6 +249,7 @@ private:
 	errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": unrecognized note '" << sNote << "'.";
 	throw errMsg.str();
       }
+
       switch (sNote.at(1)) {
       case '-': case '.': break;
       case '#': case '+': n += 1; break;
@@ -258,9 +258,10 @@ private:
 	errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": unrecognized note '" << sNote << "'.";
 	throw errMsg.str();
       }
+
       while (n <   0) n += 12;
       while (n >= 12) n -= 12;
-    
+
       int o = sNote.at(2) - '0';
       if (o < 0 || o >= OCTAVE_RANGE) {
 	errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": unrecognized octave '" << sNote << "'.";
@@ -269,8 +270,6 @@ private:
 
       return { n + 1, o };
     }
-
-    throw "unreachable";
   }
   
   void importCellText(void) {

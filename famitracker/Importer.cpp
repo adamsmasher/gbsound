@@ -89,11 +89,11 @@ static uint8_t computeTempo(int speed, int tempo) {
 
 typedef uint8_t Chip;
 
-class SequenceIndex {
+class InstrSequenceIndex {
  public:
   typedef int SeqType;
 
-  SequenceIndex(Chip chip, SeqType seqType, int num) :
+  InstrSequenceIndex(Chip chip, SeqType seqType, int num) :
     index(std::make_tuple(chip, seqType, num))
   {}
   
@@ -109,14 +109,14 @@ class SequenceIndex {
     return std::get<2>(index);
   }
   
-  friend bool operator==(const SequenceIndex&, const SequenceIndex&);
+  friend bool operator==(const InstrSequenceIndex&, const InstrSequenceIndex&);
 private:
   std::tuple<Chip, SeqType, int> index;
 };
 
 namespace std {
-  template <> struct hash<SequenceIndex> {
-    size_t operator()(const SequenceIndex&) const;
+  template <> struct hash<InstrSequenceIndex> {
+    size_t operator()(const InstrSequenceIndex&) const;
   };
 }
 
@@ -125,9 +125,9 @@ size_t hash_combine(size_t lhs, size_t rhs) {
   return lhs;
 }
 
-size_t std::hash<SequenceIndex>::operator()(const SequenceIndex& sequenceIndex) const {
+size_t std::hash<InstrSequenceIndex>::operator()(const InstrSequenceIndex& sequenceIndex) const {
   std::hash<Chip> chipHash;
-  std::hash<SequenceIndex::SeqType> seqTypeHash;
+  std::hash<InstrSequenceIndex::SeqType> seqTypeHash;
   std::hash<uint8_t> byteHash;
 
   return hash_combine(chipHash(sequenceIndex.getChip()),
@@ -135,7 +135,7 @@ size_t std::hash<SequenceIndex>::operator()(const SequenceIndex& sequenceIndex) 
 				   byteHash(sequenceIndex.getNum())));
 }
 
-bool operator==(const SequenceIndex& sequenceIndex, const SequenceIndex& sequenceIndex_) {
+bool operator==(const InstrSequenceIndex& sequenceIndex, const InstrSequenceIndex& sequenceIndex_) {
   return sequenceIndex.index == sequenceIndex_.index;
 }
 
@@ -185,7 +185,7 @@ private:
   unsigned int channel;
   unsigned int row;
   bool hasN163;
-  std::unordered_map<SequenceIndex, uint8_t> sequenceTable;
+  std::unordered_map<InstrSequenceIndex, uint8_t> instrSequenceTable;
   Song song;
   
   int getVolId(const std::string& sVol) const {
@@ -403,7 +403,7 @@ private:
       importSplit();
       return;
     case CT_MACRO:
-      importStandardMacro();
+      importStandardInstrSequence();
       return;
     case CT_INST2A03:
       importStandardInstrument();
@@ -432,7 +432,7 @@ private:
       importN163Wave();
       return;
     case CT_MACRON163:
-      importN163Macro();
+      importN163InstrSequence();
       return;
     case CT_N163CHANNELS:
       importN163Channels();
@@ -455,8 +455,8 @@ private:
     }
   }
 
-  void importMacro(Chip chip) {
-    Sequence sequence;
+  void importInstrSequence(Chip chip) {
+    InstrSequence sequence;
   
     int sequenceType = t.readInt(0, SEQ_COUNT - 1);
     int sequenceNum = t.readInt(0, MAX_SEQUENCES - 1);
@@ -478,11 +478,11 @@ private:
     sequence.setLoopPoint(loopPoint);
     sequence.setReleasePoint(releasePoint);
 
-    addSequence(SequenceIndex(chip, sequenceType, sequenceNum), sequence);
+    addInstrSequence(InstrSequenceIndex(chip, sequenceType, sequenceNum), sequence);
   }
   
-  void importStandardMacro(void) {
-    importMacro(SNDCHIP_NONE);
+  void importStandardInstrSequence(void) {
+    importInstrSequence(SNDCHIP_NONE);
   }
 
   void importStandardInstrument(void) {
@@ -668,8 +668,8 @@ private:
     t.readEOL();
   }
   
-  void importN163Macro(void) {
-    importMacro(SNDCHIP_N163);
+  void importN163InstrSequence(void) {
+    importInstrSequence(SNDCHIP_N163);
   }
 
   void skipInstrumentName(void) {
@@ -693,11 +693,11 @@ private:
   }
 
   void addInstrument(Chip chip, int volumeFt, int arpeggioFt, int pitchFt, int hiPitchFt, int dutyCycleFt) {
-    uint8_t volumeGb    = getSequence(SequenceIndex(chip, SEQ_VOLUME,    volumeFt));
-    uint8_t arpeggioGb  = getSequence(SequenceIndex(chip, SEQ_ARPEGGIO,  arpeggioFt));
-    uint8_t pitchGb     = getSequence(SequenceIndex(chip, SEQ_PITCH,     pitchFt));
-    uint8_t hiPitchGb   = getSequence(SequenceIndex(chip, SEQ_HIPITCH,   hiPitchFt));
-    uint8_t dutyCycleGb = getSequence(SequenceIndex(chip, SEQ_DUTYCYCLE, dutyCycleFt));
+    uint8_t volumeGb    = getInstrSequence(InstrSequenceIndex(chip, SEQ_VOLUME,    volumeFt));
+    uint8_t arpeggioGb  = getInstrSequence(InstrSequenceIndex(chip, SEQ_ARPEGGIO,  arpeggioFt));
+    uint8_t pitchGb     = getInstrSequence(InstrSequenceIndex(chip, SEQ_PITCH,     pitchFt));
+    uint8_t hiPitchGb   = getInstrSequence(InstrSequenceIndex(chip, SEQ_HIPITCH,   hiPitchFt));
+    uint8_t dutyCycleGb = getInstrSequence(InstrSequenceIndex(chip, SEQ_DUTYCYCLE, dutyCycleFt));
     song.addInstrument(volumeGb, arpeggioGb, pitchGb, hiPitchGb, dutyCycleGb);
   }
 
@@ -716,32 +716,32 @@ private:
     checkColon();
   }
 
-  void addSequence(SequenceIndex index, const Sequence& sequence) {
-    uint8_t i = song.addSequence(sequence);
-    sequenceTable[index] = i;
+  void addInstrSequence(InstrSequenceIndex index, const InstrSequence& sequence) {
+    uint8_t i = song.addInstrSequence(sequence);
+    instrSequenceTable[index] = i;
   }
   
-  uint8_t getSequence(SequenceIndex i) const {
+  uint8_t getInstrSequence(InstrSequenceIndex i) const {
     // TODO: handle non existent
-    return sequenceTable.at(i);
+    return instrSequenceTable.at(i);
   }
 };
 
-void Sequence::setLoopPoint(int loopPoint) {
+void InstrSequence::setLoopPoint(int loopPoint) {
   if(loopPoint >= 0 && (unsigned)loopPoint > sequence.size()) {
     throw "Loop point out of range";
   }
   this->loopPoint = loopPoint;
 }
 
-void Sequence::setReleasePoint(int releasePoint) {
+void InstrSequence::setReleasePoint(int releasePoint) {
   if(releasePoint >= 0 && (unsigned)releasePoint > sequence.size()) {
     throw "Release point out of range";
   }
   this->releasePoint = releasePoint;
 }
 
-void Sequence::pushBack(int i) {
+void InstrSequence::pushBack(int i) {
   sequence.push_back(i);
 }
 

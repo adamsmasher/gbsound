@@ -26,7 +26,7 @@
 
 using namespace std::experimental;
 
-class Sequence {
+class InstrSequence {
  public:
   void setLoopPoint(int loopPoint);
   void setReleasePoint(int releasePoint);
@@ -101,11 +101,11 @@ std::ostream& operator<<(std::ostream&, const std::vector<PatternNumber>&);
 class Song {
  public:
   void addInstrument(uint8_t volumeSeq, uint8_t arpeggioSeq, uint8_t pitchSeq, uint8_t hiPitchSeq, uint8_t dutyCycleSeq);
-  uint8_t addSequence(const Sequence&);
+  uint8_t addInstrSequence(const InstrSequence&);
   void setTempo(uint8_t tempo);
   friend std::ostream& operator<<(std::ostream&, const Song&);
  private:
-  std::vector<Sequence> sequences;
+  std::vector<InstrSequence> instrSequences;
   std::vector<Instrument> instruments;
   SongMasterConfig songMasterConfig;
   Channel1Config channel1Config;

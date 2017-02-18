@@ -36,9 +36,9 @@ void Song::setTempo(uint8_t tempo) {
   songMasterConfig.setTempo(tempo);
 }
 
-uint8_t Song::addSequence(const Sequence& sequence) {
-  sequences.push_back(sequence);
-  return sequences.size() - 1;
+uint8_t Song::addInstrSequence(const InstrSequence& sequence) {
+  instrSequences.push_back(sequence);
+  return instrSequences.size() - 1;
 }
 
 void Song::addInstrument(uint8_t volumeSeq, uint8_t arpeggioSeq, uint8_t pitchSeq, uint8_t hiPitchSeq, uint8_t dutyCycleSeq) {

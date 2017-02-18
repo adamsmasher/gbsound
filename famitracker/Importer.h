@@ -32,7 +32,7 @@ struct ImporterImpl;
 class Importer {
 public:
   explicit Importer(const std::string& text);
-  virtual ~Importer();
+  ~Importer();
 
   static Importer fromFile(const char *filename);
 

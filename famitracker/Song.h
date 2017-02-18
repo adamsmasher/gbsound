@@ -18,13 +18,13 @@
 ** must bear this legend.
 */
 
+#pragma once
+
 #include <vector>
 #include <iostream>
 #include <experimental/optional>
 
 using namespace std::experimental;
-
-#pragma once
 
 class Sequence {
  public:

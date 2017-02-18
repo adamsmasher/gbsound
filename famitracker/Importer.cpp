@@ -655,7 +655,7 @@ int Importer::getChannelCount() const {
   }
 }
 
-uint8_t Importer::getSequence(SequenceIndex i) {
+uint8_t Importer::getSequence(SequenceIndex i) const {
   // TODO: handle non existent
   return sequenceTable.at(i);
 }

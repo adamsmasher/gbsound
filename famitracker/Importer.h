@@ -93,11 +93,11 @@ public:
   void skipTrackTitle(void);
   int readPatternNumber(void);
   void addInstrument(Chip, int volumeSeqFt, int arpeggioSeqFt, int pitchSeqFt, int hiPitchSeqFt, int dutyCycleSeqFt);
-  int getChannelCount(void);
+  int getChannelCount(void) const;
   void setPatternLength(int patternLength);
   void skipFrameNumber(void);
   void addSequence(SequenceIndex index, const Sequence& sequence);
-  uint8_t getSequence(SequenceIndex index);
+  uint8_t getSequence(SequenceIndex index) const;
 
   unsigned int track;
   unsigned int pattern;

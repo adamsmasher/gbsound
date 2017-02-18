@@ -239,7 +239,7 @@ private:
       return Note(HALT, 0);
     } else if (sNote == "===") {
       return Note(RELEASE, 0);
-    } else if (channel == 3) { // noise // TODO: make a constant
+    } else if (channel == CHANID_NOISE) {
       int h = importHex(sNote.substr(0, 1));
 
       // importer is very tolerant about the second and third characters

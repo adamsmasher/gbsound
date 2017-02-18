@@ -77,6 +77,15 @@ static const char* CT[CT_LAST + 1] = {
   "ROW",
 };
 
+static uint8_t computeTempo(int speed, int tempo) {
+  /*double bpm = (tempo * 6.0)/speed;
+  double rowsPerMinute = bpm * 4;
+  double rowsPerSecond = rowsPerMinute/60;
+  double ticksPerRow = 60/rowsPerSecond;
+  return (uint8_t)ceil(256/ticksPerRow);*/
+  return (150 * speed)/tempo;
+}
+
 Command Importer::getCommandEnum(const std::string& command) const {
   for (int c = 0; c <= CT_LAST; ++c) {
     if (0 == strcasecmp(command.c_str(), CT[c])) {
@@ -89,7 +98,7 @@ Command Importer::getCommandEnum(const std::string& command) const {
   throw errMsg.str();
 }
 
-const char* HEX_TEXT[16] = {
+static const char* HEX_TEXT[16] = {
   "0", "1", "2", "3", "4", "5", "6", "7",
   "8", "9", "A", "B", "C", "D", "E", "F"
 };
@@ -636,14 +645,6 @@ Song Importer::runImport(void) {
   return song;
 }
 
-// TODO: 
-uint8_t Importer::computeTempo(int speed, int tempo) {
-  /*double bpm = (tempo * 6.0)/speed;
-  double rowsPerMinute = bpm * 4;
-  double rowsPerSecond = rowsPerMinute/60;
-  double ticksPerRow = 60/rowsPerSecond;
-  return (uint8_t)ceil(256/ticksPerRow);*/
-  return (150 * speed)/tempo;
 }
 
 uint8_t Importer::getSequence(SequenceIndex i) {

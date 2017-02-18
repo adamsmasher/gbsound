@@ -95,7 +95,6 @@ public:
   void addInstrument(Chip, int volumeSeqFt, int arpeggioSeqFt, int pitchSeqFt, int hiPitchSeqFt, int dutyCycleSeqFt);
   int getChannelCount(void);
   void setPatternLength(int patternLength);
-  uint8_t computeTempo(int speed, int tempo);
   void skipFrameNumber(void);
   void addSequence(SequenceIndex index, const Sequence& sequence);
   uint8_t getSequence(SequenceIndex index);

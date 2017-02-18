@@ -63,11 +63,48 @@ class SongMasterConfig {
   uint8_t outputTerminals;
 };
 
+enum ChannelCommandType {
+  NO_COMMAND,
+  CHANGE_INSTRUMENT
+};
+
+struct ChangeInstrument {
+  int newInstrument;
+};
+
+struct ChannelCommand {
+  ChannelCommandType type;
+  union {
+    ChangeInstrument changeInstrument;
+  };
+};
+
+enum EngineCommand {
+};
+
+class GbNote {
+ public:
+  GbNote();
+  GbNote(const ChannelCommand&, uint8_t pitch);
+ private:
+  ChannelCommand command;
+  uint8_t pitch;
+};
+
+class Row {
+ public:
+  void setNote(int, GbNote);
+ private:
+  std::vector<EngineCommand> engineCommands;
+  GbNote notes[4];
+};
+
 class Pattern {
  public:
   void writeGb(std::ostream&) const;
+  void pushBack(const Row&);
  private:
-  // TODO
+  std::vector<Row> rows;
 };
 
 class PatternNumber {
@@ -76,6 +113,7 @@ class PatternNumber {
   friend std::ostream& operator<<(std::ostream&, const PatternNumber&);
   void writeGb(std::ostream&) const;
   friend bool operator!=(const PatternNumber&, const PatternNumber&);
+  int toInt() const;
  private:
   uint8_t patternNumber;
 };
@@ -94,6 +132,8 @@ class Song {
   void setTempo(uint8_t tempo);
 
   void pushNextPattern(PatternNumber patternNumber);
+
+  void addRow(const Row&, PatternNumber);
 
   void writeGb(std::ostream&) const;
  private:

@@ -144,7 +144,13 @@ public:
   Note(int pitchClass, int octave) : pitchClass(pitchClass), octave(octave) {}
   int getPitchClass(void) const { return pitchClass; }
   int getOctave(void) const { return octave; }
-  bool isEmpty() const { return pitchClass == 0 && octave == 0; }
+
+  uint8_t toGbPitch(void) const {
+    if (octave < 3 || (octave == 3 && pitchClass < 3)) {
+      throw "Note unrepresentable on GB.";
+    }
+    return 12 * (octave - 3) + (pitchClass - 3) + 1;
+  }
 private:
   int pitchClass;
   int octave;
@@ -152,15 +158,15 @@ private:
 
 class Cell {
 public:
-  Cell(Note note, int instrumentId, int volId, int effect, int effectParam) :
-    note(note), instrumentId(instrumentId), volId(volId), effect(effect), effectParam(effectParam)
+  Cell(Note note, int instrumentId, int effect, int effectParam) :
+    note(note), instrumentId(instrumentId), effect(effect), effectParam(effectParam)
   {}
 
-  bool isEmpty() const { return note.isEmpty(); }
+  Note getNote(void) const { return note; }
+  int getInstrumentId(void) const { return instrumentId; }
 private:
   Note note;
   int instrumentId;
-  int volId;
   int effect;
   int effectParam;
 };
@@ -168,7 +174,7 @@ private:
 class ImporterImpl {
 public:
   ImporterImpl(const std::string& text) :
-    isExpired(false), t(text), track(0), pattern(0), channel(0), row(0), hasN163(false)
+    isExpired(false), t(text), track(0), pattern(0), hasN163(false)
   {}
 
   Song runImport(void) {
@@ -197,29 +203,21 @@ private:
   bool isExpired;
   Tokenizer t;
   unsigned int track;
-  unsigned int pattern;
-  unsigned int channel;
-  unsigned int row;
+  PatternNumber pattern;
+  int channel;
+  uint8_t currentInstruments[6]; // two dummy channels, one for triangle, one for DPCM
   bool hasN163;
   std::unordered_map<InstrSequenceIndex, uint8_t> instrSequenceTable;
   Song song;
   
-  int getVolId(const std::string& sVol) const {
-    const char* VOL_TEXT[17] = {
-      "0", "1", "2", "3", "4", "5", "6", "7",
-      "8", "9", "A", "B", "C", "D", "E", "F",
-      "."
-    };
+  void ignoreVolId() {
+    std::string sVol = t.readToken();
 
-    for (int v = 0; v <= 17; ++v) {
-      if (0 == strcasecmp(sVol.c_str(), VOL_TEXT[v])) {
-	return v;
-      }
+    if(sVol != ".") {
+      std::stringstream errMsg;
+      errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": unrecognized volume token '" << sVol << "'; volume column is unsupported";
+      throw errMsg.str();
     }
-
-    std::stringstream errMsg;
-    errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": unrecognized volume token '" << sVol << "'.";
-    throw errMsg.str();
   }
   
   int getInstrumentId(const std::string& sInst) const {
@@ -262,6 +260,14 @@ private:
       // in a noise note, they can be anything
 
       return Note(h % 12 + 1, h / 12);
+    } else if (channel == CHANID_TRIANGLE) {
+      std::ostringstream errMsg;
+      errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": non-empty cell " << sNote << " in triangle channel";
+      throw errMsg.str();
+    } else if (channel == CHANID_DPCM) {
+      std::ostringstream errMsg;
+      errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": non-empty cell " << sNote  << " in DPCM channel";
+      throw errMsg.str();
     } else {
       int n;
       switch (sNote.at(0)) {
@@ -327,7 +333,7 @@ private:
   Cell importCell(void) {
     Note note = readNote();
     int instrumentId = getInstrumentId(t.readToken());
-    int volId = getVolId(t.readToken());
+    ignoreVolId();
 
     // only one effect column per channel is allowed
     std::string effectColumn = readEffectColumn();
@@ -338,7 +344,7 @@ private:
       effectParam = importHex(effectColumn.substr(effectColumn.size() - 2));
     }
 
-    return Cell(note, instrumentId, volId, effect, effectParam);
+    return Cell(note, instrumentId, effect, effectParam);
   }
 
   int hexCharVal(char c) const {
@@ -565,7 +571,6 @@ private:
     t.readEOL();
   }
 
-  // TODO: make sure there's nothing on the triangle/DPCM channel
   void importRow(void) {
     if (track == 0) {
       std::ostringstream errMsg;
@@ -573,18 +578,27 @@ private:
       throw errMsg.str();
     }
 
+    Row row;
+
     int i = t.readHex(0, MAX_PATTERN_LENGTH - 1);
-    for (int c = 0; c < getChannelCount(); ++c) {
+    for (this->channel = 0; channel < getChannelCount(); channel++) {
       checkColon();
       Cell cell = importCell();
-      if((c == CHANID_TRIANGLE || c == CHANID_DPCM) && !cell.isEmpty()) {
-	std::ostringstream errMsg;
-	errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": non-empty cell in a non-GB channel";
-	throw errMsg.str();
+      // TODO: handle effects
+      ChannelCommand command;
+      command.type = NO_COMMAND;
+      int instrument = cell.getInstrumentId();
+      if(cell.getInstrumentId() != currentInstruments[channel]) {
+	command.type = CHANGE_INSTRUMENT;
+	command.changeInstrument.newInstrument = instrument;
+	currentInstruments[channel] = instrument;
       }
-      // TODO: write the cell into the song!
+      Note note = cell.getNote();
+      row.setNote(channel, GbNote(command, note.toGbPitch()));
     }
     t.readEOL();
+
+    song.addRow(row, pattern);
   }
 
   void importMachine(void) {
@@ -619,7 +633,7 @@ private:
     
   void importPattern(void) {
     int i = t.readHex(0, MAX_PATTERN - 1);
-    pattern = i;
+    this->pattern = PatternNumber(i);
     t.readEOL();
   }
 

@@ -85,6 +85,10 @@ public:
     sequence.push_back(patternNumber);
   }
 
+  void addRow(const Row& row, PatternNumber i) {
+    patterns.at(i.toInt()).pushBack(row);
+  }
+
   void addInstrument(uint8_t volumeSeq, uint8_t arpeggioSeq, uint8_t pitchSeq, uint8_t hiPitchSeq, uint8_t dutyCycleSeq) {
     if(!isValidInstrSequence(volumeSeq)) {
       throw "Invalid volume sequence number";
@@ -164,3 +168,32 @@ std::ostream& operator<<(std::ostream& ostream, const PatternNumber& patternNumb
 PatternNumber::PatternNumber(uint8_t n) : patternNumber(n) {}
 
 SongMasterConfig::SongMasterConfig() : tempo(0), channelControl(0), outputTerminals(0) {}
+
+GbNote::GbNote() 
+{
+}
+
+GbNote::GbNote(const ChannelCommand& command, uint8_t pitch) : command(command), pitch(pitch) 
+{
+}
+
+void Row::setNote(int i, GbNote note) {
+  if(i >= 4) {
+    throw "setNote out of bounds";
+  }
+  
+  notes[i] = note;
+}
+
+void Song::addRow(const Row& row, PatternNumber i) {
+  impl->addRow(row, i);
+}
+
+int PatternNumber::toInt() const {
+  return patternNumber;
+}
+
+void Pattern::pushBack(const Row& row) {
+  rows.push_back(row);
+
+}

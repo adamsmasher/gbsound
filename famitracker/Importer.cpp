@@ -272,9 +272,8 @@ void Importer::importCellText(void) {
   //pDoc->SetDataAtPattern(track,pattern,channel,row,&Cell);
 }
 
-// TODO: initialize everything?
 Importer::Importer(const std::string& text)
-  : isExpired(false), t(text)
+  : isExpired(false), t(text), track(0), pattern(0), channel(0), row(0), hasN163(false)
 {}
 
 Importer Importer::fromFile(const char *filename) {
@@ -477,9 +476,12 @@ void Importer::importPattern(void) {
 
 void Importer::importExpansion(void) {
   int i = t.readInt(0, 255);
-  if(i != SNDCHIP_NONE && i != SNDCHIP_N163) {
-    throw "Unsupported expansion.";
+  switch(i) {
+  case SNDCHIP_NONE: hasN163 = false; break;
+  case SNDCHIP_N163: hasN163 = true;  break;
+  default: throw "Unsupported expansion.";
   }
+
   t.readEOL();
 }
 

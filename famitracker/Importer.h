@@ -104,6 +104,8 @@ public:
   unsigned int channel;
   unsigned int row;
 
+  bool hasN163;
+
   std::unordered_map<SequenceIndex, int> sequenceTable;
 
   Song song;

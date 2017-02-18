@@ -139,6 +139,16 @@ bool operator==(const SequenceIndex& sequenceIndex, const SequenceIndex& sequenc
   return sequenceIndex.index == sequenceIndex_.index;
 }
 
+class Note {
+public:
+  Note(int pitchClass, int octave) : pitchClass(pitchClass), octave(octave) {}
+  int getPitchClass(void) const { return pitchClass; }
+  int getOctave(void) const { return octave; }
+private:
+  int pitchClass;
+  int octave;
+};
+
 class ImporterImpl {
 public:
   ImporterImpl(const std::string& text) :
@@ -216,25 +226,26 @@ private:
     }
   }
 
-  std::pair<int, int> getNoteAndOctave(const std::string& sNote) const {
+  Note readNote() {
     std::ostringstream errMsg;
-  
+
+    std::string sNote = t.readToken();
     if (sNote.size() != 3) {
       errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": note column should be 3 characters wide, '" << sNote << "' found.";
       throw errMsg.str();
     } else if (sNote == "...") {
-      return {0, 0};
+      return Note(0, 0);
     } else if (sNote == "---") {
-      return {HALT, 0};
+      return Note(HALT, 0);
     } else if (sNote == "===") {
-      return {RELEASE, 0};
+      return Note(RELEASE, 0);
     } else if (channel == 3) { // noise // TODO: make a constant
       int h = importHex(sNote.substr(0, 1));
 
       // importer is very tolerant about the second and third characters
       // in a noise note, they can be anything
 
-      return {h % 12 + 1, h / 12};
+      return Note(h % 12 + 1, h / 12);
     } else {
       int n;
       switch (sNote.at(0)) {
@@ -268,7 +279,7 @@ private:
 	throw errMsg.str();
       }
 
-      return { n + 1, o };
+      return Note(n + 1, o);
     }
   }
 
@@ -297,11 +308,10 @@ private:
     throw errMsg.str();
   }
 
-  // TODO: improve the types!
-  void addCell(std::pair<int, int> noteAndOctave, int instrumentId, int volId, int effect, int effectParam);
+  void addCell(Note, int instrumentId, int volId, int effect, int effectParam);
 
   void importCellText(void) {
-    std::pair<int, int> noteAndOctave = getNoteAndOctave(t.readToken());
+    Note note = readNote();
     int instrumentId = getInstrumentId(t.readToken());
     int volId = getVolId(t.readToken());
 
@@ -314,7 +324,7 @@ private:
       effectParam = importHex(effectColumn.substr(effectColumn.size() - 2));
     }
 
-    addCell(noteAndOctave, instrumentId, volId, effect, effectParam);
+    addCell(note, instrumentId, volId, effect, effectParam);
   }
 
   int importHex(const std::string& sToken) const {

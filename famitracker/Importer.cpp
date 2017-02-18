@@ -144,9 +144,25 @@ public:
   Note(int pitchClass, int octave) : pitchClass(pitchClass), octave(octave) {}
   int getPitchClass(void) const { return pitchClass; }
   int getOctave(void) const { return octave; }
+  bool isEmpty() const { return pitchClass == 0 && octave == 0; }
 private:
   int pitchClass;
   int octave;
+};
+
+class Cell {
+public:
+  Cell(Note note, int instrumentId, int volId, int effect, int effectParam) :
+    note(note), instrumentId(instrumentId), volId(volId), effect(effect), effectParam(effectParam)
+  {}
+
+  bool isEmpty() const { return note.isEmpty(); }
+private:
+  Note note;
+  int instrumentId;
+  int volId;
+  int effect;
+  int effectParam;
 };
 
 class ImporterImpl {
@@ -308,9 +324,7 @@ private:
     throw errMsg.str();
   }
 
-  void addCell(Note, int instrumentId, int volId, int effect, int effectParam);
-
-  void importCellText(void) {
+  Cell importCell(void) {
     Note note = readNote();
     int instrumentId = getInstrumentId(t.readToken());
     int volId = getVolId(t.readToken());
@@ -324,7 +338,7 @@ private:
       effectParam = importHex(effectColumn.substr(effectColumn.size() - 2));
     }
 
-    addCell(note, instrumentId, volId, effect, effectParam);
+    return Cell(note, instrumentId, volId, effect, effectParam);
   }
 
   int hexCharVal(char c) const {
@@ -562,7 +576,13 @@ private:
     int i = t.readHex(0, MAX_PATTERN_LENGTH - 1);
     for (int c = 0; c < getChannelCount(); ++c) {
       checkColon();
-      importCellText();
+      Cell cell = importCell();
+      if((c == CHANID_TRIANGLE || c == CHANID_DPCM) && !cell.isEmpty()) {
+	std::ostringstream errMsg;
+	errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": non-empty cell in a non-GB channel";
+	throw errMsg.str();
+      }
+      // TODO: write the cell into the song!
     }
     t.readEOL();
   }

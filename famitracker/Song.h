@@ -105,11 +105,16 @@ class Song {
  public:
   Song();
   ~Song();
-  
+
   void addInstrument(uint8_t volumeSeq, uint8_t arpeggioSeq, uint8_t pitchSeq, uint8_t hiPitchSeq, uint8_t dutyCycleSeq);
+
+  // returns the index of the new sequence
   uint8_t addInstrSequence(const InstrSequence&);
+
   void setTempo(uint8_t tempo);
+
   void pushNextPattern(PatternNumber patternNumber);
+
   void writeGb(std::ostream&) const;
  private:
   SongImpl *impl;

@@ -550,7 +550,8 @@ private:
     }
     t.readEOL();
   }
-    
+
+  // TODO: make sure there's nothing on the triangle/DPCM channel
   void importRow(void) {
     if (track == 0) {
       std::ostringstream errMsg;

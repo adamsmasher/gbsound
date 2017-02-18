@@ -33,9 +33,9 @@ void SongMasterConfig::setTempo(uint8_t tempo) {
 }
 
 void SongMasterConfig::writeGb(std::ostream& ostream) const {
-  ostream.write(&channelControl, 1);
-  ostream.write(&outputTerminals, 1);
-  ostream.write(&tempo, 1);
+  ostream.write((const char*)&channelControl, 1);
+  ostream.write((const char*)&outputTerminals, 1);
+  ostream.write((const char*)&tempo, 1);
 }
 
 static void writePatternsGb(std::ostream& ostream, const std::vector<Pattern>& patterns) {
@@ -105,12 +105,13 @@ public:
     instruments.push_back(Instrument(volumeSeq, arpeggioSeq, pitchSeq, hiPitchSeq, dutyCycleSeq));
   }
 
+  void writeChannelInstrumentsGb(std::ostream& ostream) const {
+    ostream.write((const char*)channelInstruments, 4);
+  }
+
   void writeGb(std::ostream& ostream) const {
     songMasterConfig.writeGb(ostream);
-    channel1Config.writeGb(ostream);
-    channel2Config.writeGb(ostream);
-    channel3Config.writeGb(ostream);
-    channel4Config.writeGb(ostream);
+    writeChannelInstrumentsGb(ostream);
     writePatternsGb(ostream, patterns);
     writeSequenceGb(ostream, sequence);
     writeInstrumentsGb(ostream, instruments);
@@ -120,10 +121,7 @@ private:
   std::vector<InstrSequence> instrSequences;
   std::vector<Instrument> instruments;
   SongMasterConfig songMasterConfig;
-  Channel1Config channel1Config;
-  Channel2Config channel2Config;
-  Channel3Config channel3Config;
-  Channel4Config channel4Config;
+  uint8_t channelInstruments[4];
   std::vector<Pattern> patterns;
   std::vector<PatternNumber> sequence;
 
@@ -165,4 +163,4 @@ std::ostream& operator<<(std::ostream& ostream, const PatternNumber& patternNumb
 
 PatternNumber::PatternNumber(uint8_t n) : patternNumber(n) {}
 
-SongConfig::SongConfig : tempo(0), channelControl(0), outputTerminals(0) {}
+SongMasterConfig::SongMasterConfig() : tempo(0), channelControl(0), outputTerminals(0) {}

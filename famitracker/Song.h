@@ -63,33 +63,11 @@ class SongMasterConfig {
   uint8_t outputTerminals;
 };
 
-class Channel1Config {
- public:
-  void writeGb(std::ostream&) const;
-  // TODO
-};
-
-class Channel2Config {
- public:
-  void writeGb(std::ostream&) const;
-  // TODO
-};
-
-class Channel3Config {
- public:
-  void writeGb(std::ostream&) const;
-  // TODO
-};
-
-class Channel4Config {
- public:
-  void writeGb(std::ostream&) const;
-  // TODO
-};
-
 class Pattern {
  public:
   void writeGb(std::ostream&) const;
+ private:
+  // TODO
 };
 
 class PatternNumber {

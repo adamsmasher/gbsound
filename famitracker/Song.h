@@ -54,10 +54,13 @@ class Instrument {
 
 class SongMasterConfig {
  public:
+  SongMasterConfig();
   void setTempo(uint8_t tempo);
   void writeGb(std::ostream&) const;
  private:
   uint8_t tempo;
+  uint8_t channelControl;
+  uint8_t outputTerminals;
 };
 
 class Channel1Config {

@@ -32,6 +32,12 @@ void SongMasterConfig::setTempo(uint8_t tempo) {
   this->tempo = tempo;
 }
 
+void SongMasterConfig::writeGb(std::ostream& ostream) const {
+  ostream.write(&channelControl, 1);
+  ostream.write(&outputTerminals, 1);
+  ostream.write(&tempo, 1);
+}
+
 static void writePatternsGb(std::ostream& ostream, const std::vector<Pattern>& patterns) {
   for(auto i = patterns.begin(); i != patterns.end(); ++i) {
     i->writeGb(ostream);
@@ -147,8 +153,6 @@ void Song::setTempo(uint8_t tempo) {
 void Song::pushNextPattern(PatternNumber patternNumber) {
   impl->pushNextPattern(patternNumber);
 }
-  
-PatternNumber::PatternNumber(uint8_t n) : patternNumber(n) {}
 
 void Song::writeGb(std::ostream& ostream) const {
   impl->writeGb(ostream);
@@ -158,3 +162,7 @@ std::ostream& operator<<(std::ostream& ostream, const PatternNumber& patternNumb
   ostream << patternNumber.patternNumber;
   return ostream;
 }
+
+PatternNumber::PatternNumber(uint8_t n) : patternNumber(n) {}
+
+SongConfig::SongConfig : tempo(0), channelControl(0), outputTerminals(0) {}

@@ -643,7 +643,7 @@ uint8_t Importer::computeTempo(int speed, int tempo) {
   double rowsPerSecond = rowsPerMinute/60;
   double ticksPerRow = 60/rowsPerSecond;
   return (uint8_t)ceil(256/ticksPerRow);*/
-  return (150 * speed)/t;
+  return (150 * speed)/tempo;
 }
 
 uint8_t Importer::getSequence(SequenceIndex i) {

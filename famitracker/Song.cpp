@@ -60,6 +60,10 @@ bool operator!=(const PatternNumber& n, const PatternNumber& n_) {
   return n.patternNumber != n_.patternNumber;
 }
 
+void PatternNumber::writeGb(std::ostream& ostream) const {
+  ostream.write((const char*)&patternNumber, 1);
+}
+
 class SongImpl {
 public:
   void setTempo(uint8_t tempo) {

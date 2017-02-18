@@ -26,12 +26,14 @@
 
 using namespace std::experimental;
 
+// TODO: move as many of these as possible into the implementation
 class InstrSequence {
  public:
   void setLoopPoint(int loopPoint);
   void setReleasePoint(int releasePoint);
   void setArpeggioType(int arpeggioType);
   void pushBack(int i);
+  void writeGb(std::ostream&) const;
  private:
   std::vector<int> sequence;
   int loopPoint;
@@ -41,7 +43,7 @@ class InstrSequence {
 class Instrument {
  public:
   Instrument(uint8_t volumeSeq, uint8_t arpeggioSeq, uint8_t pitchSeq, uint8_t hiPitchSeq, uint8_t dutyCycleSeq);
-  friend std::ostream& operator<<(std::ostream&, const Instrument&);
+  void writeGb(std::ostream&) const;
  private:
   uint8_t volumeSeq;
   uint8_t arpeggioSeq;
@@ -54,52 +56,50 @@ std::ostream& operator<<(std::ostream&, const std::vector<Instrument>&);
 class SongMasterConfig {
  public:
   void setTempo(uint8_t tempo);
-  friend std::ostream& operator<<(std::ostream&, const SongMasterConfig&);
+  void writeGb(std::ostream&) const;
  private:
   uint8_t tempo;
 };
 
 class Channel1Config {
  public:
-  friend std::ostream& operator<<(std::ostream&, const Channel1Config&);
+  void writeGb(std::ostream&) const;
   // TODO
 };
 
 class Channel2Config {
  public:
-  friend std::ostream& operator<<(std::ostream&, const Channel2Config&);
+  void writeGb(std::ostream&) const;
   // TODO
 };
 
 class Channel3Config {
  public:
-  friend std::ostream& operator<<(std::ostream&, const Channel3Config&);
+  void writeGb(std::ostream&) const;
   // TODO
 };
 
 class Channel4Config {
  public:
-  friend std::ostream& operator<<(std::ostream&, const Channel4Config&);
+  void writeGb(std::ostream&) const;
   // TODO
 };
 
 class Pattern {
  public:
-  friend std::ostream& operator<<(std::ostream&, const Pattern&);
+  void writeGb(std::ostream&) const;
 };
-std::ostream& operator<<(std::ostream&, const std::vector<Pattern>&);
 
 class PatternNumber {
  public:
   explicit PatternNumber(uint8_t);
   friend std::ostream& operator<<(std::ostream&, const PatternNumber&);
+  void writeGb(std::ostream&) const;
  private:
   uint8_t patternNumber;
 };
-std::ostream& operator<<(std::ostream&, const std::vector<PatternNumber>&);
 
 struct SongImpl;
-
 class Song {
  public:
   Song();
@@ -109,7 +109,7 @@ class Song {
   uint8_t addInstrSequence(const InstrSequence&);
   void setTempo(uint8_t tempo);
   void pushNextPattern(PatternNumber patternNumber);
-  friend std::ostream& operator<<(std::ostream&, const Song&);
+  void writeGb(std::ostream&) const;
  private:
   SongImpl *impl;
 };

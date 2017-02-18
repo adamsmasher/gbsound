@@ -15,6 +15,6 @@ int main(int argc, char **argv) {
 
   std::ofstream out;
   out.open(argv[2], std::ios::binary);
-  out << song;
+  song.writeGb(out);
   out.close();
 }

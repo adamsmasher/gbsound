@@ -95,6 +95,7 @@ class PatternNumber {
   explicit PatternNumber(uint8_t);
   friend std::ostream& operator<<(std::ostream&, const PatternNumber&);
   void writeGb(std::ostream&) const;
+  friend bool operator!=(const PatternNumber&, const PatternNumber&);
  private:
   uint8_t patternNumber;
 };

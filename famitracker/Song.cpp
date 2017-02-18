@@ -56,6 +56,10 @@ static void writeInstrSequencesGb(std::ostream& ostream, const std::vector<Instr
   }
 }
 
+bool operator!=(const PatternNumber& n, const PatternNumber& n_) {
+  return n.patternNumber != n_.patternNumber;
+}
+
 class SongImpl {
 public:
   void setTempo(uint8_t tempo) {

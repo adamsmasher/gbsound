@@ -535,18 +535,18 @@ private:
   void importOrder(void) {
     skipFrameNumber();
 
-    int pattern = readPatternNumber();
+    PatternNumber pattern = readPatternNumber();
 
     // unlike in Famitracker, in our driver there's only one
     // pattern per frame
     for (int c = 1; c < getChannelCount(); ++c) {
-      int pattern_ = readPatternNumber();
+      PatternNumber pattern_ = readPatternNumber();
       if(pattern != pattern_) {
 	std::ostringstream errMsg;
 	errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": Mismatched pattern number, expected " << pattern << " got " << pattern_;
 	throw errMsg.str();
       }
-      song.pushNextPattern(PatternNumber(pattern));
+      song.pushNextPattern(pattern);
     }
     t.readEOL();
   }
@@ -693,8 +693,8 @@ private:
     t.readToken();
   }
   
-  int readPatternNumber(void) {
-    return t.readHex(0, MAX_PATTERN - 1);
+  PatternNumber readPatternNumber(void) {
+    return PatternNumber(t.readHex(0, MAX_PATTERN - 1));
   }
 
   void addInstrument(Chip chip, int volumeFt, int arpeggioFt, int pitchFt, int hiPitchFt, int dutyCycleFt) {

@@ -175,7 +175,7 @@ private:
   unsigned int channel;
   unsigned int row;
   bool hasN163;
-  std::unordered_map<SequenceIndex, int> sequenceTable;
+  std::unordered_map<SequenceIndex, uint8_t> sequenceTable;
   Song song;
   
   int getVolId(const std::string& sVol) const {

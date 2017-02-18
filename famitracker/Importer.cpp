@@ -78,6 +78,7 @@ static const char* CT[CT_LAST + 1] = {
 };
 
 static uint8_t computeTempo(int speed, int tempo) {
+  // the following is how we derived the much nicer formula below
   /*double bpm = (tempo * 6.0)/speed;
   double rowsPerMinute = bpm * 4;
   double rowsPerSecond = rowsPerMinute/60;
@@ -119,9 +120,19 @@ namespace std {
   };
 }
 
-// TODO: better hash
+size_t hash_combine(size_t lhs, size_t rhs) {
+  lhs ^= rhs + 0x9e3779b9 + (lhs << 6) + (lhs >> 2);
+  return lhs;
+}
+
 size_t std::hash<SequenceIndex>::operator()(const SequenceIndex& sequenceIndex) const {
-  return sequenceIndex.getChip() + sequenceIndex.getType() + sequenceIndex.getNum();
+  std::hash<Chip> chipHash;
+  std::hash<SequenceIndex::SeqType> seqTypeHash;
+  std::hash<uint8_t> byteHash;
+
+  return hash_combine(chipHash(sequenceIndex.getChip()),
+		      hash_combine(seqTypeHash(sequenceIndex.getType()),
+				   byteHash(sequenceIndex.getNum())));
 }
 
 bool operator==(const SequenceIndex& sequenceIndex, const SequenceIndex& sequenceIndex_) {

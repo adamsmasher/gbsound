@@ -41,8 +41,27 @@ uint8_t Song::addInstrSequence(const InstrSequence& sequence) {
   return instrSequences.size() - 1;
 }
 
+bool Song::isValidInstrSequence(uint8_t seq) const {
+  return seq < instrSequences.size();
+}
+
 void Song::addInstrument(uint8_t volumeSeq, uint8_t arpeggioSeq, uint8_t pitchSeq, uint8_t hiPitchSeq, uint8_t dutyCycleSeq) {
-  // TODO: validate that the sequences exist
+  if(!isValidInstrSequence(volumeSeq)) {
+    throw "Invalid volume sequence number";
+  }
+  if(!isValidInstrSequence(arpeggioSeq)) {
+    throw "Invalid arpeggio sequence number";
+  }
+  if(!isValidInstrSequence(pitchSeq)) {
+    throw "Invalid pitch sequence number";
+  }
+  if(!isValidInstrSequence(hiPitchSeq)) {
+    throw "Invalid hipitch sequence number";
+  }
+  if(!isValidInstrSequence(dutyCycleSeq)) {
+    throw "Invalid duty cycle sequence number";
+  }
+
   instruments.push_back(Instrument(volumeSeq, arpeggioSeq, pitchSeq, hiPitchSeq, dutyCycleSeq));
 }
 

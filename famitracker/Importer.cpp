@@ -647,6 +647,12 @@ Song Importer::runImport(void) {
   return song;
 }
 
+int Importer::getChannelCount() const {
+  if(hasN163) {
+    return 5;
+  } else {
+    return 4;
+  }
 }
 
 uint8_t Importer::getSequence(SequenceIndex i) {

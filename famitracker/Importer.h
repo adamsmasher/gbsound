@@ -27,28 +27,7 @@
 #include "Song.h"
 #include "Tokenizer.h"
 
-// TODO: put this internal stuff in the .cpp
-typedef uint8_t Chip;
-
-class SequenceIndex {
- public:
-  typedef int SeqType;
-
-  SequenceIndex(Chip, SeqType, int num);
-  Chip getChip() const;
-  SeqType getType() const;
-  int getNum() const;
-  
-  friend bool operator==(const SequenceIndex&, const SequenceIndex&);
- private:
-  std::tuple<Chip, SeqType, int> index;
-};
-
-namespace std {
-  template <> struct hash<SequenceIndex> {
-    size_t operator()(const SequenceIndex&) const;
-  };
-}
+struct ImporterImpl;
 
 class Importer {
 public:
@@ -59,54 +38,5 @@ public:
 
   Song runImport();
  private:
-  bool isExpired;
-  Tokenizer t;
-  int getVolId(const std::string& sVol) const;
-  int getInstrumentId(const std::string& sInst) const;
-  std::pair<int, int> getNoteAndOctave(const std::string& sNote) const;
-  void importCellText(void);
-  int importHex(const std::string& sToken) const;
-  Command getCommandEnum(const std::string& command) const;
-  void importCommand(Command);
-  void importMacro(Chip);
-  void importStandardMacro(void);
-  void importStandardInstrument(void);
-  void importTrack(void);
-  void importColumns(void);
-  void importOrder(void);
-  void importRow(void);
-  void importMachine(void);
-  void importVibrato(void);
-  void importSplit(void);
-  void importFramerate(void);
-  void importPattern(void);
-  void importExpansion(void);
-  void checkColon(void);
-  void checkSymbol(const std::string&);
-  void importN163Wave(void);
-  void importN163Channels(void);
-  void importN163Instrument(void);
-  void importN163Macro(void);
-  void skipInstrumentName(void);
-  void skipInstrumentNumber(void);
-  int readSequenceNumber(void);
-  void skipTrackTitle(void);
-  int readPatternNumber(void);
-  void addInstrument(Chip, int volumeSeqFt, int arpeggioSeqFt, int pitchSeqFt, int hiPitchSeqFt, int dutyCycleSeqFt);
-  int getChannelCount(void) const;
-  void setPatternLength(int patternLength);
-  void skipFrameNumber(void);
-  void addSequence(SequenceIndex index, const Sequence& sequence);
-  uint8_t getSequence(SequenceIndex index) const;
-
-  unsigned int track;
-  unsigned int pattern;
-  unsigned int channel;
-  unsigned int row;
-
-  bool hasN163;
-
-  std::unordered_map<SequenceIndex, int> sequenceTable;
-
-  Song song;
+  ImporterImpl *impl;
 };

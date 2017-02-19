@@ -16,7 +16,7 @@ build/%.o: %.cpp $(HEADERS)
 	g++ -std=c++17 -Wall -O2 -Werror -c -o $@ $<
 
 ../famiconv: $(DEPS)
-	g++ -o famiconv $(DEPS)
+	g++ -o ../famiconv $(DEPS)
 
 .PHONY: clean
 

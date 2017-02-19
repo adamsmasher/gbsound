@@ -30,39 +30,33 @@ using namespace std::experimental;
 
 // TODO: move as many of these as possible into the implementation
 
-enum ArpeggioType {
-  NON_ARPEGGIO,
-  ABSOLUTE,
-  FIXED,
-  RELATIVE
+enum InstrumentCommandType {
+  INSTR_VOL,
+  INSTR_MARK,
+  INSTR_LOOP,
+  INSTR_PITCH,
+  INSTR_HPITCH,
+  INSTR_DUTY_LO,
+  INSTR_DUTY_25,
+  INSTR_DUTY_50,
+  INSTR_DUTY_75
 };
 
-class InstrSequence {
- public:
-  InstrSequence(sequence_t);
-  void setLoopPoint(int loopPoint);
-  void setReleasePoint(int releasePoint);
-  void setArpeggioType(ArpeggioType arpeggioType);
-  void pushBack(int i);
-  void writeGb(std::ostream&) const;
- private:
-  std::vector<uint8_t> sequence;
-  sequence_t type;
-  int loopPoint;
-  int releasePoint;
-  ArpeggioType arpeggioType;
+struct InstrumentCommand {
+  InstrumentCommandType type;
+  union {
+    uint8_t newVolume;
+  };
+  
+  void writeGb(std::ostream& ostream) const;
 };
 
 class Instrument {
  public:
-  Instrument(uint8_t volumeSeq, uint8_t arpeggioSeq, uint8_t pitchSeq, uint8_t hiPitchSeq, uint8_t dutyCycleSeq);
+  void addCommand(const InstrumentCommand&);
   void writeGb(std::ostream&) const;
  private:
-  uint8_t volumeSeq;
-  uint8_t arpeggioSeq;
-  uint8_t pitchSeq;
-  uint8_t hiPitchSeq;
-  uint8_t dutyCycleSeq;
+  std::vector<InstrumentCommand> commands;
 };
 
 class SongMasterConfig {
@@ -84,16 +78,10 @@ enum ChannelCommandType {
   CHANNEL_CMD_SET_INSTRUMENT
 };
 
-struct ChangeInstrument {
-  uint8_t newInstrument;
-
-  void writeGb(std::ostream&) const;
-};
-
 struct ChannelCommand {
   ChannelCommandType type;
   union {
-    ChangeInstrument changeInstrument;
+    uint8_t newInstrument;
   };
 
   void writeGb(std::ostream&) const;
@@ -158,10 +146,7 @@ class Song {
   Song();
   ~Song();
 
-  void addInstrument(uint8_t volumeSeq, uint8_t arpeggioSeq, uint8_t pitchSeq, uint8_t hiPitchSeq, uint8_t dutyCycleSeq);
-
-  // returns the index of the new sequence
-  uint8_t addInstrSequence(const InstrSequence&);
+  void addInstrument(const Instrument&);
 
   void setTempo(uint8_t tempo);
 

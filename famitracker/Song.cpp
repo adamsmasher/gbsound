@@ -20,14 +20,6 @@
 
 #include "Song.h"
 
-Instrument::Instrument(uint8_t volumeSeq, uint8_t arpeggioSeq, uint8_t pitchSeq, uint8_t hiPitchSeq, uint8_t dutyCycleSeq) :
-  volumeSeq(volumeSeq),
-  arpeggioSeq(arpeggioSeq),
-  pitchSeq(pitchSeq),
-  hiPitchSeq(hiPitchSeq),
-  dutyCycleSeq(dutyCycleSeq)
-{}
-
 void SongMasterConfig::setTempo(uint8_t tempo) {
   this->tempo = tempo;
 }
@@ -56,12 +48,6 @@ static void writeInstrumentsGb(std::ostream& ostream, const std::vector<Instrume
   }
 }
 
-static void writeInstrSequencesGb(std::ostream& ostream, const std::vector<InstrSequence>& instrSequences) {
-  for(auto i = instrSequences.begin(); i != instrSequences.end(); ++i) {
-    i->writeGb(ostream);
-  }
-}
-
 bool operator!=(const PatternNumber& n, const PatternNumber& n_) {
   return n.patternNumber != n_.patternNumber;
 }
@@ -77,11 +63,6 @@ public:
     songMasterConfig.setTempo(tempo);
   }
 
-  uint8_t addInstrSequence(const InstrSequence& sequence) {
-    instrSequences.push_back(sequence);
-    return instrSequences.size() - 1;
-  }
-
   void pushNextPattern(PatternNumber patternNumber) {
     sequence.push_back(patternNumber);
   }
@@ -90,24 +71,8 @@ public:
     patterns.at(i.toInt()).pushBack(row);
   }
 
-  void addInstrument(uint8_t volumeSeq, uint8_t arpeggioSeq, uint8_t pitchSeq, uint8_t hiPitchSeq, uint8_t dutyCycleSeq) {
-    if(!isValidInstrSequence(volumeSeq)) {
-      throw "Invalid volume sequence number";
-    }
-    if(!isValidInstrSequence(arpeggioSeq)) {
-      throw "Invalid arpeggio sequence number";
-    }
-    if(!isValidInstrSequence(pitchSeq)) {
-      throw "Invalid pitch sequence number";
-    }
-    if(!isValidInstrSequence(hiPitchSeq)) {
-      throw "Invalid hipitch sequence number";
-    }
-    if(!isValidInstrSequence(dutyCycleSeq)) {
-      throw "Invalid duty cycle sequence number";
-    }
-
-    instruments.push_back(Instrument(volumeSeq, arpeggioSeq, pitchSeq, hiPitchSeq, dutyCycleSeq));
+  void addInstrument(const Instrument& instrument) {
+    instruments.push_back(instrument);
   }
 
   void writeChannelInstrumentsGb(std::ostream& ostream) const {
@@ -121,19 +86,13 @@ public:
     writePatternsGb(ostream, patterns);
     writeSequenceGb(ostream, sequence);
     writeInstrumentsGb(ostream, instruments);
-    writeInstrSequencesGb(ostream, instrSequences);
   }
 private:
-  std::vector<InstrSequence> instrSequences;
   std::vector<Instrument> instruments;
   SongMasterConfig songMasterConfig;
   uint8_t channelInstruments[4];
   std::vector<Pattern> patterns;
   std::vector<PatternNumber> sequence;
-
-  bool isValidInstrSequence(uint8_t seq) const {
-    return seq < instrSequences.size();
-  }
 };
 
 Song::Song() : impl(new SongImpl) {}
@@ -142,12 +101,8 @@ Song::~Song() {
   delete impl;
 }
 
-void Song::addInstrument(uint8_t volumeSeq, uint8_t arpeggioSeq, uint8_t pitchSeq, uint8_t hiPitchSeq, uint8_t dutyCycleSeq) {
-  impl->addInstrument(volumeSeq, arpeggioSeq, pitchSeq, hiPitchSeq, dutyCycleSeq);
-}
-
-uint8_t Song::addInstrSequence(const InstrSequence& instrSequence) {
-  return impl->addInstrSequence(instrSequence);
+void Song::addInstrument(const Instrument& instrument) {
+  impl->addInstrument(instrument);
 }
 
 void Song::setTempo(uint8_t tempo) {
@@ -230,50 +185,44 @@ void GbNote::writeGb(std::ostream& ostream) const {
 }
 
 void ChannelCommand::writeGb(std::ostream& ostream) const {
-  // channel commands are odd numbered, starting at 2
+  // channel commands are even numbered, starting at 2
   ostream.put(type * 2 + 2);
   switch(type) {
   case CHANNEL_CMD_KEY_OFF: break;
   case CHANNEL_CMD_SET_SND_LEN: /* TODO */ throw "Unimplemented";
   case CHANNEL_CMD_OCTAVE_UP: break;
   case CHANNEL_CMD_OCTAVE_DOWN: break;
-  case CHANNEL_CMD_SET_INSTRUMENT: changeInstrument.writeGb(ostream); break;
+  case CHANNEL_CMD_SET_INSTRUMENT: ostream.put(newInstrument); break;
   }      
 }
 
-void ChangeInstrument::writeGb(std::ostream& ostream) const {
-  ostream.put(newInstrument);
-}
-
-InstrSequence::InstrSequence(sequence_t type) : type(type), loopPoint(0), releasePoint(0), arpeggioType(NON_ARPEGGIO) {}
-
-void InstrSequence::setArpeggioType(ArpeggioType arpeggioType) {
-  if(this->type != SEQ_ARPEGGIO) {
-    throw "Cannot set arpeggio type for non-arpeggio sequence!";
-  }
-  this->arpeggioType = arpeggioType;
-}
-
-// TODO: change this
 void Instrument::writeGb(std::ostream& ostream) const {
-  ostream.put(volumeSeq);
-  ostream.put(arpeggioSeq);
-  ostream.put(pitchSeq);
-  ostream.put(hiPitchSeq);
-  ostream.put(dutyCycleSeq);
-}
-
-void InstrSequence::writeGb(std::ostream& ostream) const {
-  if(type == SEQ_ARPEGGIO) {
-    ostream.put(arpeggioType);
-  }
-
-  // TODO: ensure termination
-  for(auto i = sequence.begin(); i != sequence.end(); ++i) {
-    ostream.put(*i);
+  // TODO: handle looping?
+  for(auto i = commands.begin(); i != commands.end(); ++i) {
+    i->writeGb(ostream);
   }
 }
 
 void GbNote::addCommand(const ChannelCommand& command) {
   commands.push_back(command);
+}
+
+void Instrument::addCommand(const InstrumentCommand& command) {
+  commands.push_back(command);
+}
+
+void InstrumentCommand::writeGb(std::ostream& ostream) const {
+  // commands are even numbered, starting at 2
+  ostream.put(type * 2 + 2);
+  switch(type) {
+  case INSTR_VOL: ostream.put(newVolume); break;
+  case INSTR_MARK: break;
+  case INSTR_LOOP: break;
+  case INSTR_PITCH: throw "Unimplemented"; break;
+  case INSTR_HPITCH: throw "Unimplemented"; break;
+  case INSTR_DUTY_LO: break;
+  case INSTR_DUTY_25: break;
+  case INSTR_DUTY_50: break;
+  case INSTR_DUTY_75: break;
+  }
 }

@@ -32,7 +32,6 @@ ChNum:		DS 1
 ;;; we can treat them uniformly.
 ChRegBase:	DS 1
 
-;;; TODO: force sequences to be the same length in converter...
 ;;; An instrument is a stream of special opcodes that update a channel's output
 ;;; parameters on a per note basis
 SECTION "ChInstrBases", BSS[$C100]

@@ -171,6 +171,74 @@ private:
   int effectParam;
 };
 
+enum ArpeggioType {
+  NON_ARPEGGIO,
+  ABSOLUTE,
+  FIXED,
+  RELATIVE
+};
+
+class InstrSequence {
+ public:
+  InstrSequence() {}
+  InstrSequence(sequence_t type) 
+    : type(type), loopPoint(0), releasePoint(0), arpeggioType(NON_ARPEGGIO) {}
+
+  size_t getLength(void) const { return sequence.size(); }
+
+  void setLoopPoint(int loopPoint);
+
+  void setReleasePoint(int releasePoint);
+
+  void setArpeggioType(ArpeggioType arpeggioType) {
+    if(this->type != SEQ_ARPEGGIO) {
+      throw "Cannot set arpeggio type for non-arpeggio sequence!";
+    }
+    this->arpeggioType = arpeggioType;
+  }
+
+  uint8_t at(size_t i) const { return sequence.at(i); }
+
+  void pushBack(int i);
+ private:
+  std::vector<uint8_t> sequence;
+  sequence_t type;
+  int loopPoint;
+  int releasePoint;
+  ArpeggioType arpeggioType;
+};
+
+static Instrument buildInstrument(const InstrSequence& volumeSeq, const InstrSequence& arpeggioSeq, const InstrSequence& pitchSeq, const InstrSequence& hiPitchSeq, const InstrSequence& dutyCycleSeq) {
+  Instrument instrument;
+
+  // the engine only has one "sequence" for each instrument, so we need to combine
+  // all the famitracker sequences into one
+  // all sequences MUST be the same length and have the same loop point
+
+  // TODO: better error message
+  size_t length = volumeSeq.getLength();
+  if(arpeggioSeq.getLength() != length || pitchSeq.getLength() != length || hiPitchSeq.getLength() != length || dutyCycleSeq.getLength() != length) {
+    throw "mismatched lengths";
+  }
+
+  // TODO: handle loop point, termination
+  int currentVolume = -1;
+  for(size_t i = 0; i < length; i++) {
+    InstrumentCommand command;
+
+    uint8_t volume = volumeSeq.at(i);
+    if(volume != currentVolume) {
+      command.type = INSTR_VOL;
+      command.newVolume = volume;
+      instrument.addCommand(command);
+    }
+
+    // TODO: handle remaining sequences!
+  }
+
+  return instrument;
+}
+
 class ImporterImpl {
 public:
   ImporterImpl(const std::string& text) :
@@ -207,7 +275,7 @@ private:
   int channel;
   uint8_t currentInstruments[6]; // two dummy channels, one for triangle, one for DPCM
   bool hasN163;
-  std::unordered_map<InstrSequenceIndex, uint8_t> instrSequenceTable;
+  std::unordered_map<InstrSequenceIndex, InstrSequence> instrSequenceTable;
   Song song;
   
   void ignoreVolId() {
@@ -605,7 +673,7 @@ private:
       if(cell.getInstrumentId() != currentInstruments[channel]) {
 	ChannelCommand command;
 	command.type = CHANNEL_CMD_SET_INSTRUMENT;
-	command.changeInstrument.newInstrument = instrument;
+	command.newInstrument = instrument;
 	currentInstruments[channel] = instrument;
 	gbNote.addCommand(command);
       }
@@ -747,13 +815,16 @@ private:
     return PatternNumber(t.readHex(0, MAX_PATTERN - 1));
   }
 
-  void addInstrument(Chip chip, int volumeFt, int arpeggioFt, int pitchFt, int hiPitchFt, int dutyCycleFt) {
-    uint8_t volumeGb    = getInstrSequence(InstrSequenceIndex(chip, SEQ_VOLUME,    volumeFt));
-    uint8_t arpeggioGb  = getInstrSequence(InstrSequenceIndex(chip, SEQ_ARPEGGIO,  arpeggioFt));
-    uint8_t pitchGb     = getInstrSequence(InstrSequenceIndex(chip, SEQ_PITCH,     pitchFt));
-    uint8_t hiPitchGb   = getInstrSequence(InstrSequenceIndex(chip, SEQ_HIPITCH,   hiPitchFt));
-    uint8_t dutyCycleGb = getInstrSequence(InstrSequenceIndex(chip, SEQ_DUTYCYCLE, dutyCycleFt));
-    song.addInstrument(volumeGb, arpeggioGb, pitchGb, hiPitchGb, dutyCycleGb);
+  void addInstrument(Chip chip, int volumeNum, int arpeggioNum, int pitchNum, int hiPitchNum, int dutyCycleNum) {
+    Instrument instrument;
+
+    auto volume    = getInstrSequence(InstrSequenceIndex(chip, SEQ_VOLUME,    volumeNum));
+    auto arpeggio  = getInstrSequence(InstrSequenceIndex(chip, SEQ_ARPEGGIO,  arpeggioNum));
+    auto pitch     = getInstrSequence(InstrSequenceIndex(chip, SEQ_PITCH,     pitchNum));
+    auto hiPitch   = getInstrSequence(InstrSequenceIndex(chip, SEQ_HIPITCH,   hiPitchNum));
+    auto dutyCycle = getInstrSequence(InstrSequenceIndex(chip, SEQ_DUTYCYCLE, dutyCycleNum));
+
+    song.addInstrument(buildInstrument(volume, arpeggio, pitch, hiPitch, dutyCycle));
   }
 
   int getChannelCount(void) const {
@@ -770,11 +841,10 @@ private:
   }
 
   void addInstrSequence(InstrSequenceIndex index, const InstrSequence& sequence) {
-    uint8_t i = song.addInstrSequence(sequence);
-    instrSequenceTable[index] = i;
+    instrSequenceTable[index] = sequence;
   }
   
-  uint8_t getInstrSequence(InstrSequenceIndex i) const {
+  const InstrSequence& getInstrSequence(InstrSequenceIndex i) const {
     // TODO: handle non existent
     return instrSequenceTable.at(i);
   }

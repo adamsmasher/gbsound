@@ -113,6 +113,7 @@ public:
     ostream.write((const char*)channelInstruments, 4);
   }
 
+  // TODO: you need to write tables and stuff
   void writeGb(std::ostream& ostream) const {
     songMasterConfig.writeGb(ostream);
     writeChannelInstrumentsGb(ostream);
@@ -244,4 +245,23 @@ void InstrSequence::setArpeggioType(ArpeggioType arpeggioType) {
     throw "Cannot set arpeggio type for non-arpeggio sequence!";
   }
   this->arpeggioType = arpeggioType;
+}
+
+void Instrument::writeGb(std::ostream& ostream) const {
+  ostream.put(volumeSeq);
+  ostream.put(arpeggioSeq);
+  ostream.put(pitchSeq);
+  ostream.put(hiPitchSeq);
+  ostream.put(dutyCycleSeq);
+}
+
+void InstrSequence::writeGb(std::ostream& ostream) const {
+  if(type == SEQ_ARPEGGIO) {
+    ostream.put(arpeggioType);
+  }
+
+  // TODO: ensure termination
+  for(auto i = sequence.begin(); i != sequence.end(); ++i) {
+    ostream.put(*i);
+  }
 }

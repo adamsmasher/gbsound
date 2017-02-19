@@ -46,7 +46,7 @@ class InstrSequence {
   void pushBack(int i);
   void writeGb(std::ostream&) const;
  private:
-  std::vector<int> sequence;
+  std::vector<uint8_t> sequence;
   sequence_t type;
   int loopPoint;
   int releasePoint;

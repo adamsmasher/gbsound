@@ -123,9 +123,7 @@ private:
 
 Song::Song() : impl(new SongImpl) {}
 
-Song::~Song() {
-  delete impl;
-}
+Song::~Song() { delete impl; }
 
 void Song::addInstrument(const Instrument& instrument) {
   impl->addInstrument(instrument);
@@ -152,9 +150,7 @@ PatternNumber::PatternNumber(uint8_t n) : patternNumber(n) {}
 
 SongMasterConfig::SongMasterConfig() : tempo(0), channelControl(0), outputTerminals(0) {}
 
-GbNote::GbNote() 
-{
-}
+GbNote::GbNote() {}
 
 GbNote::GbNote(uint8_t pitch) : pitch(pitch) {}
 
@@ -213,7 +209,6 @@ void ChannelCommand::writeGb(std::ostream& ostream) const {
 }
 
 void Instrument::writeGb(std::ostream& ostream) const {
-  // TODO: handle looping?
   for(auto i = commands.begin(); i != commands.end(); ++i) {
     i->writeGb(ostream);
   }

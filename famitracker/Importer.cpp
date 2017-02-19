@@ -180,15 +180,18 @@ enum ArpeggioType {
 
 class InstrSequence {
  public:
-  InstrSequence() {}
+  InstrSequence() : loopPoint(-1) {}
   InstrSequence(sequence_t type) 
-    : type(type), loopPoint(0), releasePoint(0), arpeggioType(NON_ARPEGGIO) {}
+    : type(type), loopPoint(0),  arpeggioType(NON_ARPEGGIO) {}
 
   size_t getLength(void) const { return sequence.size(); }
 
-  void setLoopPoint(int loopPoint);
-
-  void setReleasePoint(int releasePoint);
+  void setLoopPoint(int loopPoint) {
+    if(loopPoint >= 0 && (unsigned)loopPoint > sequence.size()) {
+      throw "Loop point out of range";
+    }
+    this->loopPoint = loopPoint;
+  }
 
   void setArpeggioType(ArpeggioType arpeggioType) {
     if(this->type != SEQ_ARPEGGIO) {
@@ -199,12 +202,13 @@ class InstrSequence {
 
   uint8_t at(size_t i) const { return sequence.at(i); }
 
-  void pushBack(int i);
+  void pushBack(uint8_t i) {
+    sequence.push_back(i);
+  }
  private:
   std::vector<uint8_t> sequence;
   sequence_t type;
   int loopPoint;
-  int releasePoint;
   ArpeggioType arpeggioType;
 };
 
@@ -551,6 +555,13 @@ private:
     return (ArpeggioType)(t.readInt(0, 255) + 1);
   }
 
+  void ignoreReleasePoint(void) {
+    int releasePoint = t.readInt(-1, MAX_SEQUENCE_ITEMS);
+    if(releasePoint != -1) {
+      throw "Instrument has release point, unsupported.";
+    }
+  }
+
   void importInstrSequence(Chip chip) {
     sequence_t sequenceType = readSequenceType();
     InstrSequence sequence(sequenceType);
@@ -558,7 +569,8 @@ private:
     int sequenceNum = t.readInt(0, MAX_SEQUENCES - 1);
 
     int loopPoint    = t.readInt(-1, MAX_SEQUENCE_ITEMS);
-    int releasePoint = t.readInt(-1, MAX_SEQUENCE_ITEMS);
+    
+    ignoreReleasePoint();
 
     ArpeggioType arpeggioType = readArpeggioType();
     if(sequenceType == SEQ_ARPEGGIO) {
@@ -578,7 +590,6 @@ private:
     }
 
     sequence.setLoopPoint(loopPoint);
-    sequence.setReleasePoint(releasePoint);
 
     addInstrSequence(InstrSequenceIndex(chip, sequenceType, sequenceNum), sequence);
   }
@@ -849,24 +860,6 @@ private:
     return instrSequenceTable.at(i);
   }
 };
-
-void InstrSequence::setLoopPoint(int loopPoint) {
-  if(loopPoint >= 0 && (unsigned)loopPoint > sequence.size()) {
-    throw "Loop point out of range";
-  }
-  this->loopPoint = loopPoint;
-}
-
-void InstrSequence::setReleasePoint(int releasePoint) {
-  if(releasePoint >= 0 && (unsigned)releasePoint > sequence.size()) {
-    throw "Release point out of range";
-  }
-  this->releasePoint = releasePoint;
-}
-
-void InstrSequence::pushBack(int i) {
-  sequence.push_back(i);
-}
 
 Importer::Importer(const std::string& text) : impl(new ImporterImpl(text)) {}
 

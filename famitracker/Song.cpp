@@ -67,7 +67,8 @@ bool operator!=(const PatternNumber& n, const PatternNumber& n_) {
 }
 
 void PatternNumber::writeGb(std::ostream& ostream) const {
-  ostream.write((const char*)&patternNumber, 1);
+  // to make it faster to index the pattern table, pattern numbers increment by 2
+  ostream.put(patternNumber * 2);
 }
 
 class SongImpl {

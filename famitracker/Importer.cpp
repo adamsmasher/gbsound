@@ -475,19 +475,33 @@ private:
     }
   }
 
+  sequence_t readSequenceType(void) {
+    return (sequence_t)t.readInt(0, SEQ_COUNT - 1);
+  }
+
+  ArpeggioType readArpeggioType(void) {
+    return (ArpeggioType)(t.readInt(0, 255) + 1);
+  }
+
   void importInstrSequence(Chip chip) {
-    InstrSequence sequence;
-  
-    int sequenceType = t.readInt(0, SEQ_COUNT - 1);
+    sequence_t sequenceType = readSequenceType();
+    InstrSequence sequence(sequenceType);
+    
     int sequenceNum = t.readInt(0, MAX_SEQUENCES - 1);
 
     int loopPoint    = t.readInt(-1, MAX_SEQUENCE_ITEMS);
     int releasePoint = t.readInt(-1, MAX_SEQUENCE_ITEMS);
 
-    // TODO: maybe validate the sequence type here - this is only meaningful for arpeggio sequences
-    int arpeggioType = t.readInt(0, 255);
-    sequence.setArpeggioType(arpeggioType);
-
+    ArpeggioType arpeggioType = readArpeggioType();
+    if(sequenceType == SEQ_ARPEGGIO) {
+      sequence.setArpeggioType(arpeggioType);
+    } else if (arpeggioType != ABSOLUTE) {
+      // in the file, 0 is both absolute and non-arpeggio sequence
+      // so if it's absolute and a non-arpeggio sequence, we're ok
+      // otherwise raise
+      throw "Non-arpeggio sequence given arpeggio type!";
+    }
+    
     checkColon();
 
     while (!t.isEOL()) {

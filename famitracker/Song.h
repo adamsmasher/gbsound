@@ -20,6 +20,8 @@
 
 #pragma once
 
+#include "FamiTrackerTypes.h"
+
 #include <vector>
 #include <iostream>
 #include <experimental/optional>
@@ -27,17 +29,28 @@
 using namespace std::experimental;
 
 // TODO: move as many of these as possible into the implementation
+
+enum ArpeggioType {
+  NON_ARPEGGIO,
+  ABSOLUTE,
+  FIXED,
+  RELATIVE
+};
+
 class InstrSequence {
  public:
+  InstrSequence(sequence_t);
   void setLoopPoint(int loopPoint);
   void setReleasePoint(int releasePoint);
-  void setArpeggioType(int arpeggioType);
+  void setArpeggioType(ArpeggioType arpeggioType);
   void pushBack(int i);
   void writeGb(std::ostream&) const;
  private:
   std::vector<int> sequence;
+  sequence_t type;
   int loopPoint;
   int releasePoint;
+  ArpeggioType arpeggioType;
 };
 
 class Instrument {

@@ -236,3 +236,12 @@ void ChannelCommand::writeGb(std::ostream& ostream) const {
 void ChangeInstrument::writeGb(std::ostream& ostream) const {
   ostream.put(newInstrument);
 }
+
+InstrSequence::InstrSequence(sequence_t type) : type(type), loopPoint(0), releasePoint(0), arpeggioType(NON_ARPEGGIO) {}
+
+void InstrSequence::setArpeggioType(ArpeggioType arpeggioType) {
+  if(this->type != SEQ_ARPEGGIO) {
+    throw "Cannot set arpeggio type for non-arpeggio sequence!";
+  }
+  this->arpeggioType = arpeggioType;
+}

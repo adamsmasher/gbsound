@@ -2,7 +2,6 @@
 ;;; TODO: implement wave RAM
 ;;; TODO: implement arpeggios
 ;;; TODO: implement effects?
-;;; TODO: converter for famitracker
 ;;; TODO: document/test
 
 SECTION "MusicVars", BSS[$C000]
@@ -28,15 +27,15 @@ ChNum:		DS 1
 ;;; Channel 3 - FF1A - FF1E
 ;;; Channel 4 - FF1F - FF23
 ;;; While they don't perfectly map onto each other (e.g. FF15 and FF1F are unused,
-;;; volume envelopes work differently for each etc), they're similarly enough that
+;;; volume envelopes work differently for each etc), they're similar enough that
 ;;; we can treat them uniformly.
 ChRegBase:	DS 1
 
-;;; TODO: per effect instruments
+;;; TODO: force sequences to be the same length in converter...
 ;;; An instrument is a stream of special opcodes that update a channel's output
 ;;; parameters on a per note basis
 SECTION "ChInstrBases", BSS[$C100]
-;;; Pointer to the beginning of each channels instrument;
+;;; Pointer to the beginning of each channel's instrument;
 ;;; the corresponding ChInstrPtr is reset to this when the note changes
 ChInstrBases:	DS 4 * 2
 ;;; MUST BE TOGETHER

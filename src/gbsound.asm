@@ -10,7 +10,7 @@ SECTION "MusicVars", BSS[$C000]
 SongPtr:	DS 2	;; musn't cross a page
 ;;; the song is described as "sequence", a list of 8-bit numbers.
 ;;; Each entry in the sequence is called a "frame".
-;;; Each frame contains an 8-bit pattern number
+;;; Each frame contains an 8-bit pattern number (0, 2, 4, ...)
 ;;; Pattern numbers are used to look up an entry in the pattern table
 ;;; The pattern table contains pointers into the opcode stream
 SeqPtr:		DS 1
@@ -32,6 +32,7 @@ ChNum:		DS 1
 ;;; we can treat them uniformly.
 ChRegBase:	DS 1
 
+;;; TODO: per effect instruments
 ;;; An instrument is a stream of special opcodes that update a channel's output
 ;;; parameters on a per note basis
 SECTION "ChInstrBases", BSS[$C100]

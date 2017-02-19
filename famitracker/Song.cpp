@@ -33,9 +33,9 @@ void SongMasterConfig::setTempo(uint8_t tempo) {
 }
 
 void SongMasterConfig::writeGb(std::ostream& ostream) const {
-  ostream.write((const char*)&channelControl, 1);
-  ostream.write((const char*)&outputTerminals, 1);
-  ostream.write((const char*)&tempo, 1);
+  ostream.put(channelControl);
+  ostream.put(outputTerminals);
+  ostream.put(tempo);
 }
 
 static void writePatternsGb(std::ostream& ostream, const std::vector<Pattern>& patterns) {
@@ -226,7 +226,6 @@ void GbNote::writeGb(std::ostream& ostream) const {
   ostream.put(pitch);
 }
 
-// TODO: replace all write(_, 1) with put
 void ChannelCommand::writeGb(std::ostream& ostream) const {
   ostream.put(type);
   switch(type) {

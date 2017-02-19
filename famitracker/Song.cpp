@@ -175,9 +175,7 @@ GbNote::GbNote()
 {
 }
 
-GbNote::GbNote(const ChannelCommand& command, uint8_t pitch) : command(command), pitch(pitch) 
-{
-}
+GbNote::GbNote(uint8_t pitch) : pitch(pitch) {}
 
 void Row::setNote(int i, GbNote note) {
   if(i >= 4) {
@@ -218,19 +216,28 @@ void Row::writeGb(std::ostream& ostream) const {
 }
 
 void EngineCommand::writeGb(std::ostream& ostream) const {
-  ostream.put(type);
+  // engine commands increment by two to make table lookup faster
+  // also, 0 is a NOP, so they start at 1 (3, 5, ...)
+  ostream.put(type * 2 + 1);
 }
 
 void GbNote::writeGb(std::ostream& ostream) const {
-  command.writeGb(ostream);
-  ostream.put(pitch);
+  for(auto i = commands.begin(); i != commands.end(); ++i) {
+    i->writeGb(ostream);
+  }
+  // notes are odd numbered... (1, 3, ...)
+  ostream.put(pitch * 2 + 1);
 }
 
 void ChannelCommand::writeGb(std::ostream& ostream) const {
-  ostream.put(type);
+  // channel commands are odd numbered, starting at 2
+  ostream.put(type * 2 + 2);
   switch(type) {
-  case NO_CHANNEL_COMMAND: break;
-  case CHANGE_INSTRUMENT: changeInstrument.writeGb(ostream);
+  case CHANNEL_CMD_KEY_OFF: break;
+  case CHANNEL_CMD_SET_SND_LEN: /* TODO */ throw "Unimplemented";
+  case CHANNEL_CMD_OCTAVE_UP: break;
+  case CHANNEL_CMD_OCTAVE_DOWN: break;
+  case CHANNEL_CMD_SET_INSTRUMENT: changeInstrument.writeGb(ostream); break;
   }      
 }
 
@@ -247,6 +254,7 @@ void InstrSequence::setArpeggioType(ArpeggioType arpeggioType) {
   this->arpeggioType = arpeggioType;
 }
 
+// TODO: change this
 void Instrument::writeGb(std::ostream& ostream) const {
   ostream.put(volumeSeq);
   ostream.put(arpeggioSeq);
@@ -264,4 +272,8 @@ void InstrSequence::writeGb(std::ostream& ostream) const {
   for(auto i = sequence.begin(); i != sequence.end(); ++i) {
     ostream.put(*i);
   }
+}
+
+void GbNote::addCommand(const ChannelCommand& command) {
+  commands.push_back(command);
 }

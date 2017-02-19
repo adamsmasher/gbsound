@@ -77,8 +77,11 @@ class SongMasterConfig {
 };
 
 enum ChannelCommandType {
-  NO_CHANNEL_COMMAND,
-  CHANGE_INSTRUMENT
+  CHANNEL_CMD_KEY_OFF,
+  CHANNEL_CMD_SET_SND_LEN,
+  CHANNEL_CMD_OCTAVE_UP,
+  CHANNEL_CMD_OCTAVE_DOWN,
+  CHANNEL_CMD_SET_INSTRUMENT
 };
 
 struct ChangeInstrument {
@@ -97,7 +100,10 @@ struct ChannelCommand {
 };
 
 enum EngineCommandType {
-  NO_ENGINE_COMMAND
+  ENGINE_CMD_SET_RATE,
+  ENGINE_CMD_STOP,
+  ENGINE_CMD_END_OF_PAT,
+  ENGINE_CMD_JMP_FRAME
 };
 
 struct EngineCommand {
@@ -109,11 +115,12 @@ struct EngineCommand {
 class GbNote {
  public:
   GbNote();
-  GbNote(const ChannelCommand&, uint8_t pitch);
+  GbNote(uint8_t pitch);
 
   void writeGb(std::ostream&) const;
+  void addCommand(const ChannelCommand&);
  private:
-  ChannelCommand command;
+  std::vector<ChannelCommand> commands;
   uint8_t pitch;
 };
 

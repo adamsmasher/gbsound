@@ -598,17 +598,18 @@ private:
     for (this->channel = 0; channel < getChannelCount(); channel++) {
       checkColon();
       Cell cell = importCell();
+      Note note = cell.getNote();
+      GbNote gbNote(note.toGbPitch());
       // TODO: handle effects
-      ChannelCommand command;
-      command.type = NO_CHANNEL_COMMAND;
       int instrument = cell.getInstrumentId();
       if(cell.getInstrumentId() != currentInstruments[channel]) {
-	command.type = CHANGE_INSTRUMENT;
+	ChannelCommand command;
+	command.type = CHANNEL_CMD_SET_INSTRUMENT;
 	command.changeInstrument.newInstrument = instrument;
 	currentInstruments[channel] = instrument;
+	gbNote.addCommand(command);
       }
-      Note note = cell.getNote();
-      row.setNote(channel, GbNote(command, note.toGbPitch()));
+      row.setNote(channel, gbNote);
     }
     t.readEOL();
 

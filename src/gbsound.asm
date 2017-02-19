@@ -65,16 +65,6 @@ SECTION "ChPitchAdjs", BSS[$C700]
 ;;; TODO: should this be 16-bits per channel?
 ChPitchAdjs:	DS 4
 
-SECTION "ChRealDuties", BSS[$C800]
-;;; instruments can change the duty cycle; this stores the duty cycle that
-;;; we should reset to on each note
-ChRealDuties:	DS 4
-;;; MUST BE TOGETHER
-SECTION "ChRealEnvs", BSS[$C900]
-;;; instruments can change the volume (envelope); this stores the volume that
-;;; we should reset to on each ntoe
-ChRealEnvs:	DS 4
-
 ;;; when a VBlank interrupt is fired, the CPU immediately jumps to $0040
 ;;; but this area is too packed (with other interrupt handlers)
 ;;; to write our code here, so just jump to the real handler
@@ -161,15 +151,7 @@ ChSetInstr:	PUSH HL
 		POP HL
 		RET
 
-InitCh:		LD D, ChRealDuties >> 8
-		LD A, [ChNum]
-		LD E, A
-		LD A, [HLI]	; default duty
-		LD [DE], A
-		INC D		; envelopes
-		LD A, [HLI]	; default envelope
-		LD [DE], A
-		LD A, [HLI]	; initial instrument
+InitCh:		LD A, [HLI]	; initial instrument
 		CALL ChSetInstr
 		XOR A
 		LD D, ChOctaves >> 8
@@ -325,29 +307,17 @@ ApplyInstrCh:	LD H, ChInstrPtrs >> 8
 		JP [HL]
 
 ;;; Called at the end of a note to reset the instrument
-ChRstInstr:	LD H, ChInstrBases >> 8
-		LD D, ChInstrPtrs >> 8
-		LD A, [ChNum]
-		LD B, A
+ChRstInstr:	LD A, [ChNum]
 		ADD A
+		LD H, ChInstrBases >> 8
 		LD L, A
+		LD D, ChInstrPtrs >> 8
 		LD E, A
 		LD A, [HLI]
 		LD [DE], A
-		LD A, [HL]
 		INC E
+		LD A, [HL]
 		LD [DE], A
-		LD H, ChRealDuties >> 8
-		LD L, B
-		LD A, [ChRegBase]
-		LD C, A
-		INC C		; duty reg
-		LD A, [HL]
-		LD [C], A
-		INC H		; vol envelope
-		LD A, [HL]
-		INC C		; vol env reg
-		LD [C], A
 		RET
 
 ChNote:		CALL ChRstInstr
@@ -398,27 +368,6 @@ ChKeyOff:	LD A, [ChRegBase]
 		LD [HL], A
 		RET
 
-ChDutyCmd:	LD A, [ChRegBase]
-		LD C, A
-		INC C		; duty reg
-		LD A, [C]
-		AND $3F
-		OR B
-		LD [C], A
-		RET
-
-ChSetDutyLo:	LD B, 0
-		JR ChDutyCmd
-
-ChSetDuty25:	LD B, $40
-		JR ChDutyCmd
-
-ChSetDuty50:	LD B, $80
-		JR ChDutyCmd
-
-ChSetDuty75:	LD B, $C0
-		JR ChDutyCmd
-
 ChSetSndLen:	CALL PopOpcode
 		LD B, A
 		LD A, [ChRegBase]
@@ -428,79 +377,6 @@ ChSetSndLen:	CALL PopOpcode
 		AND $C0
 		OR B
 		LD [C], A
-		RET
-
-ChSetEnvCmd:	LD H, ChRealEnvs >> 8
-		LD A, [ChNum]
-		LD L, A
-		LD A, [ChRegBase]
-		ADD 2		; volume envelope reg
-		LD C, A
-		LD A, [C]
-		AND $07
-		OR B
-		LD [C], A
-		LD [HL], A
-		RET
-
-ChSetEnv0:	LD B, $00
-		JR ChSetEnvCmd
-
-ChSetEnv1:	LD B, $01
-		JR ChSetEnvCmd
-
-ChSetEnv2:	LD B, $02
-		JR ChSetEnvCmd
-
-ChSetEnv3:	LD B, $03
-		JR ChSetEnvCmd
-
-ChSetEnv4:	LD B, $04
-		JR ChSetEnvCmd
-
-ChSetEnv5:	LD B, $05
-		JR ChSetEnvCmd
-
-ChSetEnv6:	LD B, $06
-		JR ChSetEnvCmd
-
-ChSetEnv7:	LD B, $07
-		JR ChSetEnvCmd
-
-ChSetEnvDec:	LD H, $FF
-		LD A, [ChRegBase]
-		ADD 2		; volume env reg
-		LD L, A
-		RES 3,[HL]
-		RET
-
-ChSetEnvInc:	LD H, $FF
-		LD A, [ChRegBase]
-		ADD 2		; volume env reg
-		LD L, A
-		SET 3,[HL]
-		LD H, ChRealEnvs >> 8
-		LD A, [ChNum]
-		LD L, A
-		SET 3,[HL]
-		RET
-
-ChSetEnvVol:	CALL PopOpcode
-		LD B, A
-		LD A, [ChRegBase]
-		ADD 2		; volume envelope reg
-		LD C, A
-		LD A, [C]
-		AND $0F
-		OR B
-		LD [C], A
-		LD H, ChRealEnvs >> 8
-		LD A, [ChNum]
-		LD L, A
-		LD A, [HL]
-		AND $0F
-		OR B
-		LD [HL], A
 		RET
 
 ChVolInstr:	LD A, [ChRegBase]
@@ -698,9 +574,7 @@ PatternTable:	DW Pattern1
 Song:		DB $77		; master volume config
 		DB $FF		; all channels on in both speakers
 		DB $40		; rate
-		DB $80		; ch2 duty/sound len (50%/no sound length specified)
-		DB $F0		; ch2 envelope (max volume/decrease/disabled)
-		DB 0		; instrument
+		DB 0		; ch1 instrument
 Pattern1:
 		DB 0, 49
 		DB 0, 0
@@ -747,22 +621,7 @@ InstrTblCh:	DW ChVolInstr
 
 SECTION "CmdTable", HOME[$7D00]
 CmdTblCh:	DW ChKeyOff
-		DW ChSetDutyLo
-		DW ChSetDuty25
-		DW ChSetDuty50
-		DW ChSetDuty75
 		DW ChSetSndLen
-		DW ChSetEnvVol
-		DW ChSetEnvInc
-		DW ChSetEnvDec
-		DW ChSetEnv0
-		DW ChSetEnv1
-		DW ChSetEnv2
-		DW ChSetEnv3
-		DW ChSetEnv4
-		DW ChSetEnv5
-		DW ChSetEnv6
-		DW ChSetEnv7
 		DW ChOctaveUp
 		DW ChOctaveDown
 		DW ChSetInstrCmd

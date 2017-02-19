@@ -20,6 +20,7 @@ SongRate:	DS 1
 SongTimer:	DS 1 ;; must follow SongRate
 ;;; Used to keep track of the current channel being updated
 ChNum:		DS 1
+;;; please keep this and ChRegBase together
 ;;; Used to keep track of the register base of the current channel being updated
 ;;; On the GB, we can look at each channel being controlled by 5 registers
 ;;; Channel 1 - FF10 - FF14
@@ -192,23 +193,33 @@ UpdateSndFrame:	LD HL, EndOfPat	; test the current pattern over flag
 		LD A, [HLI]
 		ADD [HL]	; update SongTimer
 		LD [HL], A
-		RET NC
-;;; fall thru to...
-RunSndFrame:	CALL TickSongCtrl
-	;; TODO: make me a loop
-		LD A, 0
-		LD [ChNum], A
+		CALL C, RunSndTick
+	;; every frame, regardless if the engine ticks, we update the instruments
+		CALL UpdateInstrs
+	;; finally, we tell the hardware to refresh by writing the frequencies
+	;; TODO: just embed the code for UpdateHardware here
+		JP UpdateHardware
+
+RunSndTick:	CALL TickSongCtrl
+		LD HL, ChNum
+		XOR A
+		LD [HLI], A
 		LD A, $10
+		LD [HL], A
+.loop:		
+	;; note how when the loop starts, HL MUST = ChRegNum!
+		LD A, $5
+		ADD [HL]
+		LD [HLD], A
+		INC [HL]
 		CALL TickCh
-		LD A, 1
-		LD A, $15
-		LD [ChNum], A
-		CALL TickCh
-		;; CALL TickCh3
-		;; CALL TickCh4
+		LD HL, ChNum
+		LD A, [HLI]	; this makes HL = ChRegNum for the loop!
+		CP 3
+		JR NZ, .loop
 		RET
 
-NextPat:	
+NextPat:
 	;; first, figure out what pattern to play
 		LD HL, SeqPtr
 		LD A, [HL]
@@ -240,7 +251,7 @@ TickSongCtrl:	CALL PopOpcode
 TickCh:		CALL PopOpcode
 	;; 0 is a NOP
 		AND A
-		JP Z, ChNOP
+		RET Z
 		DEC A
 	;; all commands have their LSB set to 0 (i.e., the first is 2, then 4...)
 	;; after shifting everything down by 1, that means they now have a 1 in the LSB
@@ -252,24 +263,25 @@ TickCh:		CALL PopOpcode
 		LD [HL], A
 		JP ChNote
 
-;;; If no event occurred, just apply the current instrument
-;;; The frequency register still needs to be rewritten, though
-;;; TODO: if the registers aren't "dirty", don't restart the note
-ChNOP:		CALL ApplyInstrCh
-TriggerCh:	LD H, ChFreqs >> 8
-		LD A, [ChNum]
-		ADD A
-		LD L, A
-		LD A, [ChRegBase]
-		ADD 3		; freq reg 1
-		LD C, A
-		LD A, [HLI]
-		LD [C], A
-		INC C		; freq reg 2
-		LD A, [HL]
-		SET 7,A		; TODO: uh now that we have to set this every time we write maybe do this once on write?
-		LD [C], A
+UpdateInstrs:	LD HL, ChNum
+		XOR A
+		LD [HLI], A
+		LD A, $10
+		LD [HL], A
+.loop:
+	;; note how when the loop starts, HL MUST = ChRegNum!
+		LD A, $5
+		ADD [HL]
+		LD [HLD], A
+		INC [HL]
+		CALL ApplyInstrCh
+		LD HL, ChNum
+		LD A, [HLI]	; this makes HL = ChRegNum for the loop!
+		CP 3
+		JR NZ, .loop
 		RET
+
+		CALL ApplyInstrCh
 
 ApplyInstrCh:	LD H, ChInstrPtrs >> 8
 		LD A, [ChNum]
@@ -306,6 +318,23 @@ ApplyInstrCh:	LD H, ChInstrPtrs >> 8
 		LD L, A
 		JP [HL]
 
+UpdateHardware:
+	;; TODO: if the registers aren't "dirty", don't restart the note
+		LD B, 4
+		LD C, $13	; freq register 1
+		LD HL, ChFreqs
+.loop:		LD A, [HLI]
+		LD [C], A
+		INC C		; freq reg 2
+		LD A, [HLI]
+		SET 7,A		; TODO: uh now that we have to set this every time we write maybe do this once on write?
+		LD [C], A
+		LD A, C
+		ADD 4		; next freq register 1
+		DEC B
+		JR NZ, .loop
+		RET
+
 ;;; Called at the end of a note to reset the instrument
 ChRstInstr:	LD A, [ChNum]
 		ADD A
@@ -321,13 +350,14 @@ ChRstInstr:	LD A, [ChNum]
 		RET
 
 ChNote:		CALL ChRstInstr
-		LD H, ChCurNotes >> 8
 		LD A, [ChNum]
 		LD B, A
+		LD H, ChCurNotes >> 8
 		LD L, A
 		LD A, [HL]
 		INC H		; octaves
 		ADD [HL]
+	;; look up current note in frequency table
 		LD H, FreqTable >> 8
 		LD L, A
 		LD A, [HLI]
@@ -337,8 +367,7 @@ ChNote:		CALL ChRstInstr
 		SLA L
 		LD [HLI], A
 		LD [HL], C
-		CALL ApplyInstrCh
-		JP TriggerCh
+		RET
 
 ;;; Assumes A = Cmd + 1
 ChCmd:		LD HL, TickCh	; put this on the stack so that we'll try to run the next op after
@@ -482,7 +511,9 @@ ChInstrMark:	LD H, ChInstrPtrs >> 8
 		LD [HL], B
 		RET
 
-ChInstrLoop:	LD H, ChInstrMarkers >> 8
+ChInstrLoop:
+	;; copy the current instrument marker into the instrument pointer
+		LD H, ChInstrMarkers >> 8
 		LD A, [ChNum]
 		ADD A
 		LD L, A
@@ -492,7 +523,7 @@ ChInstrLoop:	LD H, ChInstrMarkers >> 8
 		DEC L
 		LD [HLI], A
 		LD [HL], B
-		JP ChNOP
+		RET
 
 ;;; B - amount to add to the octave
 ChOctaveCmd:	LD H, ChOctaves >> 8
@@ -562,7 +593,7 @@ SongJmpFrame:	CALL PopOpcode
 		ADD SP, 2
 		LD A, 1
 		LD [EndOfPat], A
-		JP RunSndFrame
+		JP RunSndTick
 
 SongSetRate:	CALL PopOpcode
 		LD [SongRate], A

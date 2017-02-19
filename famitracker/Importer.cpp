@@ -186,6 +186,8 @@ class InstrSequence {
 
   size_t getLength(void) const { return sequence.size(); }
 
+  int getLoopPoint(void) const { return loopPoint; }
+
   void setLoopPoint(int loopPoint) {
     if(loopPoint >= 0 && (unsigned)loopPoint > sequence.size()) {
       throw "Loop point out of range";
@@ -225,10 +227,24 @@ static Instrument buildInstrument(const InstrSequence& volumeSeq, const InstrSeq
     throw "mismatched lengths";
   }
 
-  // TODO: handle loop point, termination
   int currentVolume = -1;
+  int loopPoint = volumeSeq.getLoopPoint();
+  if(arpeggioSeq.getLoopPoint() != loopPoint || pitchSeq.getLoopPoint() != loopPoint || hiPitchSeq.getLoopPoint() != loopPoint || dutyCycleSeq.getLoopPoint() != loopPoint) {
+    throw "mismatched loop points";
+  }
+
+  if(loopPoint < -1) {
+    throw "invalid loop point";
+  }
+
+  unsigned loopPoint_ = (unsigned)(loopPoint + 1);
+
+  InstrumentCommand command;
   for(size_t i = 0; i < length; i++) {
-    InstrumentCommand command;
+    if(i == loopPoint_) {
+      command.type = INSTR_MARK;
+      instrument.addCommand(command);
+    }
 
     uint8_t volume = volumeSeq.at(i);
     if(volume != currentVolume) {
@@ -239,6 +255,8 @@ static Instrument buildInstrument(const InstrSequence& volumeSeq, const InstrSeq
 
     // TODO: handle remaining sequences!
   }
+  command.type = INSTR_MARK;
+  instrument.addCommand(command);
 
   return instrument;
 }

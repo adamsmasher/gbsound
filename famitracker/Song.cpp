@@ -20,15 +20,41 @@
 
 #include "Song.h"
 
-void SongMasterConfig::setTempo(uint8_t tempo) {
-  this->tempo = tempo;
-}
+class SongMasterConfig {
+ public:
+  SongMasterConfig();
 
-void SongMasterConfig::writeGb(std::ostream& ostream) const {
-  ostream.put(channelControl);
-  ostream.put(outputTerminals);
-  ostream.put(tempo);
-}
+  void setTempo(uint8_t tempo) {
+    this->tempo = tempo;
+  }
+
+  void writeGb(std::ostream& ostream) const {
+    ostream.put(channelControl);
+    ostream.put(outputTerminals);
+    ostream.put(tempo);
+  }
+
+ private:
+  uint8_t tempo;
+  uint8_t channelControl;
+  uint8_t outputTerminals;
+};
+
+class Pattern {
+ public:
+  void writeGb(std::ostream& ostream) const {
+    for(auto i = rows.begin(); i != rows.end(); ++i) {
+      i->writeGb(ostream);
+    }
+  }
+
+  void addRow(const Row& row) {
+    rows.push_back(row);
+  }
+
+ private:
+  std::vector<Row> rows;
+};
 
 static void writePatternsGb(std::ostream& ostream, const std::vector<Pattern>& patterns) {
   for(auto i = patterns.begin(); i != patterns.end(); ++i) {
@@ -68,7 +94,7 @@ public:
   }
 
   void addRow(const Row& row, PatternNumber i) {
-    patterns.at(i.toInt()).pushBack(row);
+    patterns.at(i.toInt()).addRow(row);
   }
 
   void addInstrument(const Instrument& instrument) {
@@ -146,16 +172,6 @@ void Song::addRow(const Row& row, PatternNumber i) {
 
 int PatternNumber::toInt() const {
   return patternNumber;
-}
-
-void Pattern::pushBack(const Row& row) {
-  rows.push_back(row);
-}
-
-void Pattern::writeGb(std::ostream& ostream) const {
-  for(auto i = rows.begin(); i != rows.end(); ++i) {
-    i->writeGb(ostream);
-  }
 }
 
 void Row::writeGb(std::ostream& ostream) const {

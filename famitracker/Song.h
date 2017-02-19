@@ -28,8 +28,6 @@
 
 using namespace std::experimental;
 
-// TODO: move as many of these as possible into the implementation
-
 enum InstrumentCommandType {
   INSTR_VOL,
   INSTR_MARK,
@@ -57,17 +55,6 @@ class Instrument {
   void writeGb(std::ostream&) const;
  private:
   std::vector<InstrumentCommand> commands;
-};
-
-class SongMasterConfig {
- public:
-  SongMasterConfig();
-  void setTempo(uint8_t tempo);
-  void writeGb(std::ostream&) const;
- private:
-  uint8_t tempo;
-  uint8_t channelControl;
-  uint8_t outputTerminals;
 };
 
 enum ChannelCommandType {
@@ -119,14 +106,6 @@ class Row {
  private:
   std::vector<EngineCommand> engineCommands;
   GbNote notes[4];
-};
-
-class Pattern {
- public:
-  void writeGb(std::ostream&) const;
-  void pushBack(const Row&);
- private:
-  std::vector<Row> rows;
 };
 
 class PatternNumber {

@@ -1,7 +1,8 @@
 all: ../gbsound.gb
 
 DEPS=\
-build/gbsound.o
+build/gbsound.o\
+build/main.o
 
 build/%.o: %.asm
 	rgbasm -o $@ $< > /dev/null

@@ -13,8 +13,7 @@ SongPtr:	DS 2	;; musn't cross a page
 ;;; Each frame contains an 8-bit pattern number
 ;;; Pattern numbers are used to look up an entry in the pattern table
 ;;; The pattern table contains pointers into the opcode stream
-;; TODO: make this only an offset into the sequence, as implied by SongJmpFrame
-SeqPtr:		DS 2	;; musn't cross a page
+SeqPtr:		DS 1
 ;;; Boolean flag to indicate if we've hit the end of a pattern and need to load the next
 EndOfPat:	DS 1
 ;;; Each frame, SongTimer is incremented by SongRate; if it overflows, we run a music tick
@@ -181,10 +180,8 @@ InitCh:		LD D, ChRealDuties >> 8
 		LD [DE], A
 		RET
 
-InitSeqPtr:	LD A, [HLI]
+InitSeqPtr:	XOR A
 		LD [SeqPtr], A
-		LD A, [HL]
-		LD [SeqPtr+1], A
 		RET
 		
 VBlank:		PUSH AF
@@ -229,21 +226,16 @@ RunSndFrame:	CALL TickSongCtrl
 		;; CALL TickCh4
 		RET
 
-;;; TODO: if we limit ourselves to 256 frames, we can make SeqPtr an 8-bit offset
-NextPat:	LD HL, SeqPtr
-		LD A, [HLI]
-		LD H, [HL]
-		LD A, [HLI]
+NextPat:	
+	;; first, figure out what pattern to play
 		LD HL, SeqPtr
+		LD A, [HL]
 		INC [HL]
-		JR NZ, LoadPat
-		INC L
-		INC [HL]
-	;; fall thru to
-		
-;;; A = Pattern to load
-LoadPat:	LD H, PatternTable >> 8
+		LD H, Sequence >> 8
 		LD L, A
+		LD L, [HL]
+	;; now load a pointer to that pattern, pulled from the PatternTable, into SongPtr
+		LD H, PatternTable >> 8
 		LD A, [HLI]
 		LD [SongPtr], A
 		LD A, [HL]
@@ -709,7 +701,6 @@ Song:		DB $77		; master volume config
 		DB $80		; ch2 duty/sound len (50%/no sound length specified)
 		DB $F0		; ch2 envelope (max volume/decrease/disabled)
 		DB 0		; instrument
-		DW Sequence
 Pattern1:
 		DB 0, 49
 		DB 0, 0

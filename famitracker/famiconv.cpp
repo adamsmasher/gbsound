@@ -7,14 +7,20 @@ int main(int argc, char **argv) {
   if(argc != 3) {
     std::ostringstream errMsg;
     errMsg << "Missing command line arguments; usage: " << argv[0] << " IN.ftm OUT.bin";
-    throw errMsg.str();
+    std::cerr << errMsg.str();
+    return -1;
   }
 
   Importer importer = Importer::fromFile(argv[1]);
-  Song song = importer.runImport();
 
   std::ofstream out;
-  out.open(argv[2], std::ios::binary);
-  song.writeGb(out);
+  try {
+    Song song = importer.runImport();
+    out.open(argv[2], std::ios::binary);
+    song.writeGb(out);
+  } catch (std::string error) {
+    std::cerr << "Error: " << error;
+    return -2;
+  }
   out.close();
 }

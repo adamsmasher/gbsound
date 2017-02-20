@@ -107,6 +107,9 @@ public:
 
 private:
   static const uint16_t CHANNEL_INSTRUMENTS_GB_SIZE = 4;
+  static const uint16_t INSTRUMENT_TABLE_GB_SIZE = 256;
+  static const uint16_t PATTERN_TABLE_GB_SIZE = 256;
+  static const uint16_t SEQUENCE_GB_SIZE = 256;
 
   std::vector<Instrument> instruments;
   SongMasterConfig songMasterConfig;
@@ -122,9 +125,9 @@ private:
 	gbRAMBase
 	+ SongMasterConfig::GB_SIZE
 	+ CHANNEL_INSTRUMENTS_GB_SIZE
-	+ 1 + song.instruments.size()
-	+ 1 + song.patterns.size()
-	+ 1 + song.sequence.size();
+	+ INSTRUMENT_TABLE_GB_SIZE
+	+ PATTERN_TABLE_GB_SIZE
+	+ SEQUENCE_GB_SIZE;
     }
 
     void writeGb(void) {

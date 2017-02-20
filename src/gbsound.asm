@@ -65,13 +65,22 @@ SECTION "ChPitchAdjs", BSS[$C700]
 ;;; TODO: should this be 16-bits per channel?
 ChPitchAdjs:	DS 4
 
+SECTION "PatternTable", BSS[$C800]
+PatternTable:	DS 128*2
+
+SECTION "Sequence", BSS[$C900]
+Sequence:	DS 256
+
+SECTION "Instruments", BSS[$CA00]
+InstrumentTbl:	DS 128*2
+
 SECTION "GbSound", ROM0
 ;;; Song initialization:
+;;; Call with HL = Song
 ;;; HL is mutated across function calls and consistently points
 ;;; to the location in the song data we're working through
 InitSndEngine::	XOR A
 		LD [SongTimer], A
-		LD HL, Song
 		CALL InitSongCtrlCh
 		;; TODO: make this a loop
 		LD A, 0
@@ -100,7 +109,7 @@ InitSongCtrlCh:	LD A, [HLI]			; volume config
 ;;; for the channel
 ;;; A - instrument number (even numbers only)
 ChSetInstr:	PUSH HL
-		LD H, Instruments >> 8
+		LD H, InstrumentTbl >> 8
 		LD L, A
 		LD D, ChInstrBases >> 8
 		LD A, [ChNum]
@@ -551,36 +560,31 @@ SongSetRate:	CALL PopOpcode
 		RET
 
 ;;; TODO: move/copy this into RAM
-SECTION "Song", HOME[$6000]
-PatternTable:	DW Pattern1
-Song:		DB $77		; master volume config
-		DB $FF		; all channels on in both speakers
-		DB $40		; rate
-		DB 0		; ch1 instrument
-Pattern1:
-		DB 0, 49
-		DB 0, 0
-		DB 0, 0
-		DB 0, 0
-		DB 0, 61
-		DB 0, 0
-		DB 0, 0
-		DB 0, 0
-		DB 0, 73
-		DB 0, 0
-		DB 0, 0
-		DB 0, 0
-		DB 7, 0		; goto frame 0
+;; SECTION "Song", HOME[$6000]
+;; Song:		DB $77		; master volume config
+;; 		DB $FF		; all channels on in both speakers
+;; 		DB $40		; rate
+;; 		DB 0		; ch1 instrument
+;; Pattern1:
+;; 		DB 0, 49
+;; 		DB 0, 0
+;; 		DB 0, 0
+;; 		DB 0, 0
+;; 		DB 0, 61
+;; 		DB 0, 0
+;; 		DB 0, 0
+;; 		DB 0, 0
+;; 		DB 0, 73
+;; 		DB 0, 0
+;; 		DB 0, 0
+;; 		DB 0, 0
+;; 		DB 7, 0		; goto frame 0
 
-;;; TODO: move/copy this into RAM
-SECTION "Instruments", HOME[$6100]
-Instruments:	DW .instr1
-.instr1:	DB 2, $F0, 1
-		DB 2, $00, 0
-
-;;; TODO: move/copy this into RAM
-SECTION "Sequence", HOME[$6200]
-Sequence:	DB 0
+;; ;;; TODO: move/copy this into RAM
+;; SECTION "Instruments", HOME[$6100]
+;; Instruments:
+;; .instr1:	DB 2, $F0, 1
+;; 		DB 2, $00, 0
 
 SECTION "FreqTable", HOME[$7A00]
 FreqTable:	DW 44, 156, 262, 363, 457, 547, 631, 710, 786, 854, 923, 986

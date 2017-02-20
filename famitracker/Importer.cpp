@@ -156,19 +156,40 @@ private:
   int octave;
 };
 
+enum EffectType {
+  EFFECT_NO_EFFECT,
+  EFFECT_JUMP,
+  EFFECT_END_OF_PATTERN,
+  EFFECT_STOP
+};
+
+static EffectType effectTypeOfId(int id) {
+  switch(id) {
+  case 1: return EFFECT_JUMP;
+  case 2: return EFFECT_END_OF_PATTERN;
+  case 3: return EFFECT_STOP;
+  default: throw "Unsupported effect";
+  }
+}
+
+struct Effect {
+  EffectType type;
+  int param;
+};
+
 class Cell {
 public:
-  Cell(Note note, int instrumentId, int effect, int effectParam) :
-    note(note), instrumentId(instrumentId), effect(effect), effectParam(effectParam)
+  Cell(Note note, int instrumentId, Effect effect) :
+    note(note), instrumentId(instrumentId), effect(effect)
   {}
 
   Note getNote(void) const { return note; }
   int getInstrumentId(void) const { return instrumentId; }
+  Effect getEffect(void) const { return effect; }
 private:
   Note note;
   int instrumentId;
-  int effect;
-  int effectParam;
+  Effect effect;
 };
 
 enum ArpeggioType {
@@ -446,11 +467,11 @@ private:
     return effectColumn;
   }
 
-  int getEffect(const std::string& effectColumn) const {
+  EffectType getEffectType(const std::string& effectColumn) const {
     char c = toupper(effectColumn.at(0));
     for (int i = 0; i < EF_COUNT; i++) {
       if (EFF_CHAR[i] == c) {
-	return i;
+	return effectTypeOfId(i);
       }
     }
 
@@ -459,21 +480,29 @@ private:
     throw errMsg.str();
   }
 
+  Effect readEffect(void) {
+    Effect effect;
+
+    std::string effectColumn = readEffectColumn();
+    if (effectColumn == "...") {
+      effect.type = EFFECT_NO_EFFECT;
+    } else {
+      effect.type = getEffectType(effectColumn);
+      effect.param = importHex(effectColumn.substr(effectColumn.size() - 2));
+    }
+
+    return effect;
+  }
+
   Cell importCell(void) {
     Note note = readNote();
     int instrumentId = getInstrumentId(t.readToken());
     ignoreVolId();
 
     // only one effect column per channel is allowed
-    std::string effectColumn = readEffectColumn();
-    int effect = 0;
-    int effectParam = 0;
-    if (effectColumn != "...") {
-      effect = getEffect(effectColumn) + 1;
-      effectParam = importHex(effectColumn.substr(effectColumn.size() - 2));
-    }
+    Effect effect = readEffect();
 
-    return Cell(note, instrumentId, effect, effectParam);
+    return Cell(note, instrumentId, effect);
   }
 
   int hexCharVal(char c) const {

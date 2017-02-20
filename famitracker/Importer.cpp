@@ -267,12 +267,24 @@ static Instrument buildInstrument(const InstrSequence& volumeSeq, const InstrSeq
 
     uint8_t hiPitch = hiPitchSeq.at(i);
     if(hiPitch != currentHiPitch) {
+      currentHiPitch = hiPitch;
       command.type = INSTR_HPITCH;
       command.newHiPitch = hiPitch;
       instrument.addCommand(command);
     }
 
-    // TODO: handle remaining sequences!
+    uint8_t duty = dutyCycleSeq.at(i);
+    if(duty != currentDuty) {
+      currentDuty = duty;
+      switch(duty) {
+      case 0: command.type = INSTR_DUTY_LO; break;
+      case 1: command.type = INSTR_DUTY_25; break;
+      case 2: command.type = INSTR_DUTY_50; break;
+      case 3: command.type = INSTR_DUTY_75; break;
+      default: throw "Invalid duty";
+      }
+      instrument.addCommand(command);
+    }
 
     command.type = INSTR_END_FRAME;
     instrument.addCommand(command);

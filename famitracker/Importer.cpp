@@ -30,6 +30,7 @@
 #include <strings.h>
 #include <sstream>
 #include <tuple>
+#include <unordered_map>
 
 static const char* CT[CT_LAST + 1] = {
   // comment

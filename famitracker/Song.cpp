@@ -158,7 +158,7 @@ void Row::setNote(int i, GbNote note) {
   if(i >= 4) {
     throw "setNote out of bounds";
   }
-  
+
   notes[i] = note;
 }
 
@@ -171,21 +171,31 @@ int PatternNumber::toInt() const {
 }
 
 void Row::writeGb(std::ostream& ostream) const {
-  for(auto i = engineCommands.begin(); i != engineCommands.end(); ++i) {
-    i->writeGb(ostream);
-  }
-  // end engine commands
-  ostream.put(0);
+  if(this->hasFlowControlCommand) {
+    engineCommands.at(0).writeGb(ostream);
+  } else {
+    for(auto i = engineCommands.begin(); i != engineCommands.end(); ++i) {
+      i->writeGb(ostream);
+    }
+    // end engine commands
+    ostream.put(0);
 
-  for(int i = 0; i < 4; i++) {
-    notes[i].writeGb(ostream);    
+    for(int i = 0; i < 4; i++) {
+      notes[i].writeGb(ostream);    
+    }
   }
 }
 
 void EngineCommand::writeGb(std::ostream& ostream) const {
   // engine commands increment by two to make table lookup faster
   // also, 0 is a NOP, so they start at 1 (3, 5, ...)
-  ostream.put(type * 2 + 1);
+  ostream.put(type);
+  switch(type) {
+  case ENGINE_CMD_SET_RATE: ostream.put(newRate); break;
+  case ENGINE_CMD_STOP: break;
+  case ENGINE_CMD_END_OF_PAT: break;
+  case ENGINE_CMD_JMP_FRAME: ostream.put(newFrame); break;
+  }
 }
 
 void GbNote::writeGb(std::ostream& ostream) const {
@@ -238,3 +248,35 @@ void InstrumentCommand::writeGb(std::ostream& ostream) const {
   case INSTR_DUTY_75: break;
   }
 }
+
+void Row::ensureUnlocked(void) const {
+  if(this->hasFlowControlCommand) {
+    throw "Multiple flow control commands in a single row are forbidden.";
+  }
+}
+
+void Row::setFlowControlCommand(EngineCommand command) {
+  this->ensureUnlocked();
+  engineCommands.clear();
+  engineCommands.push_back(command);
+  this->hasFlowControlCommand = true;
+}
+
+void Row::endOfPattern(void) {
+  EngineCommand command;
+  command.type = ENGINE_CMD_END_OF_PAT;
+  setFlowControlCommand(command);
+}
+
+void Row::stop(void) {
+  EngineCommand command;
+  command.type = ENGINE_CMD_STOP;
+  setFlowControlCommand(command);
+}
+
+void Row::jump(uint8_t newFrame) {
+  EngineCommand command;
+  command.type = ENGINE_CMD_STOP;
+  command.newFrame = newFrame;
+  setFlowControlCommand(command);
+}    

@@ -762,16 +762,30 @@ private:
     int i = t.readHex(0, MAX_PATTERN_LENGTH - 1);
     int gbChannel = 0;
     for (this->channel = 0; channel < getChannelCount(); channel++) {
-      // read the cell stuff
+      // read the cell - we need to actually read the data for all
+      // channels, even if we're going to ignore some (non GB ones)
       checkColon();
       Cell cell = importCell();
       Note note = cell.getNote();
-      // TODO: handle effects
       int instrument = cell.getInstrumentId();
+      Effect effect = cell.getEffect();
 
       // don't actually do anything if this isn't a GB channel
       if(channel == CHANID_TRIANGLE || channel == CHANID_DPCM) {
 	continue;
+      }
+
+      switch(effect.type) {
+      case EFFECT_NO_EFFECT: break;
+      case EFFECT_JUMP:
+	row.jump(effect.param);
+	break;
+      case EFFECT_END_OF_PATTERN:
+	row.endOfPattern();
+	break;
+      case EFFECT_STOP:
+	row.stop();
+	break;
       }
 
       GbNote gbNote(note.toGbPitch());

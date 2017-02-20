@@ -81,15 +81,20 @@ struct ChannelCommand {
 };
 
 enum EngineCommandType {
-  ENGINE_CMD_SET_RATE,
-  ENGINE_CMD_STOP,
-  ENGINE_CMD_END_OF_PAT,
-  ENGINE_CMD_JMP_FRAME
+  ENGINE_CMD_SET_RATE = 1,
+  ENGINE_CMD_STOP = 3,
+  ENGINE_CMD_END_OF_PAT = 5,
+  ENGINE_CMD_JMP_FRAME = 7
 };
 
 struct EngineCommand {
   EngineCommandType type;
-  
+
+  union {
+    uint8_t newRate;
+    uint8_t newFrame;
+  };
+
   void writeGb(std::ostream&) const;
 };
 
@@ -109,9 +114,16 @@ class Row {
  public:
   void setNote(int, GbNote);
   void writeGb(std::ostream&) const;
+  void jump(uint8_t newFrame);
+  void endOfPattern(void);
+  void stop(void);
  private:
+  bool hasFlowControlCommand;
   std::vector<EngineCommand> engineCommands;
   GbNote notes[4];
+
+  void ensureUnlocked(void) const;
+  void setFlowControlCommand(EngineCommand);
 };
 
 class PatternNumber {

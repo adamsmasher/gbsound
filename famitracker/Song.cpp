@@ -46,6 +46,9 @@ class Pattern {
     for(auto i = rows.begin(); i != rows.end(); ++i) {
       i->writeGb(ostream);
     }
+    EngineCommand endOfPattern;
+    endOfPattern.type = ENGINE_CMD_END_OF_PAT;
+    endOfPattern.writeGb(ostream);
   }
 
   void addRow(const Row& row) {
@@ -60,6 +63,7 @@ static void writePatternsGb(std::ostream& ostream, const std::vector<Pattern>& p
   for(auto i = patterns.begin(); i != patterns.end(); ++i) {
     i->writeGb(ostream);
   }
+  
 }
 
 static void writeSequenceGb(std::ostream& ostream, const std::vector<PatternNumber>& sequence) {

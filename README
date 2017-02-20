@@ -1,0 +1,21 @@
+Song format:
+
+1 byte - initial value for $FF24 (aka NR50)
+1 byte - initial value for $FF25 (aka NR51)
+1 byte - tempo control byte
+1 byte - channel 1 instrument
+1 byte - channel 2 instrument
+1 byte - channel 3 instrument
+1 byte - channel 4 instrument
+1 byte - # of entries in instrument table (1-128)
+  for each:
+      2 byte pointer to instrument data
+1 byte - # of entries in pattern table (1 - 128)
+  for each:
+      2 byte pointer to pattern data
+1 byte - # of entries in sequence (0 - 255; 0 -> 256)
+  for each:
+      1 byte pattern number
+
+n bytes - instrument code
+n bytes - pattern code

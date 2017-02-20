@@ -251,6 +251,7 @@ static Instrument buildInstrument(const InstrSequence& volumeSeq, const InstrSeq
 
     uint8_t volume = volumeSeq.at(i);
     if(volume != currentVolume) {
+      currentVolume = volume;
       command.type = INSTR_VOL;
       command.newVolume = volume;
       instrument.addCommand(command);
@@ -258,6 +259,7 @@ static Instrument buildInstrument(const InstrSequence& volumeSeq, const InstrSeq
 
     uint8_t pitch = pitchSeq.at(i);
     if(pitch != currentPitch) {
+      currentPitch = pitch;
       command.type = INSTR_HPITCH;
       command.newPitch = pitch;
       instrument.addCommand(command);

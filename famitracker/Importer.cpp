@@ -253,7 +253,7 @@ static Instrument buildInstrument(const InstrSequence& volumeSeq, const InstrSeq
     if(volume != currentVolume) {
       currentVolume = volume;
       command.type = INSTR_VOL;
-      command.newVolume = volume;
+      command.newVolume = volume << 4;
       instrument.addCommand(command);
     }
 

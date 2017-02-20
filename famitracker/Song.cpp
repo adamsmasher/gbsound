@@ -225,6 +225,7 @@ void Instrument::addCommand(const InstrumentCommand& command) {
 void InstrumentCommand::writeGb(std::ostream& ostream) const {
   ostream.put(type);
   switch(type) {
+  case INSTR_END: break;
   case INSTR_END_FRAME: break;
   case INSTR_VOL: ostream.put(newVolume); break;
   case INSTR_MARK: break;

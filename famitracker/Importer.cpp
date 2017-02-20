@@ -189,7 +189,7 @@ class InstrSequence {
   int getLoopPoint(void) const { return loopPoint; }
 
   void setLoopPoint(int loopPoint) {
-    if(loopPoint >= 0 && (unsigned)loopPoint > sequence.size()) {
+    if(loopPoint < -1 || (loopPoint >= 0 && (unsigned)loopPoint > sequence.size())) {
       throw "Loop point out of range";
     }
     this->loopPoint = loopPoint;
@@ -235,7 +235,7 @@ static Instrument buildInstrument(const InstrSequence& volumeSeq, const InstrSeq
   if(loopPoint < -1) {
     throw "invalid loop point";
   }
-  unsigned loopPoint_ = (unsigned)(loopPoint + 1);
+  unsigned loopPoint_ = loopPoint == -1 ? 0 : (unsigned)loopPoint;
 
   InstrumentCommand command;
 
@@ -275,9 +275,13 @@ static Instrument buildInstrument(const InstrSequence& volumeSeq, const InstrSeq
     command.type = INSTR_END_FRAME;
     instrument.addCommand(command);
   }
-  // TODO: I don't think this works if the loop is the last thing
-  command.type = INSTR_MARK;
-  instrument.addCommand(command);
+  if(loopPoint_ == length) {
+    command.type = INSTR_END;
+    instrument.addCommand(command);
+  } else {
+    command.type = INSTR_LOOP;
+    instrument.addCommand(command);
+  }
 
   return instrument;
 }

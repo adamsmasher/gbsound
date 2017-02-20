@@ -30,6 +30,7 @@ using namespace std::experimental;
 
 // commands are even numbered, starting at 2
 enum InstrumentCommandType {
+  INSTR_END       = 0,
   INSTR_END_FRAME = 1,
   INSTR_VOL       = 2,
   INSTR_MARK      = 4,

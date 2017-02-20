@@ -6,7 +6,7 @@
 int main(int argc, char **argv) {
   if(argc != 3) {
     std::ostringstream errMsg;
-    errMsg << "Missing command line arguments; usage: " << argv[0] << " IN.ftm OUT.bin";
+    errMsg << "Missing command line arguments; usage: " << argv[0] << " IN.txt OUT.bin";
     std::cerr << errMsg.str();
     return -1;
   }
@@ -19,6 +19,9 @@ int main(int argc, char **argv) {
     out.open(argv[2], std::ios::binary);
     song.writeGb(out);
   } catch (std::string error) {
+    std::cerr << "Error: " << error;
+    return -2;
+  } catch (const char *error) {
     std::cerr << "Error: " << error;
     return -2;
   }

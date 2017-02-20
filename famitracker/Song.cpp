@@ -178,6 +178,7 @@ private:
       }
     }
 
+    // TODO: compression
     void writeInstruments(void) {
       for(auto i = song.instruments.begin(); i != song.instruments.end(); ++i) {
 	i->writeGb(ostream);

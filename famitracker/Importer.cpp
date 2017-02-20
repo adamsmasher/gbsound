@@ -829,7 +829,7 @@ private:
     
   void importFramerate(void) {
     int i = t.readInt(0, 800);
-    if(i != 0 || i != 60) {
+    if(i != 0 && i != 60) {
       throw "Engine speed must be 60Hz.";
     }
     t.readEOL();
@@ -950,9 +950,9 @@ private:
 
   int getChannelCount(void) const {
     if(hasN163) {
-      return 5;
+      return 6;
     } else {
-      return 4;
+      return 5;
     }
   }
 

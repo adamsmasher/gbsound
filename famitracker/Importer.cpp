@@ -347,7 +347,7 @@ public:
       importCommand(c);
     }
 
-    return song;
+    return std::move(song);
   }
 
 private:
@@ -971,7 +971,9 @@ private:
   }
 };
 
-Importer::Importer(const std::string& text) : impl(new ImporterImpl(text)) {}
+Importer::Importer(const std::string& text) : impl(std::make_unique<ImporterImpl>(text)) {}
+Importer::Importer(Importer&& importer) : impl(std::move(importer.impl)) {}
+Importer::~Importer() {}
 
 Importer Importer::fromFile(const char *filename) {
   std::ifstream f(filename, std::ifstream::in);
@@ -979,11 +981,7 @@ Importer Importer::fromFile(const char *filename) {
   buffer << f.rdbuf();
   f.close();
 
-  return Importer(buffer.str());
-}
-
-Importer::~Importer() {
-  delete impl;
+  return std::move(Importer(buffer.str()));
 }
 
 Song Importer::runImport(void) {

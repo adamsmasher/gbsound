@@ -22,8 +22,9 @@
 
 #include "FamiTrackerTypes.h"
 
-#include <vector>
 #include <iostream>
+#include <memory>
+#include <vector>
 #include <experimental/optional>
 
 using namespace std::experimental;
@@ -147,6 +148,7 @@ struct SongImpl;
 class Song {
  public:
   Song();
+  Song(Song&&);
   ~Song();
 
   void addInstrument(const Instrument&);
@@ -159,5 +161,5 @@ class Song {
 
   void writeGb(std::ostream&) const;
  private:
-  SongImpl *impl;
+  std::unique_ptr<SongImpl> impl;
 };

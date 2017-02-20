@@ -31,11 +31,12 @@ struct ImporterImpl;
 class Importer {
 public:
   explicit Importer(const std::string& text);
+  Importer(Importer&&);
   ~Importer();
 
   static Importer fromFile(const char *filename);
 
   Song runImport();
  private:
-  ImporterImpl *impl;
+  std::unique_ptr<ImporterImpl> impl;
 };

@@ -193,9 +193,9 @@ private:
   };
 };
 
-Song::Song() : impl(new SongImpl) {}
-
-Song::~Song() { delete impl; }
+Song::Song() : impl(std::make_unique<SongImpl>()) {}
+Song::Song(Song&& song) : impl(std::move(song.impl)) {}
+Song::~Song() {}
 
 void Song::addInstrument(const Instrument& instrument) {
   impl->addInstrument(instrument);

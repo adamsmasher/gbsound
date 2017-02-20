@@ -52,12 +52,14 @@ struct InstrumentCommand {
   };
 
   void writeGb(std::ostream& ostream) const;
+  uint16_t getLength(void) const;
 };
 
 class Instrument {
  public:
   void addCommand(const InstrumentCommand&);
   void writeGb(std::ostream&) const;
+  uint16_t getLength(void) const;
 
  private:
   std::vector<InstrumentCommand> commands;
@@ -78,6 +80,7 @@ struct ChannelCommand {
   };
 
   void writeGb(std::ostream&) const;
+  uint16_t getLength(void) const;
 };
 
 enum EngineCommandType {
@@ -96,6 +99,7 @@ struct EngineCommand {
   };
 
   void writeGb(std::ostream&) const;
+  uint16_t getLength(void) const;
 };
 
 class GbNote {
@@ -105,6 +109,7 @@ class GbNote {
 
   void writeGb(std::ostream&) const;
   void addCommand(const ChannelCommand&);
+  uint16_t getLength(void) const;
  private:
   std::vector<ChannelCommand> commands;
   uint8_t pitch;
@@ -117,6 +122,7 @@ class Row {
   void jump(uint8_t newFrame);
   void endOfPattern(void);
   void stop(void);
+  uint16_t getLength(void) const;
  private:
   bool hasFlowControlCommand;
   std::vector<EngineCommand> engineCommands;

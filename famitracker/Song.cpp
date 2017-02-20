@@ -20,8 +20,13 @@
 
 #include "Song.h"
 
+// TODO: specify this on the command line
+static const uint16_t gbRAMBase = 0xC000;
+
 class SongMasterConfig {
  public:
+  static const uint16_t GB_SIZE = 3;
+
   SongMasterConfig();
 
   void setTempo(uint8_t tempo) {
@@ -55,28 +60,18 @@ class Pattern {
     rows.push_back(row);
   }
 
+  uint16_t getLength(void) const {
+    uint16_t length = 0;
+    for(auto i = rows.begin(); i != rows.end(); ++i) {
+      length += i->getLength();
+    }
+    length++; // for the end of pattern byte
+    return length;
+  }
+
  private:
   std::vector<Row> rows;
 };
-
-static void writePatternsGb(std::ostream& ostream, const std::vector<Pattern>& patterns) {
-  for(auto i = patterns.begin(); i != patterns.end(); ++i) {
-    i->writeGb(ostream);
-  }
-  
-}
-
-static void writeSequenceGb(std::ostream& ostream, const std::vector<PatternNumber>& sequence) {
-  for(auto i = sequence.begin(); i != sequence.end(); ++i) {
-    i->writeGb(ostream);
-  }
-}
-
-static void writeInstrumentsGb(std::ostream& ostream, const std::vector<Instrument>& instruments) {
-  for(auto i = instruments.begin(); i != instruments.end(); ++i) {
-    i->writeGb(ostream);
-  }
-}
 
 bool operator!=(const PatternNumber& n, const PatternNumber& n_) {
   return n.patternNumber != n_.patternNumber;
@@ -105,24 +100,93 @@ public:
     instruments.push_back(instrument);
   }
 
-  void writeChannelInstrumentsGb(std::ostream& ostream) const {
-    ostream.write((const char*)channelInstruments, 4);
+  void writeGb(std::ostream& ostream) const {
+    Writer writer(*this, ostream);
+    writer.writeGb();
   }
 
-  // TODO: you need to write tables and stuff
-  void writeGb(std::ostream& ostream) const {
-    songMasterConfig.writeGb(ostream);
-    writeChannelInstrumentsGb(ostream);
-    writePatternsGb(ostream, patterns);
-    writeSequenceGb(ostream, sequence);
-    writeInstrumentsGb(ostream, instruments);
-  }
 private:
+  static const uint16_t CHANNEL_INSTRUMENTS_GB_SIZE = 4;
+
   std::vector<Instrument> instruments;
   SongMasterConfig songMasterConfig;
   uint8_t channelInstruments[4];
   std::vector<Pattern> patterns;
   std::vector<PatternNumber> sequence;
+
+
+  class Writer {
+  public:
+    Writer(const SongImpl& song, std::ostream& ostream) : song(song), ostream(ostream) {
+      opcodeAddress = 
+	gbRAMBase
+	+ SongMasterConfig::GB_SIZE
+	+ CHANNEL_INSTRUMENTS_GB_SIZE
+	+ 1 + song.instruments.size()
+	+ 1 + song.patterns.size()
+	+ 1 + song.sequence.size();
+    }
+
+    void writeGb(void) {
+      writeSongMasterConfig();
+      writeChannelInstruments();
+      writeInstrumentTable();
+      writePatternTable();
+      writeSequence();
+      writeInstruments();
+      writePatterns();
+    }
+
+  private:
+    const SongImpl& song;
+    std::ostream& ostream;
+    uint16_t opcodeAddress;
+
+    void writeSongMasterConfig(void) {
+      song.songMasterConfig.writeGb(ostream);
+    }
+
+    void writeChannelInstruments(void) {
+      ostream.write((const char*)song.channelInstruments, sizeof(song.channelInstruments));
+    }
+
+    void writeInstrumentTable(void) {
+      ostream.put(song.instruments.size());
+      for(auto i = song.instruments.begin(); i != song.instruments.end(); ++i) {
+	ostream.put(opcodeAddress & 0x00FF);
+	ostream.put(opcodeAddress >> 8);
+	opcodeAddress += i->getLength();
+      }
+    }
+
+    void writePatternTable(void) {
+      ostream.put(song.patterns.size());
+      for(auto i = song.patterns.begin(); i != song.patterns.end(); ++i) {
+	ostream.put(opcodeAddress & 0x00FF);
+	ostream.put(opcodeAddress >> 8);
+	opcodeAddress += i->getLength();
+      }
+    }
+
+    void writeSequence(void) {
+      ostream.put(song.sequence.size());
+      for(auto i = song.sequence.begin(); i != song.sequence.end(); ++i) {
+	i->writeGb(ostream);
+      }
+    }
+
+    void writeInstruments(void) {
+      for(auto i = song.instruments.begin(); i != song.instruments.end(); ++i) {
+	i->writeGb(ostream);
+      }
+    }
+
+    void writePatterns(void) {
+      for(auto i = song.patterns.begin(); i != song.patterns.end(); ++i) {
+	i->writeGb(ostream);
+      }
+    }
+  };
 };
 
 Song::Song() : impl(new SongImpl) {}
@@ -190,6 +254,23 @@ void Row::writeGb(std::ostream& ostream) const {
   }
 }
 
+uint16_t Row::getLength(void) const {
+  if(this->hasFlowControlCommand) {
+    return 1;
+  } else {
+    uint16_t length = 0;
+    for(auto i = engineCommands.begin(); i != engineCommands.end(); ++i) {
+      length += i->getLength();
+    }
+    length++; // end of engine commands
+
+    for(int i = 0; i < 4; i++) {
+      length += notes[i].getLength();
+    }
+    return length;
+  }
+}
+
 void EngineCommand::writeGb(std::ostream& ostream) const {
   // engine commands increment by two to make table lookup faster
   // also, 0 is a NOP, so they start at 1 (3, 5, ...)
@@ -202,12 +283,31 @@ void EngineCommand::writeGb(std::ostream& ostream) const {
   }
 }
 
+uint16_t EngineCommand::getLength(void) const {
+  switch(type) {
+  case ENGINE_CMD_SET_RATE: return 2;
+  case ENGINE_CMD_STOP: return 1;
+  case ENGINE_CMD_END_OF_PAT: return 1;
+  case ENGINE_CMD_JMP_FRAME: return 2;
+  default: throw "internal error - invalid engine command";
+  }
+}
+
 void GbNote::writeGb(std::ostream& ostream) const {
   for(auto i = commands.begin(); i != commands.end(); ++i) {
     i->writeGb(ostream);
   }
   // notes are odd numbered... (1, 3, ...)
   ostream.put(pitch * 2 + 1);
+}
+
+uint16_t GbNote::getLength(void) const {
+  uint16_t length = 0;
+  for(auto i = commands.begin(); i != commands.end(); ++i) {
+    length += i->getLength();
+  }
+  length++; // for the note
+  return length;
 }
 
 void ChannelCommand::writeGb(std::ostream& ostream) const {
@@ -222,10 +322,31 @@ void ChannelCommand::writeGb(std::ostream& ostream) const {
   }      
 }
 
+uint16_t ChannelCommand::getLength(void) const {
+  switch(type) {
+  case CHANNEL_CMD_KEY_OFF: return 1;
+  case CHANNEL_CMD_SET_SND_LEN: return 2;
+  case CHANNEL_CMD_OCTAVE_UP: return 1;
+  case CHANNEL_CMD_OCTAVE_DOWN: return 1;
+  case CHANNEL_CMD_SET_INSTRUMENT: return 2;
+  default: throw "internal error - invalid channel command";
+  }
+}
+
+// TODO: use some tasteful inheritence for commands and stuff
+// to get rid of switch statements
 void Instrument::writeGb(std::ostream& ostream) const {
   for(auto i = commands.begin(); i != commands.end(); ++i) {
     i->writeGb(ostream);
   }
+}
+
+uint16_t Instrument::getLength(void) const {
+  uint16_t length = 0;
+  for(auto i = commands.begin(); i != commands.end(); ++i) {
+    length += i->getLength();
+  }
+  return length;
 }
 
 void GbNote::addCommand(const ChannelCommand& command) {
@@ -250,6 +371,23 @@ void InstrumentCommand::writeGb(std::ostream& ostream) const {
   case INSTR_DUTY_25: break;
   case INSTR_DUTY_50: break;
   case INSTR_DUTY_75: break;
+  }
+}
+
+uint16_t InstrumentCommand::getLength(void) const {
+  switch(type) {
+  case INSTR_END: return 1;
+  case INSTR_END_FRAME: return 1;
+  case INSTR_VOL: return 2;
+  case INSTR_MARK: return 1;
+  case INSTR_LOOP: return 1;
+  case INSTR_PITCH: return 2;
+  case INSTR_HPITCH: return 2;
+  case INSTR_DUTY_LO: return 1;
+  case INSTR_DUTY_25: return 1;
+  case INSTR_DUTY_50: return 1;
+  case INSTR_DUTY_75: return 1;
+  default: throw "internal error - invalid instrument command type";
   }
 }
 

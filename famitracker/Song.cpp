@@ -223,14 +223,14 @@ void Instrument::addCommand(const InstrumentCommand& command) {
 }
 
 void InstrumentCommand::writeGb(std::ostream& ostream) const {
-  // commands are even numbered, starting at 2
-  ostream.put(type * 2 + 2);
+  ostream.put(type);
   switch(type) {
+  case INSTR_END_FRAME: break;
   case INSTR_VOL: ostream.put(newVolume); break;
   case INSTR_MARK: break;
   case INSTR_LOOP: break;
-  case INSTR_PITCH: throw "Unimplemented"; break;
-  case INSTR_HPITCH: throw "Unimplemented"; break;
+  case INSTR_PITCH: ostream.put(newPitch); break;
+  case INSTR_HPITCH: ostream.put(newHiPitch); break;
   case INSTR_DUTY_LO: break;
   case INSTR_DUTY_25: break;
   case INSTR_DUTY_50: break;

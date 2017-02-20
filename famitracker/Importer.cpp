@@ -227,7 +227,6 @@ static Instrument buildInstrument(const InstrSequence& volumeSeq, const InstrSeq
     throw "mismatched lengths";
   }
 
-  int currentVolume = -1;
   int loopPoint = volumeSeq.getLoopPoint();
   if(arpeggioSeq.getLoopPoint() != loopPoint || pitchSeq.getLoopPoint() != loopPoint || hiPitchSeq.getLoopPoint() != loopPoint || dutyCycleSeq.getLoopPoint() != loopPoint) {
     throw "mismatched loop points";
@@ -236,10 +235,14 @@ static Instrument buildInstrument(const InstrSequence& volumeSeq, const InstrSeq
   if(loopPoint < -1) {
     throw "invalid loop point";
   }
-
   unsigned loopPoint_ = (unsigned)(loopPoint + 1);
 
   InstrumentCommand command;
+
+  int currentVolume = -1;
+  int currentPitch = 0;
+  int currentHiPitch = 0;
+  int currentDuty = -1;
   for(size_t i = 0; i < length; i++) {
     if(i == loopPoint_) {
       command.type = INSTR_MARK;
@@ -253,8 +256,26 @@ static Instrument buildInstrument(const InstrSequence& volumeSeq, const InstrSeq
       instrument.addCommand(command);
     }
 
+    uint8_t pitch = pitchSeq.at(i);
+    if(pitch != currentPitch) {
+      command.type = INSTR_HPITCH;
+      command.newPitch = pitch;
+      instrument.addCommand(command);
+    }
+
+    uint8_t hiPitch = hiPitchSeq.at(i);
+    if(hiPitch != currentHiPitch) {
+      command.type = INSTR_HPITCH;
+      command.newHiPitch = hiPitch;
+      instrument.addCommand(command);
+    }
+
     // TODO: handle remaining sequences!
+
+    command.type = INSTR_END_FRAME;
+    instrument.addCommand(command);
   }
+  // TODO: I don't think this works if the loop is the last thing
   command.type = INSTR_MARK;
   instrument.addCommand(command);
 

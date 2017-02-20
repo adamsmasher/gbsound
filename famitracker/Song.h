@@ -28,24 +28,28 @@
 
 using namespace std::experimental;
 
+// commands are even numbered, starting at 2
 enum InstrumentCommandType {
-  INSTR_VOL,
-  INSTR_MARK,
-  INSTR_LOOP,
-  INSTR_PITCH,
-  INSTR_HPITCH,
-  INSTR_DUTY_LO,
-  INSTR_DUTY_25,
-  INSTR_DUTY_50,
-  INSTR_DUTY_75
+  INSTR_END_FRAME = 1,
+  INSTR_VOL       = 2,
+  INSTR_MARK      = 4,
+  INSTR_LOOP      = 6,
+  INSTR_PITCH     = 8,
+  INSTR_HPITCH    = 10,
+  INSTR_DUTY_LO   = 12,
+  INSTR_DUTY_25   = 14,
+  INSTR_DUTY_50   = 16,
+  INSTR_DUTY_75   = 18
 };
 
 struct InstrumentCommand {
   InstrumentCommandType type;
   union {
     uint8_t newVolume;
+    uint8_t newPitch;
+    uint8_t newHiPitch;
   };
-  
+
   void writeGb(std::ostream& ostream) const;
 };
 
@@ -53,6 +57,7 @@ class Instrument {
  public:
   void addCommand(const InstrumentCommand&);
   void writeGb(std::ostream&) const;
+
  private:
   std::vector<InstrumentCommand> commands;
 };

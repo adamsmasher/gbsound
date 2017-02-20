@@ -731,13 +731,21 @@ private:
     Row row;
 
     int i = t.readHex(0, MAX_PATTERN_LENGTH - 1);
+    int gbChannel = 0;
     for (this->channel = 0; channel < getChannelCount(); channel++) {
+      // read the cell stuff
       checkColon();
       Cell cell = importCell();
       Note note = cell.getNote();
-      GbNote gbNote(note.toGbPitch());
       // TODO: handle effects
       int instrument = cell.getInstrumentId();
+
+      // don't actually do anything if this isn't a GB channel
+      if(channel == CHANID_TRIANGLE || channel == CHANID_DPCM) {
+	continue;
+      }
+
+      GbNote gbNote(note.toGbPitch());
       if(cell.getInstrumentId() != currentInstruments[channel]) {
 	ChannelCommand command;
 	command.type = CHANNEL_CMD_SET_INSTRUMENT;
@@ -745,7 +753,8 @@ private:
 	currentInstruments[channel] = instrument;
 	gbNote.addCommand(command);
       }
-      row.setNote(channel, gbNote);
+      row.setNote(gbChannel, gbNote);
+      gbChannel++;
     }
     t.readEOL();
 

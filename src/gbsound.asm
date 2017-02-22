@@ -4,7 +4,6 @@
 ;;; TODO: document/test
 
 ;;; TODO:
-;;; * eliminate the sequence, just increment unless otherwise told to
 ;;; * keep the pattern table in ROM, no need to copy it
 ;;; * saaaame with the instrument table
 ;;; * pattern table points to data in ROM, I guess
@@ -14,12 +13,9 @@
 SECTION "MusicVars", BSS
 ;;; pointer into the opcode stream
 SongPtr:	DS 2	;; musn't cross a page
-;;; the song is described as "sequence", a list of 8-bit numbers.
-;;; Each entry in the sequence is called a "frame".
-;;; Each frame contains an 8-bit pattern number (0, 2, 4, ...)
 ;;; Pattern numbers are used to look up an entry in the pattern table
 ;;; The pattern table contains pointers into the opcode stream
-SeqPtr:		DS 1
+NextPattern:	DS 1
 ;;; Boolean flag to indicate if we've hit the end of a pattern and need to load the next
 EndOfPat:	DS 1
 ;;; Each frame, SongTimer is incremented by SongRate; if it overflows, we run a music tick
@@ -75,9 +71,6 @@ ChPitchAdjs:	DS 4
 SECTION "PatternTable", BSS[$C700]
 PatternTable:	DS 128*2
 
-SECTION "Sequence", BSS[$C800]
-Sequence:	DS 256
-
 SECTION "Instruments", BSS[$C900]
 InstrumentTbl:	DS 128*2
 
@@ -103,7 +96,7 @@ InitSndEngine::	XOR A
 		LD A, $15
 		LD [ChRegBase], A
 		CALL InitCh
-		CALL InitSeqPtr
+		CALL InitNextPat
 		RET
 
 InitSongCtrlCh:	LD A, [HLI]			; volume config
@@ -144,8 +137,8 @@ InitCh:		LD A, [HLI]	; initial instrument
 		LD [DE], A
 		RET
 
-InitSeqPtr:	XOR A
-		LD [SeqPtr], A
+InitNextPat:	XOR A
+		LD [NextPattern], A
 		RET
 		
 ;;; each frame, add a "rate" var to a timer variable
@@ -158,7 +151,7 @@ UpdateSndFrame::LD HL, EndOfPat	; test the current pattern over flag
 		JR Z, .chkTick
 		XOR A		; if so, clear that flag and move to the next
 		LD [HL], A	; and then update as normal
-		CALL NextPat
+		CALL PlayNextPat
 .chkTick:	LD HL, SongRate
 		LD A, [HLI]
 		ADD [HL]	; update SongTimer
@@ -189,16 +182,14 @@ RunSndTick:	CALL TickSongCtrl
 		JR NZ, .loop
 		RET
 
-NextPat:
+PlayNextPat:
 	;; first, figure out what pattern to play
-		LD HL, SeqPtr
+		LD HL, NextPattern
 		LD A, [HL]
 		INC [HL]
-		LD H, Sequence >> 8
-		LD L, A
-		LD L, [HL]
 	;; now load a pointer to that pattern, pulled from the PatternTable, into SongPtr
 		LD H, PatternTable >> 8
+		LD L, A
 		LD A, [HLI]
 		LD [SongPtr], A
 		LD A, [HL]
@@ -556,7 +547,7 @@ SongEndOfPat:	LD A, 1
 		RET
 
 SongJmpFrame:	CALL PopOpcode
-		LD [SeqPtr], A
+		LD [NextPattern], A
 	;; another, similar nasty bit of trickery - instead of returning and updating the sound channels
 	;; scrap the return address and jump back to the beginning of the frame update code
 	;; so that the first song control byte isn't ignored

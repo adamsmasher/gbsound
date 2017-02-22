@@ -46,6 +46,9 @@ class SongMasterConfig {
 class Pattern {
  public:
   void writeGb(std::ostream& ostream) const {
+    uint16_t length = getLength();
+    ostream.put(length & 0x00FF);
+    ostream.put(length >> 8);
     for(auto i = rows.begin(); i != rows.end(); ++i) {
       i->writeGb(ostream);
     }

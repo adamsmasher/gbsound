@@ -746,7 +746,11 @@ private:
 	errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": Mismatched pattern number, expected " << pattern << " got " << pattern_;
 	throw errMsg.str();
       }
-      song.pushNextPattern(pattern);
+
+      if(pattern != this->pattern) {
+	// TODO: make the previous pattern jump to this one
+	// TODO: track which pattern we're currently on or something
+      }
     }
     t.readEOL();
   }

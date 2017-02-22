@@ -20,9 +20,6 @@
 
 #include "Song.h"
 
-// TODO: specify this on the command line
-static const uint16_t gbRAMBase = 0xC000;
-
 class SongMasterConfig {
  public:
   SongMasterConfig() : tempo(0), channelControl(0x77), outputTerminals(0xFF) {}
@@ -36,6 +33,8 @@ class SongMasterConfig {
     ostream.put(outputTerminals);
     ostream.put(tempo);
   }
+
+  static const uint16_t GB_SIZE = 3;
 
  private:
   uint8_t tempo;
@@ -89,10 +88,6 @@ public:
     songMasterConfig.setTempo(tempo);
   }
 
-  void pushNextPattern(PatternNumber patternNumber) {
-    sequence.push_back(patternNumber);
-  }
-
   void addRow(const Row& row, PatternNumber i) {
     patterns.at(i.toInt()).addRow(row);
   }
@@ -107,35 +102,21 @@ public:
   }
 
 private:
-  static const uint16_t INSTRUMENT_TABLE_GB_SIZE = 256;
-  static const uint16_t PATTERN_TABLE_GB_SIZE = 256;
-  static const uint16_t SEQUENCE_GB_SIZE = 256;
-
   std::vector<Instrument> instruments;
   SongMasterConfig songMasterConfig;
-  uint8_t channelInstruments[4];
   std::vector<Pattern> patterns;
-  std::vector<PatternNumber> sequence;
-
 
   class Writer {
   public:
-    Writer(const SongImpl& song, std::ostream& ostream) : song(song), ostream(ostream) {
-      opcodeAddress = 
-	gbRAMBase
-	+ INSTRUMENT_TABLE_GB_SIZE
-	+ PATTERN_TABLE_GB_SIZE
-	+ SEQUENCE_GB_SIZE;
-    }
+    Writer(const SongImpl& song, std::ostream& ostream) : song(song), ostream(ostream), opcodeAddress(0) {}
 
     void writeGb(void) {
+      opcodeAddress = computeOpcodeAddress();
       writeSongMasterConfig();
-      writeChannelInstruments();
-      writeInstrumentTable();
       writePatternTable();
-      writeSequence();
-      writeInstruments();
+      writeInstrumentTable();
       writePatterns();
+      writeInstruments();
     }
 
   private:
@@ -143,46 +124,42 @@ private:
     std::ostream& ostream;
     uint16_t opcodeAddress;
 
+    uint16_t computeOpcodeAddress() const {
+      return 
+	SongMasterConfig::GB_SIZE
+	+ song.patterns.size() * 2 + 1
+	+ song.instruments.size() * 2 + 1;
+    }
+
     void writeSongMasterConfig(void) {
       song.songMasterConfig.writeGb(ostream);
     }
 
-    void writeChannelInstruments(void) {
-      ostream.write((const char*)song.channelInstruments, sizeof(song.channelInstruments));
-    }
-
     void writeInstrumentTable(void) {
-      ostream.put(song.instruments.size());
+      ostream.put(song.instruments.size() * 2);
       for(auto i = song.instruments.begin(); i != song.instruments.end(); ++i) {
 	ostream.put(opcodeAddress & 0x00FF);
 	ostream.put(opcodeAddress >> 8);
-	opcodeAddress += i->getLength();
+	opcodeAddress += i->getLength() + 1; // extra byte for length
       }
     }
 
     void writePatternTable(void) {
-      ostream.put(song.patterns.size());
+      ostream.put(song.patterns.size() * 2);
       for(auto i = song.patterns.begin(); i != song.patterns.end(); ++i) {
 	ostream.put(opcodeAddress & 0x00FF);
 	ostream.put(opcodeAddress >> 8);
-	opcodeAddress += i->getLength();
+	opcodeAddress += i->getLength() + 2; // two extra bytes for length
       }
     }
 
-    void writeSequence(void) {
-      ostream.put(song.sequence.size());
-      for(auto i = song.sequence.begin(); i != song.sequence.end(); ++i) {
+     void writeInstruments(void) {
+      for(auto i = song.instruments.begin(); i != song.instruments.end(); ++i) {
 	i->writeGb(ostream);
       }
     }
 
     // TODO: compression
-    void writeInstruments(void) {
-      for(auto i = song.instruments.begin(); i != song.instruments.end(); ++i) {
-	i->writeGb(ostream);
-      }
-    }
-
     void writePatterns(void) {
       for(auto i = song.patterns.begin(); i != song.patterns.end(); ++i) {
 	i->writeGb(ostream);
@@ -201,10 +178,6 @@ void Song::addInstrument(const Instrument& instrument) {
 
 void Song::setTempo(uint8_t tempo) {
   impl->setTempo(tempo);
-}
-
-void Song::pushNextPattern(PatternNumber patternNumber) {
-  impl->pushNextPattern(patternNumber);
 }
 
 void Song::writeGb(std::ostream& ostream) const {
@@ -338,13 +311,14 @@ uint16_t ChannelCommand::getLength(void) const {
 // TODO: use some tasteful inheritence for commands and stuff
 // to get rid of switch statements
 void Instrument::writeGb(std::ostream& ostream) const {
+  ostream.put(getLength());
   for(auto i = commands.begin(); i != commands.end(); ++i) {
     i->writeGb(ostream);
   }
 }
 
-uint16_t Instrument::getLength(void) const {
-  uint16_t length = 0;
+uint8_t Instrument::getLength(void) const {
+  uint8_t length = 0;
   for(auto i = commands.begin(); i != commands.end(); ++i) {
     length += i->getLength();
   }
@@ -376,7 +350,7 @@ void InstrumentCommand::writeGb(std::ostream& ostream) const {
   }
 }
 
-uint16_t InstrumentCommand::getLength(void) const {
+uint8_t InstrumentCommand::getLength(void) const {
   switch(type) {
   case INSTR_END: return 1;
   case INSTR_END_FRAME: return 1;

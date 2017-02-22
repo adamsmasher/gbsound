@@ -53,14 +53,14 @@ struct InstrumentCommand {
   };
 
   void writeGb(std::ostream& ostream) const;
-  uint16_t getLength(void) const;
+  uint8_t getLength(void) const;
 };
 
 class Instrument {
  public:
   void addCommand(const InstrumentCommand&);
   void writeGb(std::ostream&) const;
-  uint16_t getLength(void) const;
+  uint8_t getLength(void) const;
 
  private:
   std::vector<InstrumentCommand> commands;
@@ -154,8 +154,6 @@ class Song {
   void addInstrument(const Instrument&);
 
   void setTempo(uint8_t tempo);
-
-  void pushNextPattern(PatternNumber patternNumber);
 
   void addRow(const Row&, PatternNumber);
 

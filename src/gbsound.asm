@@ -7,9 +7,10 @@
 ;;; * pattern table points to data in ROM
 ;;; * same with the instrument table
 ;;; * instruments can stay in ROM, uncompressed
-;;; * fix loading up
 
 SECTION "MusicVars", BSS
+;;; where the song starts in ROM
+SongBase:	DS 2
 ;;; pointer into the opcode stream
 SongPtr:	DS 2	;; musn't cross a page
 ;;; Pattern numbers are used to look up an entry in the pattern table
@@ -33,6 +34,9 @@ ChNum:		DS 1
 ;;; volume envelopes work differently for each etc), they're similar enough that
 ;;; we can treat them uniformly.
 ChRegBase:	DS 1
+;;; These values are in BYTES
+InstrTblLen:	DS 1
+PatTblLen:	DS 1
 
 ;;; An instrument is a stream of special opcodes that update a channel's output
 ;;; parameters on a per note basis
@@ -64,8 +68,7 @@ ChOctaves:	DS 4
 SECTION "ChPitchAdjs", BSS[$C600]
 ;;; allows for fine tuning the pitch (for slides, etc)
 ;;; TODO: is this used?
-;;; TODO: should this be 16-bits per channel?
-ChPitchAdjs:	DS 4
+ChPitchAdjs:	DS 4 * 2
 
 SECTION "PatternTable", BSS[$C700]
 PatternTable:	DS 128*2
@@ -77,28 +80,32 @@ SECTION "SongData", BSS[$C900]
 SongData:	DS $700
 
 SECTION "GbSound", ROM0
+
 ;;; Song initialization:
+;;; Call with HL = Song
+InitSndEngine:: XOR A
+		LD [SongTimer], A
+		LD [NextPattern], A
+		INC A
+		LD [EndOfPat], A
+		CALL LoadSong
+		CALL ClearEffects
+		JP ClearSndRegs
+
 ;;; Call with HL = Song
 ;;; HL is mutated across function calls and consistently points
 ;;; to the location in the song data we're working through
-InitSndEngine::	XOR A
-		LD [SongTimer], A
-		CALL InitSongCtrlCh
-		;; TODO: make this a loop
-		LD A, 0
-		LD [ChNum], A
-		LD A, $10
-		LD [ChRegBase], A
-		CALL InitCh
-		LD A, 1
-		LD [ChNum], A
-		LD A, $15
-		LD [ChRegBase], A
-		CALL InitCh
-		CALL InitNextPat
-		RET
+LoadSong:	LD A, L
+		LD [SongBase], A
+		LD A, H
+		LD [SongBase+1], A
+		CALL LoadSongCtrlCh
+		CALL LoadPatternTbl
+		CALL LoadInstrTbl
+		CALL OffsetPatTbl
+		JP OffsetInstrTbl
 
-InitSongCtrlCh:	LD A, [HLI]			; volume config
+LoadSongCtrlCh:	LD A, [HLI]			; volume config
 		LDH [$24], A
 		LD A, [HLI]			; channel select
 		LDH [$25], A
@@ -106,13 +113,70 @@ InitSongCtrlCh:	LD A, [HLI]			; volume config
 		LD [SongRate], A
 		RET
 
+LoadPatternTbl:	LD DE, PatternTable
+		LD A, [HLI]
+		LD B, A
+		LD [PatTblLen], A
+.loop:		LD A, [HLI]
+		LD [DE], A
+		INC E
+		DEC B
+		JR NZ, .loop
+		RET
+
+LoadInstrTbl:	LD DE, InstrumentTbl
+		LD A, [HLI]
+		LD B, A
+		LD [InstrTblLen], A
+.loop:		LD A, [HLI]
+		LD [DE], A
+		INC E
+		DEC B
+		JR NZ, .loop
+		RET
+
+;;; B = number of BYTES to update
+;;; HL - pointer to table
+OffsetTbl:	SRL B
+		LD A, [SongBase]
+		LD D, A
+		LD A, [SongBase+1]
+		LD E, A
+		LD HL, PatternTable
+.loop:		LD A, D
+		ADD [HL]
+		LD [HLI], A
+		JR NC, .nc
+.nc:		LD A, E
+		ADD [HL]
+		LD [HLI], A
+		DEC B
+		JR NZ, .loop
+		RET
+
+OffsetPatTbl:	LD A, [PatTblLen]
+		LD B, A
+		LD HL, PatternTable
+		JP OffsetTbl
+
+OffsetInstrTbl:	LD A, [InstrTblLen]
+		LD B, A
+		LD HL, InstrumentTbl
+		JP OffsetTbl
+
+
 ;;; The Instruments table contains a list of pointers to the start of each instrument
 ;;; This just copies the requested instrument number's pointer into the instrument base
 ;;; for the channel
 ;;; A - instrument number (even numbers only)
-ChSetInstr:	PUSH HL
+ChSetInstr:
+	;; get the pointer from the table
 		LD H, InstrumentTbl >> 8
 		LD L, A
+		LD A, [HLI]
+		LD H, [HL]
+		LD L, A
+	;; copy the pointer into the base
 		LD D, ChInstrBases >> 8
 		LD A, [ChNum]
 		ADD A
@@ -122,18 +186,28 @@ ChSetInstr:	PUSH HL
 		INC E
 		LD A, [HL]
 		LD [DE], A
-		POP HL
 		RET
 
-InitCh:		LD A, [HLI]	; initial instrument
-		CALL ChSetInstr
+ClearEffects:   LD HL, ChOctaves
 		XOR A
-		LD D, ChOctaves >> 8
-		LD A, [ChNum]	
-		LD E, A
-		LD [DE], A
-		INC D		; pitch adjusts
-		LD [DE], A
+		LD B, 4 
+.loop1:		LD [HLI], A
+		DEC B
+		JR NZ, .loop1
+		INC H		; move to pitch adjusts
+		LD L, A
+		LD B, 8
+.loop2:		LD [HLI], A
+		DEC B
+		JR NZ, .loop2
+		RET
+
+ClearSndRegs:	XOR A
+		LD C, $10
+		LD B, 5 * 4	; number of sound registers
+.loop:		LD [C], A
+		DEC B
+		JR NZ, .loop
 		RET
 
 InitNextPat:	XOR A

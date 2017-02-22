@@ -25,7 +25,7 @@ static const uint16_t gbRAMBase = 0xC000;
 
 class SongMasterConfig {
  public:
-  SongMasterConfig();
+  SongMasterConfig() : tempo(0), channelControl(0x77), outputTerminals(0xFF) {}
 
   void setTempo(uint8_t tempo) {
     this->tempo = tempo;
@@ -215,7 +215,7 @@ std::ostream& operator<<(std::ostream& ostream, const PatternNumber& patternNumb
 
 PatternNumber::PatternNumber(uint8_t n) : patternNumber(n) {}
 
-SongMasterConfig::SongMasterConfig() : tempo(0), channelControl(0), outputTerminals(0) {}
+
 
 GbNote::GbNote() {}
 

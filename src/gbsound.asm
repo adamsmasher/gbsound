@@ -4,9 +4,7 @@
 ;;; TODO: document/test
 
 ;;; TODO:
-;;; * keep the pattern table in ROM, no need to copy it
-;;; * saaaame with the instrument table
-;;; * pattern table points to data in ROM, I guess
+;;; * pattern table points to data in ROM
 ;;; * decompress (copy, for now) a pattern in when it's time to play it?
 ;;; * instruments can stay in ROM, uncompressed
 
@@ -71,11 +69,11 @@ ChPitchAdjs:	DS 4
 SECTION "PatternTable", BSS[$C700]
 PatternTable:	DS 128*2
 
-SECTION "Instruments", BSS[$C900]
+SECTION "Instruments", BSS[$C800]
 InstrumentTbl:	DS 128*2
 
-SECTION "SongData", BSS[$CA00]
-SongData:	DS $600
+SECTION "SongData", BSS[$C900]
+SongData:	DS $700
 
 SECTION "GbSound", ROM0
 ;;; Song initialization:

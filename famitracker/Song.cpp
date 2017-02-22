@@ -25,8 +25,6 @@ static const uint16_t gbRAMBase = 0xC000;
 
 class SongMasterConfig {
  public:
-  static const uint16_t GB_SIZE = 3;
-
   SongMasterConfig();
 
   void setTempo(uint8_t tempo) {
@@ -106,7 +104,6 @@ public:
   }
 
 private:
-  static const uint16_t CHANNEL_INSTRUMENTS_GB_SIZE = 4;
   static const uint16_t INSTRUMENT_TABLE_GB_SIZE = 256;
   static const uint16_t PATTERN_TABLE_GB_SIZE = 256;
   static const uint16_t SEQUENCE_GB_SIZE = 256;
@@ -123,8 +120,6 @@ private:
     Writer(const SongImpl& song, std::ostream& ostream) : song(song), ostream(ostream) {
       opcodeAddress = 
 	gbRAMBase
-	+ SongMasterConfig::GB_SIZE
-	+ CHANNEL_INSTRUMENTS_GB_SIZE
 	+ INSTRUMENT_TABLE_GB_SIZE
 	+ PATTERN_TABLE_GB_SIZE
 	+ SEQUENCE_GB_SIZE;

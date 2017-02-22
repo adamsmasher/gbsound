@@ -3,11 +3,6 @@
 ;;; TODO: implement effects?
 ;;; TODO: document/test
 
-;;; TODO:
-;;; * pattern table points to data in ROM
-;;; * same with the instrument table
-;;; * instruments can stay in ROM, uncompressed
-
 SECTION "MusicVars", BSS
 ;;; where the song starts in ROM
 SongBase:	DS 2

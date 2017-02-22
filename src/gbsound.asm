@@ -5,8 +5,9 @@
 
 ;;; TODO:
 ;;; * pattern table points to data in ROM
-;;; * decompress (copy, for now) a pattern in when it's time to play it?
+;;; * same with the instrument table
 ;;; * instruments can stay in ROM, uncompressed
+;;; * fix loading up
 
 SECTION "MusicVars", BSS
 ;;; pointer into the opcode stream
@@ -185,13 +186,31 @@ PlayNextPat:
 		LD HL, NextPattern
 		LD A, [HL]
 		INC [HL]
-	;; now load a pointer to that pattern, pulled from the PatternTable, into SongPtr
+	;; now load a pointer to that pattern, pulled from the PatternTable
 		LD H, PatternTable >> 8
 		LD L, A
 		LD A, [HLI]
-		LD [SongPtr], A
-		LD A, [HL]
-		LD [SongPtr+1], A
+		LD H, [HL]
+	;; TODO: compress/decompress
+	;; copy it into the song data
+		LD A, [HLI]
+		LD C, A
+		LD A, [HLI]
+		LD B, A
+		LD DE, SongData
+.loop:		LD A, [HLI]
+		LD [DE], A
+		INC DE
+		DEC C
+		JR NZ, .loop
+		DEC B
+		JR NZ, .loop
+	;; finally - point the SongPtr to the beginning of the new data
+		LD HL, SongPtr
+		XOR A
+		LD [HLI], A
+		LD A, SongData >> 8
+		LD [HL], A
 		RET
 
 TickSongCtrl:	CALL PopOpcode

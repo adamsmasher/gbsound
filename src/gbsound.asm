@@ -1,10 +1,17 @@
-;;; TODO: implement sweep
 ;;; TODO: implement wave RAM
 ;;; TODO: implement arpeggios
 ;;; TODO: implement effects?
 ;;; TODO: document/test
 
-SECTION "MusicVars", BSS[$C000]
+;;; TODO:
+;;; * eliminate the sequence, just increment unless otherwise told to
+;;; * keep the pattern table in ROM, no need to copy it
+;;; * saaaame with the instrument table
+;;; * pattern table points to data in ROM, I guess
+;;; * decompress (copy, for now) a pattern in when it's time to play it?
+;;; * instruments can stay in ROM, uncompressed
+
+SECTION "MusicVars", BSS
 ;;; pointer into the opcode stream
 SongPtr:	DS 2	;; musn't cross a page
 ;;; the song is described as "sequence", a list of 8-bit numbers.
@@ -34,45 +41,48 @@ ChRegBase:	DS 1
 
 ;;; An instrument is a stream of special opcodes that update a channel's output
 ;;; parameters on a per note basis
-SECTION "ChInstrBases", BSS[$C100]
+SECTION "ChInstrBases", BSS[$C000]
 ;;; Pointer to the beginning of each channel's instrument;
 ;;; the corresponding ChInstrPtr is reset to this when the note changes
 ChInstrBases:	DS 4 * 2
 ;;; MUST BE TOGETHER
-SECTION "ChInstrPtrs", BSS[$C200]
+SECTION "ChInstrPtrs", BSS[$C100]
 ChInstrPtrs:	DS 4 * 2
 ;;; MUST BE TOGETHER
-SECTION "ChInstrMarkers", BSS[$C300]
+SECTION "ChInstrMarkers", BSS[$C200]
 ;;; Instruments can contain an unbounded loop;
 ;;; these contain pointers to each channel's instrument's loop point
 ChInstrMarkers:	DS 4 * 2
 
-SECTION "ChFreqs", BSS[$C400]
+SECTION "ChFreqs", BSS[$C300]
 ;;; Stores the current frequency being output on each channel
 ChFreqs:	DS 4 * 2
 
-SECTION "ChCurNotes", BSS[$C500]
+SECTION "ChCurNotes", BSS[$C400]
 ;;; Stores the current note (offset into the note table) being output on each channel
 ChCurNotes:	DS 4
 ;;; MUST BE TOGETHER
-SECTION "ChOctaves", BSS[$C600]
+SECTION "ChOctaves", BSS[$C500]
 ;;; stores an offset that's added to note lookup; used to change keys or octaves
 ChOctaves:	DS 4
 ;;; MUST BE TOGETHER
-SECTION "ChPitchAdjs", BSS[$C700]
+SECTION "ChPitchAdjs", BSS[$C600]
 ;;; allows for fine tuning the pitch (for slides, etc)
 ;;; TODO: is this used?
 ;;; TODO: should this be 16-bits per channel?
 ChPitchAdjs:	DS 4
 
-SECTION "PatternTable", BSS[$C800]
+SECTION "PatternTable", BSS[$C700]
 PatternTable:	DS 128*2
 
-SECTION "Sequence", BSS[$C900]
+SECTION "Sequence", BSS[$C800]
 Sequence:	DS 256
 
-SECTION "Instruments", BSS[$CA00]
+SECTION "Instruments", BSS[$C900]
 InstrumentTbl:	DS 128*2
+
+SECTION "SongData", BSS[$CA00]
+SongData:	DS $600
 
 SECTION "GbSound", ROM0
 ;;; Song initialization:

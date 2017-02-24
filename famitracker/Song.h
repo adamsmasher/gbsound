@@ -135,14 +135,24 @@ class Row {
 
 class PatternNumber {
  public:
+  PatternNumber(void);
   explicit PatternNumber(uint8_t);
   friend std::ostream& operator<<(std::ostream&, const PatternNumber&);
   void writeGb(std::ostream&) const;
+  friend bool operator==(const PatternNumber&, const PatternNumber&);
   friend bool operator!=(const PatternNumber&, const PatternNumber&);
   int toInt() const;
+  PatternNumber next(void) const;
+  friend std::hash<PatternNumber>;
  private:
   uint8_t patternNumber;
 };
+
+namespace std {
+  template <> struct hash<PatternNumber> {
+    size_t operator()(const PatternNumber&) const;
+  };
+}
 
 struct SongImpl;
 class Song {

@@ -73,6 +73,10 @@ class Pattern {
   std::vector<Row> rows;
 };
 
+bool operator==(const PatternNumber& n, const PatternNumber& n_) {
+  return n.patternNumber == n_.patternNumber;
+}
+
 bool operator!=(const PatternNumber& n, const PatternNumber& n_) {
   return n.patternNumber != n_.patternNumber;
 }
@@ -189,9 +193,13 @@ std::ostream& operator<<(std::ostream& ostream, const PatternNumber& patternNumb
   return ostream;
 }
 
+PatternNumber::PatternNumber(void) : patternNumber(-1) {}
+
 PatternNumber::PatternNumber(uint8_t n) : patternNumber(n) {}
 
-
+PatternNumber PatternNumber::next(void) const {
+  return PatternNumber(patternNumber + 1);
+}
 
 GbNote::GbNote() {}
 
@@ -398,3 +406,9 @@ void Row::jump(uint8_t newFrame) {
   command.newFrame = newFrame;
   setFlowControlCommand(command);
 }    
+
+size_t std::hash<PatternNumber>::operator()(const PatternNumber& patternNumber) const {
+  std::hash<uint8_t> byteHash;
+
+  return byteHash(patternNumber.patternNumber);
+}

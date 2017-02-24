@@ -646,33 +646,6 @@ SongSetRate:	CALL PopOpcode
 		LD [SongRate], A
 		RET
 
-;;; TODO: move/copy this into RAM
-;; SECTION "Song", HOME[$6000]
-;; Song:		DB $77		; master volume config
-;; 		DB $FF		; all channels on in both speakers
-;; 		DB $40		; rate
-;; 		DB 0		; ch1 instrument
-;; Pattern1:
-;; 		DB 0, 49
-;; 		DB 0, 0
-;; 		DB 0, 0
-;; 		DB 0, 0
-;; 		DB 0, 61
-;; 		DB 0, 0
-;; 		DB 0, 0
-;; 		DB 0, 0
-;; 		DB 0, 73
-;; 		DB 0, 0
-;; 		DB 0, 0
-;; 		DB 0, 0
-;; 		DB 7, 0		; goto frame 0
-
-;; ;;; TODO: move/copy this into RAM
-;; SECTION "Instruments", HOME[$6100]
-;; Instruments:
-;; .instr1:	DB 2, $F0, 1
-;; 		DB 2, $00, 0
-
 SECTION "FreqTable", HOME[$7A00]
 FreqTable:	DW 44, 156, 262, 363, 457, 547, 631, 710, 786, 854, 923, 986
 		DW 1046, 1102, 1155, 1205, 1253, 1297, 1339, 1379, 1417, 1452, 1486, 1517

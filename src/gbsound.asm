@@ -228,7 +228,6 @@ UpdateSndFrame::LD HL, EndOfPat	; test the current pattern over flag
 	;; every frame, regardless if the engine ticks, we update the instruments
 		CALL UpdateInstrs
 	;; finally, we tell the hardware to refresh by writing the frequencies
-	;; TODO: just embed the code for UpdateHardware here
 		JP UpdateHardware
 
 RunSndTick:	CALL TickSongCtrl

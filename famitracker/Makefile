@@ -3,11 +3,13 @@ all: ../famiconv
 DEPS=\
 build/Importer.o\
 build/famiconv.o\
+build/hash.o\
 build/Song.o\
 build/Tokenizer.o
 
 HEADERS=\
 Command.h\
+hash.h\
 Importer.h\
 Song.h\
 Tokenizer.h

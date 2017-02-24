@@ -22,6 +22,7 @@
 
 #include "APUTypes.h"
 #include "FamiTrackerTypes.h"
+#include "hash.h"
 
 #include <cstdio>
 #include <fstream>
@@ -119,11 +120,6 @@ namespace std {
   template <> struct hash<InstrSequenceIndex> {
     size_t operator()(const InstrSequenceIndex&) const;
   };
-}
-
-size_t hash_combine(size_t lhs, size_t rhs) {
-  lhs ^= rhs + 0x9e3779b9 + (lhs << 6) + (lhs >> 2);
-  return lhs;
 }
 
 size_t std::hash<InstrSequenceIndex>::operator()(const InstrSequenceIndex& sequenceIndex) const {

@@ -350,7 +350,10 @@ private:
   bool isExpired;
   Tokenizer t;
   unsigned int track;
+  // this is used both to track the current pattern we're on as we read orders
+  // and also to track the pattern we're on as we read patterns
   PatternNumber pattern;
+  std::unordered_map<PatternNumber, PatternNumber> jumps;
   int channel;
   uint8_t currentInstruments[6]; // two dummy channels, one for triangle, one for DPCM
   bool hasN163;
@@ -727,6 +730,10 @@ private:
     }
     t.readEOL();
   }
+
+  void addJump(PatternNumber from, PatternNumber to) {
+    jumps[from] = to;
+  }
     
   void importOrder(void) {
     skipFrameNumber();
@@ -742,13 +749,14 @@ private:
 	errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": Mismatched pattern number, expected " << pattern << " got " << pattern_;
 	throw errMsg.str();
       }
-
-      if(pattern != this->pattern) {
-	// TODO: make the previous pattern jump to this one
-	// TODO: track which pattern we're currently on or something
-      }
     }
     t.readEOL();
+
+    if(pattern != this->pattern.next()) {
+      addJump(this->pattern, pattern);
+    }
+
+    this->pattern = pattern;
   }
 
   void importRow(void) {

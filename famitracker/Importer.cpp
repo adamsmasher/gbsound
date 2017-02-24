@@ -970,7 +970,6 @@ private:
   }
   
   const InstrSequence& getInstrSequence(InstrSequenceIndex i) const {
-    // TODO: handle non existent
     return instrSequenceTable.at(i);
   }
 };

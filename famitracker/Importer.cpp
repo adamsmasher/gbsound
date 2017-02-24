@@ -868,7 +868,8 @@ private:
       throw errMsg.str();
     }
   }
-    
+
+  // TODO: implement me, duh
   void importN163Wave(void) {
     int i = t.readInt(0, MAX_INSTRUMENTS - 1);
     //          if (pDoc->GetInstrumentType(i) != INST_N163)
@@ -897,6 +898,7 @@ private:
     t.readEOL();
   }
 
+  // TODO: implement me, duh
   void importN163Instrument(void) {
     int i = t.readInt(0, MAX_INSTRUMENTS - 1);
     //CInstrumentN163* pInst = (CInstrumentN163*)pDoc->CreateInstrument(INST_N163);

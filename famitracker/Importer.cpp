@@ -359,6 +359,11 @@ private:
   bool hasN163;
   std::unordered_map<InstrSequenceIndex, InstrSequence> instrSequenceTable;
   Song song;
+  enum {
+    IMPORTING_ORDERS,
+    IMPORTING_PATTERNS
+  } state;
+
   
   void ignoreVolId() {
     std::string sVol = t.readToken();
@@ -844,8 +849,19 @@ private:
   }
     
   void importPattern(void) {
-    int i = t.readHex(0, MAX_PATTERN - 1);
-    this->pattern = PatternNumber(i);
+    PatternNumber pattern(t.readHex(0, MAX_PATTERN - 1));
+
+    switch(state) {
+    case IMPORTING_ORDERS:
+      state = IMPORTING_PATTERNS;
+      break;
+    case IMPORTING_PATTERNS:
+      if(jumps.count(this->pattern)) {
+	song.addJump(this->pattern, jumps[this->pattern]);
+      }
+    }
+
+    this->pattern = pattern;
     t.readEOL();
   }
 

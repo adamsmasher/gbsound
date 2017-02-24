@@ -60,6 +60,12 @@ class Pattern {
     rows.push_back(row);
   }
 
+  void addJump(PatternNumber to) {
+    Row row;
+    row.jump(to.toInt());
+    rows.push_back(row);
+  }
+
   uint16_t getLength(void) const {
     uint16_t length = 0;
     for(auto i = rows.begin(); i != rows.end(); ++i) {
@@ -94,6 +100,10 @@ public:
 
   void addRow(const Row& row, PatternNumber i) {
     patterns.at(i.toInt()).addRow(row);
+  }
+
+  void addJump(PatternNumber from, PatternNumber to) {
+    patterns.at(from.toInt()).addJump(to);
   }
 
   void addInstrument(const Instrument& instrument) {
@@ -215,6 +225,10 @@ void Row::setNote(int i, GbNote note) {
 
 void Song::addRow(const Row& row, PatternNumber i) {
   impl->addRow(row, i);
+}
+
+void Song::addJump(PatternNumber from, PatternNumber to) {
+  impl->addJump(from, to);
 }
 
 int PatternNumber::toInt() const {
@@ -400,6 +414,7 @@ void Row::stop(void) {
   setFlowControlCommand(command);
 }
 
+// TODO: maybe use patternnumber here
 void Row::jump(uint8_t newFrame) {
   EngineCommand command;
   command.type = ENGINE_CMD_STOP;

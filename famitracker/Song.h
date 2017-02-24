@@ -167,6 +167,8 @@ class Song {
 
   void addRow(const Row&, PatternNumber);
 
+  void addJump(PatternNumber from, PatternNumber to);
+
   void writeGb(std::ostream&) const;
  private:
   std::unique_ptr<SongImpl> impl;

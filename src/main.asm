@@ -26,6 +26,7 @@ Start:		DI				; disable interrupts
 		LD HL, $E000			; init stack from $E000 down
 		LD SP, HL
 		CALL InitInterrupts
+		LD HL, Song
 		CALL InitSndEngine
 	;; the vblank interrupt is where all the action happens, so just HALT to wait for it
 .loop:		HALT
@@ -48,3 +49,5 @@ VBlank:		PUSH AF
 		POP BC
 		POP AF
 		RETI
+
+Song:		INCBIN "data/test.bin"

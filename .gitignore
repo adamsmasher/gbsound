@@ -3,3 +3,4 @@ build/
 famitracker/build
 gbsound.gb
 famiconv
+src/data

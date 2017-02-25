@@ -137,11 +137,11 @@ OffsetTbl:	SRL B
 		LD D, A
 		LD A, [SongBase+1]
 		LD E, A
-		LD HL, PatternTable
 .loop:		LD A, D
 		ADD [HL]
 		LD [HLI], A
 		JR NC, .nc
+		INC [HL]
 .nc:		LD A, E
 		ADD [HL]
 		LD [HLI], A
@@ -249,16 +249,20 @@ RunSndTick:	CALL TickSongCtrl
 		JR NZ, .loop
 		RET
 
+;;; TODO: fix converter so that patterns go by twos
+;;; TODO: fix converter to end song properly???
 PlayNextPat:
 	;; first, figure out what pattern to play
 		LD HL, NextPattern
 		LD A, [HL]
+		INC [HL]	; patterns go by twos
 		INC [HL]
 	;; now load a pointer to that pattern, pulled from the PatternTable
 		LD H, PatternTable >> 8
 		LD L, A
 		LD A, [HLI]
 		LD H, [HL]
+		LD L, A
 	;; TODO: compress/decompress
 	;; copy it into the song data
 		LD A, [HLI]

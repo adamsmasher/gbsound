@@ -154,6 +154,10 @@ public:
     }
     return 12 * (octave - 3) + (pitchClass - 3) + 1;
   }
+
+  operator bool() const {
+    return pitchClass || octave;
+  }
 private:
   int pitchClass;
   int octave;
@@ -857,15 +861,17 @@ private:
 	break;
       }
 
-      GbNote gbNote(note.toGbPitch());
-      if(cell.getInstrumentId() != currentInstruments[channel]) {
-	ChannelCommand command;
-	command.type = CHANNEL_CMD_SET_INSTRUMENT;
-	command.newInstrument = instrument;
-	currentInstruments[channel] = instrument;
-	gbNote.addCommand(command);
+      if(note) {
+	GbNote gbNote(note.toGbPitch());
+	if(cell.getInstrumentId() != currentInstruments[channel]) {
+	  ChannelCommand command;
+	  command.type = CHANNEL_CMD_SET_INSTRUMENT;
+	  command.newInstrument = instrument;
+	  currentInstruments[channel] = instrument;
+	  gbNote.addCommand(command);
+	}
+	row.setNote(gbChannel, gbNote);
       }
-      row.setNote(gbChannel, gbNote);
       gbChannel++;
     }
     t.readEOL();

@@ -207,7 +207,7 @@ void Song::addPattern(void) {
 }
 
 std::ostream& operator<<(std::ostream& ostream, const PatternNumber& patternNumber) {
-  ostream << patternNumber.patternNumber;
+  ostream << (unsigned)patternNumber.patternNumber;
   return ostream;
 }
 

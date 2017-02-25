@@ -233,6 +233,10 @@ class InstrSequence {
   }
 
   static const InstrSequence emptySequence;
+
+  operator bool() const {
+    return sequence.size() > 0;
+  }
  private:
   std::vector<uint8_t> sequence;
   sequence_t type;
@@ -250,14 +254,44 @@ static Instrument buildInstrument(const InstrSequence& volumeSeq, const InstrSeq
   // all sequences MUST be the same length and have the same loop point
 
   // TODO: better error message
-  size_t length = volumeSeq.getLength();
-  if(arpeggioSeq.getLength() != length || pitchSeq.getLength() != length || hiPitchSeq.getLength() != length || dutyCycleSeq.getLength() != length) {
-    throw "mismatched lengths";
+  size_t lengths[] = {
+    volumeSeq.getLength(),
+    arpeggioSeq.getLength(),
+    pitchSeq.getLength(),
+    hiPitchSeq.getLength(),
+    dutyCycleSeq.getLength()
+  };
+
+  size_t length = 0;
+  for(auto i = std::begin(lengths); i != std::end(lengths); ++i) {
+    size_t length_ = *i;
+    if(length) {
+      if(length_ && length_ != length) {
+	throw "mismatched lengths";
+      }
+    } else {
+      length = length_;
+    }
   }
 
-  int loopPoint = volumeSeq.getLoopPoint();
-  if(arpeggioSeq.getLoopPoint() != loopPoint || pitchSeq.getLoopPoint() != loopPoint || hiPitchSeq.getLoopPoint() != loopPoint || dutyCycleSeq.getLoopPoint() != loopPoint) {
-    throw "mismatched loop points";
+  int loopPoints[] = {
+    volumeSeq.getLoopPoint(),
+    arpeggioSeq.getLoopPoint(),
+    pitchSeq.getLoopPoint(),
+    hiPitchSeq.getLoopPoint(),
+    dutyCycleSeq.getLoopPoint()
+  };
+
+  int loopPoint = -1;
+  for(auto i = std::begin(loopPoints); i != std::end(loopPoints); ++i) {
+    int loopPoint_ = *i;
+    if(loopPoint != -1) {
+      if(loopPoint_ != -1 && loopPoint_ != loopPoint) {
+	throw "mismatched loop point";
+      }
+    } else {
+      loopPoint = loopPoint_;
+    }
   }
 
   if(loopPoint < -1) {
@@ -277,41 +311,49 @@ static Instrument buildInstrument(const InstrSequence& volumeSeq, const InstrSeq
       instrument.addCommand(command);
     }
 
-    uint8_t volume = volumeSeq.at(i);
-    if(volume != currentVolume) {
-      currentVolume = volume;
-      command.type = INSTR_VOL;
-      command.newVolume = volume << 4;
-      instrument.addCommand(command);
-    }
-
-    uint8_t pitch = pitchSeq.at(i);
-    if(pitch != currentPitch) {
-      currentPitch = pitch;
-      command.type = INSTR_HPITCH;
-      command.newPitch = pitch;
-      instrument.addCommand(command);
-    }
-
-    uint8_t hiPitch = hiPitchSeq.at(i);
-    if(hiPitch != currentHiPitch) {
-      currentHiPitch = hiPitch;
-      command.type = INSTR_HPITCH;
-      command.newHiPitch = hiPitch;
-      instrument.addCommand(command);
-    }
-
-    uint8_t duty = dutyCycleSeq.at(i);
-    if(duty != currentDuty) {
-      currentDuty = duty;
-      switch(duty) {
-      case 0: command.type = INSTR_DUTY_LO; break;
-      case 1: command.type = INSTR_DUTY_25; break;
-      case 2: command.type = INSTR_DUTY_50; break;
-      case 3: command.type = INSTR_DUTY_75; break;
-      default: throw "Invalid duty";
+    if(volumeSeq) {
+      uint8_t volume = volumeSeq.at(i);
+      if(volume != currentVolume) {
+	currentVolume = volume;
+	command.type = INSTR_VOL;
+	command.newVolume = volume << 4;
+	instrument.addCommand(command);
       }
-      instrument.addCommand(command);
+    }
+
+    if(pitchSeq) {
+      uint8_t pitch = pitchSeq.at(i);
+      if(pitch != currentPitch) {
+	currentPitch = pitch;
+	command.type = INSTR_HPITCH;
+	command.newPitch = pitch;
+	instrument.addCommand(command);
+      }
+    }
+
+    if(hiPitchSeq) {
+      uint8_t hiPitch = hiPitchSeq.at(i);
+      if(hiPitch != currentHiPitch) {
+	currentHiPitch = hiPitch;
+	command.type = INSTR_HPITCH;
+	command.newHiPitch = hiPitch;
+	instrument.addCommand(command);
+      }
+    }
+
+    if(dutyCycleSeq) {
+      uint8_t duty = dutyCycleSeq.at(i);
+      if(duty != currentDuty) {
+	currentDuty = duty;
+	switch(duty) {
+	case 0: command.type = INSTR_DUTY_LO; break;
+	case 1: command.type = INSTR_DUTY_25; break;
+	case 2: command.type = INSTR_DUTY_50; break;
+	case 3: command.type = INSTR_DUTY_75; break;
+	default: throw "Invalid duty";
+	}
+	instrument.addCommand(command);
+      }
     }
 
     command.type = INSTR_END_FRAME;

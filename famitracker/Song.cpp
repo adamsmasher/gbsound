@@ -115,6 +115,10 @@ public:
     writer.writeGb();
   }
 
+  void addPattern(void) {
+    patterns.push_back(Pattern());
+  }
+
 private:
   std::vector<Instrument> instruments;
   SongMasterConfig songMasterConfig;
@@ -196,6 +200,10 @@ void Song::setTempo(uint8_t tempo) {
 
 void Song::writeGb(std::ostream& ostream) const {
   impl->writeGb(ostream);
+}
+
+void Song::addPattern(void) {
+  impl->addPattern();
 }
 
 std::ostream& operator<<(std::ostream& ostream, const PatternNumber& patternNumber) {

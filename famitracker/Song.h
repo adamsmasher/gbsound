@@ -170,6 +170,8 @@ class Song {
   void addJump(PatternNumber from, PatternNumber to);
 
   void writeGb(std::ostream&) const;
+
+  void addPattern(void);
  private:
   std::unique_ptr<SongImpl> impl;
 };

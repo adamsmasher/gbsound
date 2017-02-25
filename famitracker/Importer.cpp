@@ -923,6 +923,8 @@ private:
     }
 
     this->pattern = pattern;
+    // TODO: assert that we're reading the patterns in order
+    song.addPattern();
     t.readEOL();
   }
 

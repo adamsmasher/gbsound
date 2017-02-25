@@ -114,6 +114,10 @@ class InstrSequenceIndex {
   }
   
   friend bool operator==(const InstrSequenceIndex&, const InstrSequenceIndex&);
+
+  operator bool() const {
+    return std::get<2>(index) >= 0;
+  }
 private:
   std::tuple<Chip, SeqType, int> index;
 };
@@ -227,12 +231,16 @@ class InstrSequence {
   void pushBack(uint8_t i) {
     sequence.push_back(i);
   }
+
+  static const InstrSequence emptySequence;
  private:
   std::vector<uint8_t> sequence;
   sequence_t type;
   int loopPoint;
   ArpeggioType arpeggioType;
 };
+
+const InstrSequence InstrSequence::emptySequence = InstrSequence();
 
 static Instrument buildInstrument(const InstrSequence& volumeSeq, const InstrSequence& arpeggioSeq, const InstrSequence& pitchSeq, const InstrSequence& hiPitchSeq, const InstrSequence& dutyCycleSeq) {
   Instrument instrument;
@@ -997,7 +1005,11 @@ private:
   }
   
   const InstrSequence& getInstrSequence(InstrSequenceIndex i) const {
-    return instrSequenceTable.at(i);
+    if(i) {
+      return instrSequenceTable.at(i);
+    } else {
+      return InstrSequence::emptySequence;
+    }
   }
 };
 

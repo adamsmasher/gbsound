@@ -20,6 +20,8 @@
 
 #pragma once
 
+#include <string>
+
 enum Command {
   CT_COMMENTLINE,    // anything may follow
   // song info
@@ -66,3 +68,5 @@ enum Command {
   // end of command list
   CT_LAST = CT_ROW
 };
+
+std::string commandName(Command);

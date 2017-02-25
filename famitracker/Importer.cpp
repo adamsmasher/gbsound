@@ -33,6 +33,8 @@
 #include <tuple>
 #include <unordered_map>
 
+const bool debug = true;
+
 static const char* CT[CT_LAST + 1] = {
   // comment
   "#",
@@ -550,6 +552,9 @@ private:
   }
 
   void importCommand(Command c) {
+    if(debug) {
+      std::cerr << commandName(c) << std::endl;
+    }
     switch (c) {
     case CT_COMMENTLINE:
       t.finishLine();

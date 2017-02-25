@@ -1,9 +1,10 @@
 all: ../famiconv
 
 DEPS=\
-build/Importer.o\
+build/Command.o\
 build/famiconv.o\
 build/hash.o\
+build/Importer.o\
 build/Song.o\
 build/Tokenizer.o
 

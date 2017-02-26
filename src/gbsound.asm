@@ -78,8 +78,12 @@ SECTION "GbSound", ROM0
 
 ;;; Song initialization:
 ;;; Call with HL = Song
-InitSndEngine:: XOR A
+InitSndEngine:: 
+	;; set this to $FF, so it ticks as soon as we start playing
+	;; so that we can set up volume, instrument, etc.
+		LD A, $FF
 		LD [SongTimer], A
+		INC A
 		LD [NextPattern], A
 		INC A
 		LD [EndOfPat], A
@@ -236,16 +240,15 @@ RunSndTick:	CALL TickSongCtrl
 		LD [HLI], A
 		LD A, $10
 		LD [HL], A
-.loop:		
-	;; note how when the loop starts, HL MUST = ChRegNum!
-		LD A, $5
-		ADD [HL]
+.loop:		CALL TickCh
+		LD HL, ChRegBase
+		LD A, [HL]
+		ADD 5
 		LD [HLD], A
-		INC [HL]
-		CALL TickCh
-		LD HL, ChNum
-		LD A, [HLI]	; this makes HL = ChRegNum for the loop!
-		CP 3
+		LD A, [HL]
+		INC A
+		LD [HL], A
+		CP 4
 		JR NZ, .loop
 		RET
 
@@ -307,10 +310,11 @@ TickCh:		CALL PopOpcode
 	;; after shifting everything down by 1, that means they now have a 1 in the LSB
 		BIT 0,A
 		JP NZ, ChCmd
+		LD B, A
 		LD H, ChCurNotes >> 8
 		LD A, [ChNum]
 		LD L, A
-		LD [HL], A
+		LD [HL], B
 		JP ChNote
 
 UpdateInstrs:	LD HL, ChNum
@@ -318,20 +322,18 @@ UpdateInstrs:	LD HL, ChNum
 		LD [HLI], A
 		LD A, $10
 		LD [HL], A
-.loop:
-	;; note how when the loop starts, HL MUST = ChRegNum!
-		LD A, $5
-		ADD [HL]
+.loop:		CALL ApplyInstrCh
+		LD HL, ChRegBase
+		LD A, [HL]
+		ADD $5
 		LD [HLD], A
-		INC [HL]
-		CALL ApplyInstrCh
-		LD HL, ChNum
-		LD A, [HLI]	; this makes HL = ChRegNum for the loop!
-		CP 3
+	;; chnum
+		LD A, [HL]
+		INC A
+		LD [HL], A
+		CP 4
 		JR NZ, .loop
 		RET
-
-		CALL ApplyInstrCh
 
 ApplyInstrCh:	LD H, ChInstrPtrs >> 8
 		LD A, [ChNum]

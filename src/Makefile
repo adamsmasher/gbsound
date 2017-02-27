@@ -4,7 +4,7 @@ DEPS=\
 build/gbsound.o\
 build/main.o
 
-build/%.o: %.asm
+build/%.o: %.asm data/test.bin
 	rgbasm -o $@ $< > /dev/null
 
 ../gbsound.gb: $(DEPS)

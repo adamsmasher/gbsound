@@ -303,9 +303,9 @@ PlayNextPat:
 .loop:		LD A, [HLI]
 		LD [DE], A
 		INC DE
-		DEC C
-		JR NZ, .loop
-		DEC B
+		DEC BC
+		LD A, B
+		OR C
 		JR NZ, .loop
 	;; finally - point the SongPtr to the beginning of the new data
 		LD HL, SongPtr
@@ -654,6 +654,7 @@ PopOpcode:	LD HL, SongPtr
 		INC [HL]
 		RET
 
+;;; TODO: stop playing noise.
 SongStop:	XOR A
 		LD [SongRate], A
 	;; a nasty bit of trickery - instead of returning and updating the sound channels

@@ -80,7 +80,6 @@ SECTION "GbSound", ROM0
 ;;; Call with HL = Song
 InitSndEngine:: 
 	;; set this to $FF, so it ticks as soon as we start playing
-	;; so that we can set up volume, instrument, etc.
 		LD A, $FF
 		LD [SongTimer], A
 		INC A
@@ -88,8 +87,10 @@ InitSndEngine::
 		INC A
 		LD [EndOfPat], A
 		CALL LoadSong
+		CALL ClearFreqs
 		CALL ClearEffects
-		JP ClearSndRegs
+		CALL ClearSndRegs
+		JP InitInstrs
 
 ;;; Call with HL = Song
 ;;; HL is mutated across function calls and consistently points
@@ -163,7 +164,6 @@ OffsetInstrTbl:	LD A, [InstrTblLen]
 		LD HL, InstrumentTbl
 		JP OffsetTbl
 
-
 ;;; The Instruments table contains a list of pointers to the start of each instrument
 ;;; This just copies the requested instrument number's pointer into the instrument base
 ;;; for the channel
@@ -201,6 +201,14 @@ ClearEffects:   LD HL, ChOctaves
 		JR NZ, .loop2
 		RET
 
+ClearFreqs:	LD HL, ChFreqs
+		XOR A
+		LD B, 8
+.loop:		LD [HLI], A
+		DEC B
+		JR NZ, .loop
+		RET
+
 ClearSndRegs:	XOR A
 		LD C, $10
 		LD B, 5 * 4	; number of sound registers
@@ -212,7 +220,30 @@ ClearSndRegs:	XOR A
 InitNextPat:	XOR A
 		LD [NextPattern], A
 		RET
-		
+
+;;; make all the instruments just point to the dummy
+;;; "NullInstr"
+InitInstrs:	LD HL, ChInstrBases
+		LD B, 4
+		LD C, NullInstr & $00FF
+		LD D, NullInstr >> 8
+.loop1:		LD A, C
+		LD [HLI], A
+		LD A, D
+		LD [HLI], A
+		DEC B
+		JR NZ, .loop1
+	;; copy these into the pointers, too
+		LD HL, ChInstrPtrs
+		LD B, 4
+.loop2:		LD A, C
+		LD [HLI], A
+		LD A, D
+		LD [HLI], A
+		DEC B
+		JR NZ, .loop2
+		RET
+
 ;;; each frame, add a "rate" var to a timer variable
 ;;; if the timer wraps around, play the next note
 ;;; this allows tempos as fast as notes 60 per second

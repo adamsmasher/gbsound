@@ -152,7 +152,7 @@ public:
     if (octave < 3 || (octave == 3 && pitchClass < 3)) {
       throw "Note unrepresentable on GB.";
     }
-    return 12 * (octave - 3) + (pitchClass - 3) + 1;
+    return 12 * (octave - 3) + (pitchClass - 3);
   }
 
   operator bool() const {

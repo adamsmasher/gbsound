@@ -319,8 +319,10 @@ void GbNote::writeGb(std::ostream& ostream) const {
   for(auto i = commands.begin(); i != commands.end(); ++i) {
     i->writeGb(ostream);
   }
+
   // notes are odd numbered... (1, 3, ...)
-  ostream.put(pitch * 2 + 1);
+  // (except for 0, which is a NOP)
+  ostream.put(pitch ? pitch * 2 + 1 : 0);
 }
 
 uint16_t GbNote::getLength(void) const {

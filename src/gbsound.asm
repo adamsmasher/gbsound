@@ -173,18 +173,16 @@ ChSetInstr:
 		LD H, InstrumentTbl >> 8
 		LD L, A
 		LD A, [HLI]
-		LD H, [HL]
-		LD L, A
+		LD D, [HL]
+		LD E, A
 	;; copy the pointer into the base
-		LD D, ChInstrBases >> 8
+		LD H, ChInstrBases >> 8
 		LD A, [ChNum]
 		ADD A
-		LD E, A
-		LD A, [HLI]
-		LD [DE], A
-		INC E
-		LD A, [HL]
-		LD [DE], A
+		LD L, A
+		LD A, E
+		LD [HLI], A
+		LD [HL], D
 		RET
 
 ClearEffects:   LD HL, ChOctaves
@@ -382,6 +380,7 @@ ApplyInstrCh:	LD H, ChInstrPtrs >> 8
 		LD A, L
 		LD [DE], A
 		INC E
+		LD A, H
 		LD [DE], A
 	;; 1 indicates the end of a frame - end the loop
 		DEC B

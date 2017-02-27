@@ -118,6 +118,7 @@ class GbNote {
 
 class Row {
  public:
+  Row();
   void setNote(int, GbNote);
   void writeGb(std::ostream&) const;
   void jump(uint8_t newFrame);

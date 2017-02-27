@@ -219,9 +219,15 @@ PatternNumber PatternNumber::next(void) const {
   return PatternNumber(patternNumber + 1);
 }
 
-GbNote::GbNote() {}
+GbNote::GbNote() : pitch(0) {}
 
 GbNote::GbNote(uint8_t pitch) : pitch(pitch) {}
+
+Row::Row() {
+  for(auto i = std::begin(notes); i < std::end(notes); ++i) {
+    *i = GbNote();
+  }
+}
 
 void Row::setNote(int i, GbNote note) {
   if(i >= 4) {

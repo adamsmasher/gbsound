@@ -119,6 +119,13 @@ public:
     patterns.push_back(Pattern());
   }
 
+  void terminateLastPattern(void) {
+    Pattern& lastPattern = patterns.back();
+    Row terminatingRow;
+    terminatingRow.stop();
+    lastPattern.addRow(terminatingRow);
+  }
+
 private:
   std::vector<Instrument> instruments;
   SongMasterConfig songMasterConfig;
@@ -206,6 +213,10 @@ void Song::addPattern(void) {
   impl->addPattern();
 }
 
+void Song::terminateLastPattern(void) {
+  impl->terminateLastPattern();
+}
+
 std::ostream& operator<<(std::ostream& ostream, const PatternNumber& patternNumber) {
   ostream << (unsigned)patternNumber.patternNumber;
   return ostream;
@@ -223,7 +234,7 @@ GbNote::GbNote() : pitch(0) {}
 
 GbNote::GbNote(uint8_t pitch) : pitch(pitch) {}
 
-Row::Row() {
+Row::Row() : hasFlowControlCommand(false) {
   for(auto i = std::begin(notes); i < std::end(notes); ++i) {
     *i = GbNote();
   }
@@ -441,3 +452,4 @@ size_t std::hash<PatternNumber>::operator()(const PatternNumber& patternNumber) 
 
   return byteHash(patternNumber.patternNumber);
 }
+

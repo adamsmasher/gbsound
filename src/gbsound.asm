@@ -252,8 +252,6 @@ RunSndTick:	CALL TickSongCtrl
 		JR NZ, .loop
 		RET
 
-;;; TODO: fix converter so that patterns go by twos
-;;; TODO: fix converter to end song properly???
 PlayNextPat:
 	;; first, figure out what pattern to play
 		LD HL, NextPattern

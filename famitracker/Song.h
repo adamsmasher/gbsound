@@ -173,6 +173,8 @@ class Song {
   void writeGb(std::ostream&) const;
 
   void addPattern(void);
+
+  void terminateLastPattern(void);
  private:
   std::unique_ptr<SongImpl> impl;
 };

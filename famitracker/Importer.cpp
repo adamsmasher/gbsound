@@ -399,6 +399,8 @@ public:
       importCommand(c);
     }
 
+    song.terminateLastPattern();
+
     return std::move(song);
   }
 

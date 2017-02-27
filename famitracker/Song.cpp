@@ -441,7 +441,7 @@ void Row::stop(void) {
 // TODO: maybe use patternnumber here
 void Row::jump(uint8_t newFrame) {
   EngineCommand command;
-  command.type = ENGINE_CMD_STOP;
+  command.type = ENGINE_CMD_JMP_FRAME;
   command.newFrame = newFrame;
   setFlowControlCommand(command);
 }    

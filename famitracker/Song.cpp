@@ -51,9 +51,6 @@ class Pattern {
     for(auto i = rows.begin(); i != rows.end(); ++i) {
       i->writeGb(ostream);
     }
-    EngineCommand endOfPattern;
-    endOfPattern.type = ENGINE_CMD_END_OF_PAT;
-    endOfPattern.writeGb(ostream);
   }
 
   void addRow(const Row& row) {

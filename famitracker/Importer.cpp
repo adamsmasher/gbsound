@@ -921,7 +921,12 @@ private:
     case IMPORTING_PATTERNS:
       if(jumps.count(this->pattern)) {
 	song.addJump(this->pattern, jumps[this->pattern]);
+      } else {
+	Row row;
+	row.endOfPattern();
+	song.addRow(row, this->pattern);
       }
+      break;
     }
 
     this->pattern = pattern;

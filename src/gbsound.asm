@@ -654,12 +654,25 @@ PopOpcode:	LD HL, SongPtr
 		INC [HL]
 		RET
 
-;;; TODO: stop playing noise.
 SongStop:	XOR A
+		LD HL, ChNum
+		LD [HLI], A
+		LD A, $10
+		LD [ChRegBase], A
+.loop:		CALL ChKeyOff
+		LD HL, ChRegBase
+		LD A, [HL]
+		ADD 5
+		LD [HLD], A
+		INC [HL]
+		LD A, [HL]
+		CP 4
+		JR NZ, .loop
+		XOR A
 		LD [SongRate], A
 	;; a nasty bit of trickery - instead of returning and updating the sound channels
 	;; scrap the return address at the top of the stack, which escapes the interrupt handler
-		ADD SP, 2
+		ADD SP, 4
 		RET
 
 SongEndOfPat:	LD A, 1

@@ -88,7 +88,7 @@ static uint8_t computeTempo(int speed, int tempo) {
   double rowsPerSecond = rowsPerMinute/60;
   double ticksPerRow = 60/rowsPerSecond;
   return (uint8_t)ceil(256/ticksPerRow);*/
-  return (150 * speed)/tempo;
+  return (256 * tempo)/(150 * speed);
 }
 
 typedef uint8_t Chip;

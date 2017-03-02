@@ -251,130 +251,6 @@ class InstrSequence {
 
 const InstrSequence InstrSequence::emptySequence = InstrSequence();
 
-static Instrument buildInstrument(const InstrSequence& volumeSeq, const InstrSequence& arpeggioSeq, const InstrSequence& pitchSeq, const InstrSequence& hiPitchSeq, const InstrSequence& dutyCycleSeq) {
-  Instrument instrument;
-
-  // the engine only has one "sequence" for each instrument, so we need to combine
-  // all the famitracker sequences into one
-  // all sequences MUST be the same length and have the same loop point
-
-  // TODO: better error message
-  size_t lengths[] = {
-    volumeSeq.getLength(),
-    arpeggioSeq.getLength(),
-    pitchSeq.getLength(),
-    hiPitchSeq.getLength(),
-    dutyCycleSeq.getLength()
-  };
-
-  size_t length = 0;
-  for(auto i = std::begin(lengths); i != std::end(lengths); ++i) {
-    size_t length_ = *i;
-    if(length) {
-      if(length_ && length_ != length) {
-	throw "mismatched lengths";
-      }
-    } else {
-      length = length_;
-    }
-  }
-
-  int loopPoints[] = {
-    volumeSeq.getLoopPoint(),
-    arpeggioSeq.getLoopPoint(),
-    pitchSeq.getLoopPoint(),
-    hiPitchSeq.getLoopPoint(),
-    dutyCycleSeq.getLoopPoint()
-  };
-
-  int loopPoint = -1;
-  for(auto i = std::begin(loopPoints); i != std::end(loopPoints); ++i) {
-    int loopPoint_ = *i;
-    if(loopPoint != -1) {
-      if(loopPoint_ != -1 && loopPoint_ != loopPoint) {
-	throw "mismatched loop point";
-      }
-    } else {
-      loopPoint = loopPoint_;
-    }
-  }
-
-  if(loopPoint < -1) {
-    throw "invalid loop point";
-  }
-  unsigned loopPoint_ = loopPoint == -1 ? 0 : (unsigned)loopPoint;
-
-  InstrumentCommand command;
-
-  int currentVolume = -1;
-  int currentPitch = 0;
-  int currentHiPitch = 0;
-  int currentDuty = -1;
-  for(size_t i = 0; i < length; i++) {
-    if(i == loopPoint_) {
-      command.type = INSTR_MARK;
-      instrument.addCommand(command);
-    }
-
-    if(volumeSeq) {
-      uint8_t volume = volumeSeq.at(i);
-      if(volume != currentVolume) {
-	currentVolume = volume;
-	command.type = INSTR_VOL;
-	command.newVolume = volume << 4;
-	instrument.addCommand(command);
-      }
-    }
-
-    if(pitchSeq) {
-      uint8_t pitch = pitchSeq.at(i);
-      if(pitch != currentPitch) {
-	currentPitch = pitch;
-	command.type = INSTR_HPITCH;
-	command.newPitch = pitch;
-	instrument.addCommand(command);
-      }
-    }
-
-    if(hiPitchSeq) {
-      uint8_t hiPitch = hiPitchSeq.at(i);
-      if(hiPitch != currentHiPitch) {
-	currentHiPitch = hiPitch;
-	command.type = INSTR_HPITCH;
-	command.newHiPitch = hiPitch;
-	instrument.addCommand(command);
-      }
-    }
-
-    if(dutyCycleSeq) {
-      uint8_t duty = dutyCycleSeq.at(i);
-      if(duty != currentDuty) {
-	currentDuty = duty;
-	switch(duty) {
-	case 0: command.type = INSTR_DUTY_LO; break;
-	case 1: command.type = INSTR_DUTY_25; break;
-	case 2: command.type = INSTR_DUTY_50; break;
-	case 3: command.type = INSTR_DUTY_75; break;
-	default: throw "Invalid duty";
-	}
-	instrument.addCommand(command);
-      }
-    }
-
-    command.type = INSTR_END_FRAME;
-    instrument.addCommand(command);
-  }
-  if(loopPoint_ == length) {
-    command.type = INSTR_END;
-    instrument.addCommand(command);
-  } else {
-    command.type = INSTR_LOOP;
-    instrument.addCommand(command);
-  }
-
-  return instrument;
-}
-
 class ImporterImpl {
 public:
   ImporterImpl(const std::string& text) :
@@ -734,7 +610,7 @@ private:
       // otherwise raise
       throw "Non-arpeggio sequence given arpeggio type!";
     }
-    
+
     checkColon();
 
     while (!t.isEOL()) {
@@ -1031,6 +907,129 @@ private:
   
   PatternNumber readPatternNumber(void) {
     return PatternNumber(t.readHex(0, MAX_PATTERN - 1));
+  }
+
+  Instrument buildInstrument(const InstrSequence& volumeSeq, const InstrSequence& arpeggioSeq, const InstrSequence& pitchSeq, const InstrSequence& hiPitchSeq, const InstrSequence& dutyCycleSeq) {
+    Instrument instrument;
+
+    // the engine only has one "sequence" for each instrument, so we need to combine
+    // all the famitracker sequences into one
+    // all sequences MUST be the same length and have the same loop point
+
+    size_t lengths[] = {
+      volumeSeq.getLength(),
+      arpeggioSeq.getLength(),
+      pitchSeq.getLength(),
+      hiPitchSeq.getLength(),
+      dutyCycleSeq.getLength()
+    };
+
+    size_t length = 0;
+    for(auto i = std::begin(lengths); i != std::end(lengths); ++i) {
+      size_t length_ = *i;
+      if(length) {
+	if(length_ && length_ != length) {
+	  throw "mismatched lengths";
+	}
+      } else {
+	length = length_;
+      }
+    }
+
+    int loopPoints[] = {
+      volumeSeq.getLoopPoint(),
+      arpeggioSeq.getLoopPoint(),
+      pitchSeq.getLoopPoint(),
+      hiPitchSeq.getLoopPoint(),
+      dutyCycleSeq.getLoopPoint()
+    };
+
+    int loopPoint = -1;
+    for(auto i = std::begin(loopPoints); i != std::end(loopPoints); ++i) {
+      int loopPoint_ = *i;
+      if(loopPoint != -1) {
+	if(loopPoint_ != -1 && loopPoint_ != loopPoint) {
+	  throw "mismatched loop point";
+	}
+      } else {
+	loopPoint = loopPoint_;
+      }
+    }
+
+    if(loopPoint < -1) {
+      throw "invalid loop point";
+    }
+    unsigned loopPoint_ = loopPoint == -1 ? 0 : (unsigned)loopPoint;
+
+    InstrumentCommand command;
+
+    int currentVolume = -1;
+    int currentPitch = 0;
+    int currentHiPitch = 0;
+    int currentDuty = -1;
+    for(size_t i = 0; i < length; i++) {
+      if(i == loopPoint_) {
+	command.type = INSTR_MARK;
+	instrument.addCommand(command);
+      }
+
+      if(volumeSeq) {
+	uint8_t volume = volumeSeq.at(i);
+	if(volume != currentVolume) {
+	  currentVolume = volume;
+	  command.type = INSTR_VOL;
+	  command.newVolume = volume << 4;
+	  instrument.addCommand(command);
+	}
+      }
+
+      if(pitchSeq) {
+	uint8_t pitch = pitchSeq.at(i);
+	if(pitch != currentPitch) {
+	  currentPitch = pitch;
+	  command.type = INSTR_HPITCH;
+	  command.newPitch = pitch;
+	  instrument.addCommand(command);
+	}
+      }
+
+      if(hiPitchSeq) {
+	uint8_t hiPitch = hiPitchSeq.at(i);
+	if(hiPitch != currentHiPitch) {
+	  currentHiPitch = hiPitch;
+	  command.type = INSTR_HPITCH;
+	  command.newHiPitch = hiPitch;
+	  instrument.addCommand(command);
+	}
+      }
+
+      if(dutyCycleSeq) {
+	uint8_t duty = dutyCycleSeq.at(i);
+	if(duty != currentDuty) {
+	  currentDuty = duty;
+	  switch(duty) {
+	  case 0: command.type = INSTR_DUTY_LO; break;
+	  case 1: command.type = INSTR_DUTY_25; break;
+	  case 2: command.type = INSTR_DUTY_50; break;
+	  case 3: command.type = INSTR_DUTY_75; break;
+	  default: throw "Invalid duty";
+	  }
+	  instrument.addCommand(command);
+	}
+      }
+
+      command.type = INSTR_END_FRAME;
+      instrument.addCommand(command);
+    }
+    if(loopPoint_ == length) {
+      command.type = INSTR_END;
+      instrument.addCommand(command);
+    } else {
+      command.type = INSTR_LOOP;
+      instrument.addCommand(command);
+    }
+
+    return instrument;
   }
 
   void addInstrument(Chip chip, int volumeNum, int arpeggioNum, int pitchNum, int hiPitchNum, int dutyCycleNum) {

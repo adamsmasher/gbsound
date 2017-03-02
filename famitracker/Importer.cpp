@@ -149,10 +149,11 @@ public:
   int getOctave(void) const { return octave; }
 
   uint8_t toGbPitch(void) const {
-    if (octave < 3 || (octave == 3 && pitchClass < 3)) {
+    if (octave < 3 || (octave == 3 && pitchClass >= 9)) {
+      // nothing lower than C-3 is representable, apparently
       throw "Note unrepresentable on GB.";
     }
-    return 12 * (octave - 3) + (pitchClass - 3);
+    return 12 * (octave - 3) + pitchClass;
   }
 
   operator bool() const {

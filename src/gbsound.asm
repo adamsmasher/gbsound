@@ -411,6 +411,7 @@ UpdateHardware:
 		LD [C], A
 		LD A, C
 		ADD 4		; next freq register 1
+		LD C, A
 		DEC B
 		JR NZ, .loop
 		RET

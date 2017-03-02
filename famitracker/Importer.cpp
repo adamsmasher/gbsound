@@ -929,7 +929,9 @@ private:
       size_t length_ = *i;
       if(length) {
 	if(length_ && length_ != length) {
-	  throw "mismatched lengths";
+	  std::stringstream errMsg;
+	  errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": mismatched sequence lengths; expected " << length << ", got " << length_;
+	  throw errMsg.str();
 	}
       } else {
 	length = length_;
@@ -949,7 +951,9 @@ private:
       int loopPoint_ = *i;
       if(loopPoint != -1) {
 	if(loopPoint_ != -1 && loopPoint_ != loopPoint) {
-	  throw "mismatched loop point";
+	  std::stringstream errMsg;
+	  errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": mismatched loop point; expected " << loopPoint << ", got " << loopPoint_;
+	  throw errMsg.str();
 	}
       } else {
 	loopPoint = loopPoint_;

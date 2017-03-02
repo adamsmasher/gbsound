@@ -224,7 +224,11 @@ PatternNumber::PatternNumber(void) : patternNumber(-1) {}
 PatternNumber::PatternNumber(uint8_t n) : patternNumber(n) {}
 
 PatternNumber PatternNumber::next(void) const {
-  return PatternNumber(patternNumber + 1);
+  if(patternNumber == 0xFF) {
+    return PatternNumber(0);
+  } else {
+    return PatternNumber(patternNumber + 1);
+  }
 }
 
 GbNote::GbNote() : pitch(0) {}

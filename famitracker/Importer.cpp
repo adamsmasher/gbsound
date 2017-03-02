@@ -254,7 +254,7 @@ const InstrSequence InstrSequence::emptySequence = InstrSequence();
 class ImporterImpl {
 public:
   ImporterImpl(const std::string& text) :
-    isExpired(false), t(text), track(0), pattern(0), hasN163(false)
+    isExpired(false), t(text), track(0), pattern(-1), hasN163(false)
   {}
 
   Song runImport(void) {
@@ -680,6 +680,8 @@ private:
   }
     
   void importOrder(void) {
+    state = IMPORTING_ORDERS;
+
     skipFrameNumber();
 
     PatternNumber pattern = readPatternNumber();
@@ -794,6 +796,7 @@ private:
     switch(state) {
     case IMPORTING_ORDERS:
       state = IMPORTING_PATTERNS;
+      this->pattern = PatternNumber(0xFF);
       break;
     case IMPORTING_PATTERNS:
       if(jumps.count(this->pattern)) {
@@ -806,8 +809,13 @@ private:
       break;
     }
 
+    if(pattern != this->pattern.next()) {
+      std::stringstream errMsg;
+      errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": bad pattern order; expected " << this->pattern.next() << ", got " << pattern;
+      throw errMsg.str();
+    }
+
     this->pattern = pattern;
-    // TODO: assert that we're reading the patterns in order
     song.addPattern();
     t.readEOL();
   }

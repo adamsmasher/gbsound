@@ -294,6 +294,7 @@ private:
   bool hasN163;
   std::unordered_map<InstrSequenceIndex, InstrSequence> instrSequenceTable;
   Song song;
+  uint8_t speedSplitPoint;
   enum {
     IMPORTING_ORDERS,
     IMPORTING_PATTERNS
@@ -765,18 +766,17 @@ private:
     }
     t.readEOL();
   }
-    
-  // TODO: wait what
+
   void importVibrato(void) {
     t.readInt(0, VIBRATO_NEW);
     std::cout << "Warning: ignoring vibrato command." << std::endl;
     t.readEOL();
   }
-    
+
   void importSplit(void) {
-    int i = t.readInt(0, 255);
-    // TODO: what does this do
-    //pDoc->SetSpeedSplitPoint(i);
+    // changes the point where the speed adjustment effect, Fxx
+    // switches to changing tempo (or vice versa)
+    this->speedSplitPoint = t.readInt(0, 255);
     t.readEOL();
   }
     

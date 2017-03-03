@@ -694,6 +694,16 @@ SongSetRate:	CALL PopOpcode
 		LD [SongRate], A
 		RET
 
+;;; HL - address of the wave
+LoadWave:	LD C, $30
+		LD B, 16
+.loop:		LD A, [HLI]
+		LD [C], A
+		INC C
+		DEC B
+		JR NZ, .loop
+		RET
+
 SECTION "FreqTable", HOME[$7A00]
 FreqTable:	DW 44, 156, 262, 363, 457, 547, 631, 710, 786, 854, 923, 986
 		DW 1046, 1102, 1155, 1205, 1253, 1297, 1339, 1379, 1417, 1452, 1486, 1517

@@ -933,8 +933,7 @@ private:
     };
 
     size_t length = 0;
-    for(auto i = std::begin(lengths); i != std::end(lengths); ++i) {
-      size_t length_ = *i;
+    for (auto length_ : lengths) {
       if(length) {
 	if(length_ && length_ != length) {
 	  std::stringstream errMsg;
@@ -955,8 +954,7 @@ private:
     };
 
     int loopPoint = -1;
-    for(auto i = std::begin(loopPoints); i != std::end(loopPoints); ++i) {
-      int loopPoint_ = *i;
+    for (auto loopPoint_ : loopPoints) {
       if(loopPoint != -1) {
 	if(loopPoint_ != -1 && loopPoint_ != loopPoint) {
 	  std::stringstream errMsg;

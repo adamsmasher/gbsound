@@ -48,8 +48,8 @@ class Pattern {
     uint16_t length = getLength();
     ostream.put(length & 0x00FF);
     ostream.put(length >> 8);
-    for(auto i = rows.begin(); i != rows.end(); ++i) {
-      i->writeGb(ostream);
+    for (const auto& row : rows) {
+      row.writeGb(ostream);
     }
   }
 
@@ -65,8 +65,8 @@ class Pattern {
 
   uint16_t getLength(void) const {
     uint16_t length = 0;
-    for(auto i = rows.begin(); i != rows.end(); ++i) {
-      length += i->getLength();
+    for (const auto& row : rows) {
+      length += row.getLength();
     }
     length++; // for the end of pattern byte
     return length;
@@ -159,32 +159,32 @@ private:
 
     void writeInstrumentTable(void) {
       ostream.put(song.instruments.size() * 2);
-      for(auto i = song.instruments.begin(); i != song.instruments.end(); ++i) {
+      for (const auto& instrument : song.instruments) {
 	ostream.put(opcodeAddress & 0x00FF);
 	ostream.put(opcodeAddress >> 8);
-	opcodeAddress += i->getLength() + 1; // extra byte for length
+	opcodeAddress += instrument.getLength() + 1; // extra byte for length
       }
     }
 
     void writePatternTable(void) {
       ostream.put(song.patterns.size() * 2);
-      for(auto i = song.patterns.begin(); i != song.patterns.end(); ++i) {
+      for (const auto& pattern : song.patterns) {
 	ostream.put(opcodeAddress & 0x00FF);
 	ostream.put(opcodeAddress >> 8);
-	opcodeAddress += i->getLength() + 2; // two extra bytes for length
+	opcodeAddress += pattern.getLength() + 2; // two extra bytes for length
       }
     }
 
      void writeInstruments(void) {
-      for(auto i = song.instruments.begin(); i != song.instruments.end(); ++i) {
-	i->writeGb(ostream);
+       for (const auto& instrument : song.instruments) {
+	instrument.writeGb(ostream);
       }
     }
 
     // TODO: compression
     void writePatterns(void) {
-      for(auto i = song.patterns.begin(); i != song.patterns.end(); ++i) {
-	i->writeGb(ostream);
+      for (const auto& pattern : song.patterns) {
+	pattern.writeGb(ostream);
       }
     }
   };
@@ -236,7 +236,7 @@ GbNote::GbNote() : pitch(0) {}
 GbNote::GbNote(uint8_t pitch) : pitch(pitch) {}
 
 Row::Row() : hasFlowControlCommand(false) {
-  for(auto i = std::begin(notes); i < std::end(notes); ++i) {
+  for (GbNote *i = std::begin(notes); i < std::end(notes); ++i) {
     *i = GbNote();
   }
 }
@@ -265,14 +265,14 @@ void Row::writeGb(std::ostream& ostream) const {
   if(this->hasFlowControlCommand) {
     engineCommands.at(0).writeGb(ostream);
   } else {
-    for(auto i = engineCommands.begin(); i != engineCommands.end(); ++i) {
-      i->writeGb(ostream);
+    for (const auto& engineCommand : engineCommands) {
+      engineCommand.writeGb(ostream);
     }
     // end engine commands
     ostream.put(0);
 
-    for(int i = 0; i < 4; i++) {
-      notes[i].writeGb(ostream);    
+    for (const GbNote *i = std::begin(notes); i != std::end(notes); ++i) {
+      i->writeGb(ostream);    
     }
   }
 }
@@ -282,13 +282,13 @@ uint16_t Row::getLength(void) const {
     return 1;
   } else {
     uint16_t length = 0;
-    for(auto i = engineCommands.begin(); i != engineCommands.end(); ++i) {
-      length += i->getLength();
+    for (const auto& engineCommand : engineCommands) {
+      length += engineCommand.getLength();
     }
     length++; // end of engine commands
 
-    for(int i = 0; i < 4; i++) {
-      length += notes[i].getLength();
+    for (const GbNote *i = std::begin(notes); i != std::end(notes); ++i) {
+      length += i->getLength();
     }
     return length;
   }
@@ -317,8 +317,8 @@ uint16_t EngineCommand::getLength(void) const {
 }
 
 void GbNote::writeGb(std::ostream& ostream) const {
-  for(auto i = commands.begin(); i != commands.end(); ++i) {
-    i->writeGb(ostream);
+  for (const auto& command : commands) {
+    command.writeGb(ostream);
   }
 
   // notes are odd numbered... (1, 3, ...)
@@ -328,8 +328,8 @@ void GbNote::writeGb(std::ostream& ostream) const {
 
 uint16_t GbNote::getLength(void) const {
   uint16_t length = 0;
-  for(auto i = commands.begin(); i != commands.end(); ++i) {
-    length += i->getLength();
+  for (const auto& command : commands) {
+    length += command.getLength();
   }
   length++; // for the note
   return length;
@@ -362,15 +362,15 @@ uint16_t ChannelCommand::getLength(void) const {
 // to get rid of switch statements
 void Instrument::writeGb(std::ostream& ostream) const {
   ostream.put(getLength());
-  for(auto i = commands.begin(); i != commands.end(); ++i) {
-    i->writeGb(ostream);
+  for (const auto& command : commands) {
+    command.writeGb(ostream);
   }
 }
 
 uint8_t Instrument::getLength(void) const {
   uint8_t length = 0;
-  for(auto i = commands.begin(); i != commands.end(); ++i) {
-    length += i->getLength();
+  for (const auto& command : commands) {
+    length += command.getLength();
   }
   return length;
 }

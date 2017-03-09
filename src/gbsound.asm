@@ -71,8 +71,11 @@ PatternTable:	DS 128*2
 SECTION "Instruments", BSS[$C800]
 InstrumentTbl:	DS 128*2
 
-SECTION "SongData", BSS[$C900]
-SongData:	DS $700
+SECTION "Waves", BSS[$C900]
+Waves:		DS 256
+
+SECTION "SongData", BSS[$CA00]
+SongData:	DS $600
 
 SECTION "GbSound", ROM0
 
@@ -100,6 +103,7 @@ LoadSong:	LD A, L
 		LD A, H
 		LD [SongBase+1], A
 		CALL LoadSongCtrlCh
+		CALL LoadWaves
 		CALL LoadPatternTbl
 		CALL LoadInstrTbl
 		CALL OffsetPatTbl
@@ -111,6 +115,16 @@ LoadSongCtrlCh:	LD A, [HLI]			; volume config
 		LDH [$25], A
 		LD A, [HLI]			; song rate
 		LD [SongRate], A
+		RET
+
+LoadWaves:	LD A, [HLI]
+		LD B, A
+		LD DE, Waves
+.loop:		LD A, [HLI]
+		LD [DE], A
+		INC E
+		DEC B
+		JR NZ, .loop
 		RET
 
 LoadPatternTbl:	LD DE, PatternTable
@@ -694,8 +708,11 @@ SongSetRate:	CALL PopOpcode
 		LD [SongRate], A
 		RET
 
-;;; HL - address of the wave
-LoadWave:	LD C, $30
+;;; A - number of the wave
+LoadWave:	LD H, Waves >> 8
+		SWAP A
+		LD L, A
+		LD C, $30
 		LD B, 16
 .loop:		LD A, [HLI]
 		LD [C], A

@@ -155,6 +155,16 @@ namespace std {
   };
 }
 
+class Wave {
+ public:
+  static const size_t SAMPLE_CNT = 32;
+  Wave(void);
+  void writeGb(std::ostream&) const;
+  void setSample(size_t sampleNum, uint8_t);
+ private:
+  uint8_t samples[SAMPLE_CNT];
+};
+
 struct SongImpl;
 class Song {
  public:
@@ -175,6 +185,8 @@ class Song {
   void addPattern(void);
 
   void terminateLastPattern(void);
+
+  void addWave(const Wave&);
  private:
   std::unique_ptr<SongImpl> impl;
 };

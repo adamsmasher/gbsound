@@ -20,6 +20,25 @@
 
 #include "Song.h"
 
+Wave::Wave() : samples{0} {}
+
+// TODO: are samples "big endian" or "little endian"?
+void Wave::writeGb(std::ostream& ostream) const {
+  for(size_t i = 0; i < Wave::SAMPLE_CNT; i += 2) {
+    ostream.put(samples[i] << 4 || samples[i+1]);
+  }
+}
+
+void Wave::setSample(size_t sampleNum, uint8_t value) {
+  if(sampleNum >= Wave::SAMPLE_CNT) {
+    throw "Sample index out of bounds";
+  }
+  if(value >= 16) {
+    throw "Sample does not fit into four bits";
+  }
+  samples[sampleNum] = value;
+}
+
 class SongMasterConfig {
  public:
   SongMasterConfig() : tempo(0), channelControl(0x77), outputTerminals(0xFF) {}
@@ -127,6 +146,7 @@ private:
   std::vector<Instrument> instruments;
   SongMasterConfig songMasterConfig;
   std::vector<Pattern> patterns;
+  std::vector<Wave> waves;
 
   class Writer {
   public:
@@ -135,6 +155,7 @@ private:
     void writeGb(void) {
       opcodeAddress = computeOpcodeAddress();
       writeSongMasterConfig();
+      writeWaves();
       writePatternTable();
       writeInstrumentTable();
       writePatterns();
@@ -149,12 +170,27 @@ private:
     uint16_t computeOpcodeAddress() const {
       return 
 	SongMasterConfig::GB_SIZE
+	+ song.waves.size() * 16 + 1
 	+ song.patterns.size() * 2 + 1
 	+ song.instruments.size() * 2 + 1;
     }
 
     void writeSongMasterConfig(void) {
       song.songMasterConfig.writeGb(ostream);
+    }
+
+    void writeWaves(void) {
+      uint8_t waveBytes = song.waves.size() * 16;
+      if(waveBytes) {
+	ostream.put(waveBytes);
+	for(const auto& wave : song.waves) {
+	  wave.writeGb(ostream);
+	}
+      } else {
+	// since 0 => 256, put a dummy byte in
+	ostream.put(1);
+	ostream.put(0);
+      }
     }
 
     void writeInstrumentTable(void) {

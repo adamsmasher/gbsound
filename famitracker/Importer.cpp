@@ -637,7 +637,7 @@ private:
     int hiPitch   = readSequenceNumber();
     int dutyCycle = readSequenceNumber();
     addInstrument(SNDCHIP_NONE, volume, arpeggio, pitch, hiPitch, dutyCycle);
-  
+
     skipInstrumentName();
     t.readEOL();
   }
@@ -873,23 +873,35 @@ private:
     t.readEOL();
   }
 
-  // TODO: implement me, duh
   void importN163Instrument(void) {
-    int i = t.readInt(0, MAX_INSTRUMENTS - 1);
-    //CInstrumentN163* pInst = (CInstrumentN163*)pDoc->CreateInstrument(INST_N163);
-    //pDoc->AddInstrument(pInst, i);
-    for (int s = 0; s < SEQ_COUNT; ++s) {
-      i = t.readInt(-1, MAX_SEQUENCES - 1);
-      //pInst->SetSeqEnable(s, (i == -1) ? 0 : 1);
-      //pInst->SetSeqIndex(s, (i == -1) ? 0 : i);
+    skipInstrumentNumber();
+
+    int volume    = readSequenceNumber();
+    int arpeggio  = readSequenceNumber();
+    int pitch     = readSequenceNumber();
+    int hiPitch   = readSequenceNumber();
+    int dutyCycle = readSequenceNumber();
+
+    int waveSize = t.readInt(0, Wave::SAMPLE_CNT);
+    if(waveSize != Wave::SAMPLE_CNT) {
+      std::stringstream errMsg;
+      errMsg << "Line " << t.getLine() << " Column " << t.getColumn() << ": invalid wave size";
+      throw errMsg.str();
     }
-    //CHECK(t.readInt(i,0,CInstrumentN163::MAX_WAVE_SIZE,&sResult));
-    //pInst->SetWaveSize(i);
-    i = t.readInt(0, 127);
-    //pInst->SetWavePos(i);
-    //i = t.readInt(0, CInstrumentN163::MAX_WAVE_COUNT,&sResult));
-    //pInst->SetWaveCount(i);
-    //pInst->SetName(Charify(t.readToken()));
+
+    // TODO: what is this
+    int wavePos = t.readInt(0, 127);
+
+    // TODO: clean this up
+    // i.e. put it into a function
+    int waveCount = t.readInt(1, 1);
+    if(waveCount != 1) {
+      throw "invalid wave count";
+    }
+
+    addInstrument(SNDCHIP_N163, volume, arpeggio, pitch, hiPitch, dutyCycle);
+
+    skipInstrumentName();
     t.readEOL();
   }
   

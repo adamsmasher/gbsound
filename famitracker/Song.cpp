@@ -142,6 +142,10 @@ public:
     lastPattern.addRow(terminatingRow);
   }
 
+  void addWave(const Wave& wave) {
+    waves.push_back(wave);
+  }
+
 private:
   std::vector<Instrument> instruments;
   SongMasterConfig songMasterConfig;
@@ -291,6 +295,10 @@ void Song::addRow(const Row& row, PatternNumber i) {
 
 void Song::addJump(PatternNumber from, PatternNumber to) {
   impl->addJump(from, to);
+}
+
+void Song::addWave(const Wave& wave) {
+  impl->addWave(wave);
 }
 
 int PatternNumber::toInt() const {

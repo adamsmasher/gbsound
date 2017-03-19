@@ -844,25 +844,22 @@ private:
     }
   }
 
-  // TODO: implement me, duh
   void importN163Wave(void) {
-    int i = t.readInt(0, MAX_INSTRUMENTS - 1);
-    //          if (pDoc->GetInstrumentType(i) != INST_N163)
-    //          {
-    //            sResult.Format(_T("Line %d column %d: instrument %d is not defined as an N163 instrument."), t.getLine(), t.GetColumn(), i);
-    //            return sResult;
-    //          }
-    //          CInstrumentN163* pInst = (CInstrumentN163*)pDoc->GetInstrument(i);
+    // TODO: we probably can't just skip this...
+    skipInstrumentNumber();
 
-    int iw;
-    //CHECK(t.readInt(iw, 0, CInstrumentN163::MAX_WAVE_COUNT - 1);
+    int waveNumber = t.readInt(0, 1);
     checkColon();
-    //          for (int s=0; s < pInst->GetWaveSize(); ++s)
-    //          {
-    //            CHECK(t.readInt(i,0,15,&sResult));
-    //            pInst->SetSample(iw, s, i);
-    //          }
+
+    Wave wave;
+    for (size_t sample = 0; sample < Wave::SAMPLE_CNT; sample++) {
+      // TODO: this seems wrong
+      int value = t.readInt(0, 1);
+      wave.setSample(sample, value);
+    }
     t.readEOL();
+
+    song.addWave(wave);
   }
 
   void importN163Channels(void) {

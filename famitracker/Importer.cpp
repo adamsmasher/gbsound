@@ -886,8 +886,9 @@ private:
       throw errMsg.str();
     }
 
-    // TODO: what is this
-    int wavePos = t.readInt(0, 127);
+    // wave pos - where the sample gets loaded into wave RAM
+    // this must be 0 in our engine
+    int wavePos = t.readInt(0, 0);
 
     // TODO: clean this up
     // i.e. put it into a function

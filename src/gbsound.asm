@@ -639,6 +639,9 @@ ChSetInstrCmd:	CALL PopOpcode
 		CALL ChSetInstr
 		JP ChRstInstr
 
+ChSetWaveCmd:	CALL PopOpcode
+		JP LoadWave
+
 ;;; assume HL = Instrument pointer
 ;;; returns the next instrument byte in A and increments the instrument pointer
 PopInstr:	LD D, H
@@ -708,9 +711,8 @@ SongSetRate:	CALL PopOpcode
 		LD [SongRate], A
 		RET
 
-;;; A - number of the wave
+;;; A - index into the wave table
 LoadWave:	LD H, Waves >> 8
-		SWAP A
 		LD L, A
 		LD C, $30
 		LD B, 16
@@ -746,6 +748,7 @@ CmdTblCh:	DW ChKeyOff
 		DW ChOctaveUp
 		DW ChOctaveDown
 		DW ChSetInstrCmd
+		DW ChSetWaveCmd
 
 SECTION "CmdTblSongCtrl", HOME[$7700]
 CmdTblSongCtrl:	DW SongSetRate

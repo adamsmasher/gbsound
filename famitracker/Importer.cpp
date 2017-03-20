@@ -254,7 +254,8 @@ const InstrSequence InstrSequence::emptySequence = InstrSequence();
 class ImporterImpl {
 public:
   ImporterImpl(const std::string& text) :
-    isExpired(false), t(text), track(0), pattern(-1), hasN163(false)
+    isExpired(false), t(text), track(0), pattern(-1), hasN163(false),
+    lastWaveRead(-1)
   {}
 
   Song runImport(void) {
@@ -299,7 +300,8 @@ private:
     IMPORTING_ORDERS,
     IMPORTING_PATTERNS
   } state;
-
+  std::unordered_map<int, int> waveForInstrument;
+  int lastWaveRead;
   
   void ignoreVolId() {
     std::string sVol = t.readToken();
@@ -751,6 +753,12 @@ private:
 	  command.newInstrument = instrument;
 	  currentInstruments[channel] = instrument;
 	  gbNote.addCommand(command);
+	  if (channel == CHANID_N163_CHAN1) {
+	    ChannelCommand command;
+	    command.type = CHANNEL_CMD_SET_WAVE;
+	    command.newWave = waveForInstrument.at(instrument) * 16;
+	    gbNote.addCommand(command);
+	  }
 	}
 	row.setNote(gbChannel, gbNote);
       }
@@ -845,8 +853,7 @@ private:
   }
 
   void importN163Wave(void) {
-    // TODO: we probably can't just skip this...
-    skipInstrumentNumber();
+    int instrumentNumber = t.readInt(0, MAX_INSTRUMENTS - 1);
 
     int waveNumber = t.readInt(0, 1);
     checkColon();
@@ -860,6 +867,7 @@ private:
     t.readEOL();
 
     song.addWave(wave);
+    waveForInstrument[instrumentNumber] = ++this->lastWaveRead;
   }
 
   void importN163Channels(void) {

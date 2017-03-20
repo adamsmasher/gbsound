@@ -71,13 +71,15 @@ enum ChannelCommandType {
   CHANNEL_CMD_SET_SND_LEN,
   CHANNEL_CMD_OCTAVE_UP,
   CHANNEL_CMD_OCTAVE_DOWN,
-  CHANNEL_CMD_SET_INSTRUMENT
+  CHANNEL_CMD_SET_INSTRUMENT,
+  CHANNEL_CMD_SET_WAVE
 };
 
 struct ChannelCommand {
   ChannelCommandType type;
   union {
     uint8_t newInstrument;
+    uint8_t newWave;
   };
 
   void writeGb(std::ostream&) const;

@@ -1,4 +1,3 @@
-;;; TODO: implement wave RAM
 ;;; TODO: implement arpeggios
 ;;; TODO: implement effects?
 ;;; TODO: document/test

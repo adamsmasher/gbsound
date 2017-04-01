@@ -22,7 +22,6 @@
 
 Wave::Wave() : samples{0} {}
 
-// TODO: are samples "big endian" or "little endian"?
 void Wave::writeGb(std::ostream& ostream) const {
   for(size_t i = 0; i < Wave::SAMPLE_CNT; i += 2) {
     ostream.put(samples[i] << 4 || samples[i+1]);

@@ -121,7 +121,7 @@ public:
     patterns.at(from.toInt()).addJump(to);
   }
 
-  void addInstrument(const Instrument& instrument) {
+  void addInstrument(const GbInstrument& instrument) {
     instruments.push_back(instrument);
   }
 
@@ -146,7 +146,7 @@ public:
   }
 
 private:
-  std::vector<Instrument> instruments;
+  std::vector<GbInstrument> instruments;
   SongMasterConfig songMasterConfig;
   std::vector<Pattern> patterns;
   std::vector<Wave> waves;
@@ -233,7 +233,7 @@ Song::Song() : impl(std::make_unique<SongImpl>()) {}
 Song::Song(Song&& song) : impl(std::move(song.impl)) {}
 Song::~Song() {}
 
-void Song::addInstrument(const Instrument& instrument) {
+void Song::addInstrument(const GbInstrument& instrument) {
   impl->addInstrument(instrument);
 }
 
@@ -404,14 +404,14 @@ uint16_t ChannelCommand::getLength(void) const {
 
 // TODO: use some tasteful inheritence for commands and stuff
 // to get rid of switch statements
-void Instrument::writeGb(std::ostream& ostream) const {
+void GbInstrument::writeGb(std::ostream& ostream) const {
   ostream.put(getLength());
   for (const auto& command : commands) {
     command.writeGb(ostream);
   }
 }
 
-uint8_t Instrument::getLength(void) const {
+uint8_t GbInstrument::getLength(void) const {
   uint8_t length = 0;
   for (const auto& command : commands) {
     length += command.getLength();
@@ -423,7 +423,7 @@ void GbNote::addCommand(const ChannelCommand& command) {
   commands.push_back(command);
 }
 
-void Instrument::addCommand(const InstrumentCommand& command) {
+void GbInstrument::addCommand(const InstrumentCommand& command) {
   commands.push_back(command);
 }
 
@@ -441,6 +441,7 @@ void InstrumentCommand::writeGb(std::ostream& ostream) const {
   case INSTR_DUTY_25: break;
   case INSTR_DUTY_50: break;
   case INSTR_DUTY_75: break;
+  case INSTR_SETWAVE: ostream.put(newWave); break;
   }
 }
 

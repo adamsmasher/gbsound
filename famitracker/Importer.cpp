@@ -638,7 +638,7 @@ private:
     int pitch     = readSequenceNumber();
     int hiPitch   = readSequenceNumber();
     int dutyCycle = readSequenceNumber();
-    addInstrument(SNDCHIP_NONE, volume, arpeggio, pitch, hiPitch, dutyCycle);
+    song.addInstrument(buildStdGbInstrument(volume, arpeggio, pitch, hiPitch, dutyCycle));
 
     skipInstrumentName();
     t.readEOL();
@@ -885,7 +885,7 @@ private:
     int arpeggio  = readSequenceNumber();
     int pitch     = readSequenceNumber();
     int hiPitch   = readSequenceNumber();
-    int dutyCycle = readSequenceNumber();
+    int wave      = readSequenceNumber();
 
     int waveSize = t.readInt(0, Wave::SAMPLE_CNT);
     if(waveSize != Wave::SAMPLE_CNT) {
@@ -905,7 +905,8 @@ private:
       throw "invalid wave count";
     }
 
-    addInstrument(SNDCHIP_N163, volume, arpeggio, pitch, hiPitch, dutyCycle);
+    std::cerr << "adding instrument" << std::endl;
+    song.addInstrument(buildN163GbInstrument(volume, arpeggio, pitch, hiPitch, wave));
 
     skipInstrumentName();
     t.readEOL();
@@ -935,8 +936,14 @@ private:
     return PatternNumber(t.readHex(0, MAX_PATTERN - 1));
   }
 
-  Instrument buildInstrument(const InstrSequence& volumeSeq, const InstrSequence& arpeggioSeq, const InstrSequence& pitchSeq, const InstrSequence& hiPitchSeq, const InstrSequence& dutyCycleSeq) {
-    Instrument instrument;
+  GbInstrument buildStdGbInstrument(int volumeNum, int arpeggioNum, int pitchNum, int hiPitchNum, int dutyCycleNum) {
+    GbInstrument instrument;
+
+    auto volumeSeq    = getInstrSequence(InstrSequenceIndex(SNDCHIP_NONE, SEQ_VOLUME,    volumeNum));
+    auto arpeggioSeq  = getInstrSequence(InstrSequenceIndex(SNDCHIP_NONE, SEQ_ARPEGGIO,  arpeggioNum));
+    auto pitchSeq     = getInstrSequence(InstrSequenceIndex(SNDCHIP_NONE, SEQ_PITCH,     pitchNum));
+    auto hiPitchSeq   = getInstrSequence(InstrSequenceIndex(SNDCHIP_NONE, SEQ_HIPITCH,   hiPitchNum));
+    auto dutyCycleSeq = getInstrSequence(InstrSequenceIndex(SNDCHIP_NONE, SEQ_DUTYCYCLE, dutyCycleNum));
 
     // the engine only has one "sequence" for each instrument, so we need to combine
     // all the famitracker sequences into one
@@ -1060,18 +1067,138 @@ private:
     return instrument;
   }
 
-  void addInstrument(Chip chip, int volumeNum, int arpeggioNum, int pitchNum, int hiPitchNum, int dutyCycleNum) {
-    Instrument instrument;
+  // TODO: this makes me sad
+#define SEQ_WAVE 4
+  
+  // TODO: combine this with the previous function, this is ridiculous
+  GbInstrument buildN163GbInstrument(int volumeNum, int arpeggioNum, int pitchNum, int hiPitchNum, int waveNum) {
+    GbInstrument instrument;
 
-    auto volume    = getInstrSequence(InstrSequenceIndex(chip, SEQ_VOLUME,    volumeNum));
-    auto arpeggio  = getInstrSequence(InstrSequenceIndex(chip, SEQ_ARPEGGIO,  arpeggioNum));
-    auto pitch     = getInstrSequence(InstrSequenceIndex(chip, SEQ_PITCH,     pitchNum));
-    auto hiPitch   = getInstrSequence(InstrSequenceIndex(chip, SEQ_HIPITCH,   hiPitchNum));
-    auto dutyCycle = getInstrSequence(InstrSequenceIndex(chip, SEQ_DUTYCYCLE, dutyCycleNum));
+    auto volumeSeq   = getInstrSequence(InstrSequenceIndex(SNDCHIP_N163, SEQ_VOLUME,   volumeNum));
+    auto arpeggioSeq = getInstrSequence(InstrSequenceIndex(SNDCHIP_N163, SEQ_ARPEGGIO, arpeggioNum));
+    auto pitchSeq    = getInstrSequence(InstrSequenceIndex(SNDCHIP_N163, SEQ_PITCH,    pitchNum));
+    auto hiPitchSeq  = getInstrSequence(InstrSequenceIndex(SNDCHIP_N163, SEQ_HIPITCH,  hiPitchNum));
+    std::cerr << "adding wave " << waveNum << std::endl;
+    auto waveSeq     = getInstrSequence(InstrSequenceIndex(SNDCHIP_N163, 4,     waveNum));
+    std::cerr << "done" << std::endl;
 
-    song.addInstrument(buildInstrument(volume, arpeggio, pitch, hiPitch, dutyCycle));
+    // the engine only has one "sequence" for each instrument, so we need to combine
+    // all the famitracker sequences into one
+    // all sequences MUST be the same length and have the same loop point
+
+    size_t lengths[] = {
+      volumeSeq.getLength(),
+      arpeggioSeq.getLength(),
+      pitchSeq.getLength(),
+      hiPitchSeq.getLength(),
+      waveSeq.getLength()
+    };
+
+    size_t length = 0;
+    for (auto length_ : lengths) {
+      if(length) {
+	if(length_ && length_ != length) {
+	  std::stringstream errMsg;
+	  errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": mismatched sequence lengths; expected " << length << ", got " << length_;
+	  throw errMsg.str();
+	}
+      } else {
+	length = length_;
+      }
+    }
+
+    int loopPoints[] = {
+      volumeSeq.getLoopPoint(),
+      arpeggioSeq.getLoopPoint(),
+      pitchSeq.getLoopPoint(),
+      hiPitchSeq.getLoopPoint(),
+      waveSeq.getLoopPoint()
+    };
+
+    int loopPoint = -1;
+    for (auto loopPoint_ : loopPoints) {
+      if(loopPoint != -1) {
+	if(loopPoint_ != -1 && loopPoint_ != loopPoint) {
+	  std::stringstream errMsg;
+	  errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": mismatched loop point; expected " << loopPoint << ", got " << loopPoint_;
+	  throw errMsg.str();
+	}
+      } else {
+	loopPoint = loopPoint_;
+      }
+    }
+
+    if(loopPoint < -1) {
+      throw "invalid loop point";
+    }
+    unsigned loopPoint_ = loopPoint == -1 ? 0 : (unsigned)loopPoint;
+
+    InstrumentCommand command;
+
+    int currentVolume = -1;
+    int currentPitch = 0;
+    int currentHiPitch = 0;
+    int currentWave = -1;
+    for(size_t i = 0; i < length; i++) {
+      if(i == loopPoint_) {
+	command.type = INSTR_MARK;
+	instrument.addCommand(command);
+      }
+
+      if(volumeSeq) {
+	uint8_t volume = volumeSeq.at(i);
+	if(volume != currentVolume) {
+	  currentVolume = volume;
+	  command.type = INSTR_VOL;
+	  command.newVolume = volume << 4;
+	  instrument.addCommand(command);
+	}
+      }
+
+      if(pitchSeq) {
+	uint8_t pitch = pitchSeq.at(i);
+	if(pitch != currentPitch) {
+	  currentPitch = pitch;
+	  command.type = INSTR_HPITCH;
+	  command.newPitch = pitch;
+	  instrument.addCommand(command);
+	}
+      }
+
+      if(hiPitchSeq) {
+	uint8_t hiPitch = hiPitchSeq.at(i);
+	if(hiPitch != currentHiPitch) {
+	  currentHiPitch = hiPitch;
+	  command.type = INSTR_HPITCH;
+	  command.newHiPitch = hiPitch;
+	  instrument.addCommand(command);
+	}
+      }
+
+      if(waveSeq) {
+	uint8_t wave = waveSeq.at(i);
+	if(wave != currentWave) {
+	  currentWave = wave;
+	  command.type = INSTR_SETWAVE;
+	  command.newWave = wave;
+	  instrument.addCommand(command);
+	}
+      }
+
+      command.type = INSTR_END_FRAME;
+      instrument.addCommand(command);
+    }
+    if(loopPoint_ == length) {
+      command.type = INSTR_END;
+      instrument.addCommand(command);
+    } else {
+      command.type = INSTR_LOOP;
+      instrument.addCommand(command);
+    }
+
+    return instrument;
   }
-
+  
   int getChannelCount(void) const {
     if(hasN163) {
       return 6;

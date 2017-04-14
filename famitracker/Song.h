@@ -41,7 +41,8 @@ enum InstrumentCommandType {
   INSTR_DUTY_LO   = 12,
   INSTR_DUTY_25   = 14,
   INSTR_DUTY_50   = 16,
-  INSTR_DUTY_75   = 18
+  INSTR_DUTY_75   = 18,
+  INSTR_SETWAVE   = 20
 };
 
 struct InstrumentCommand {
@@ -50,13 +51,14 @@ struct InstrumentCommand {
     uint8_t newVolume;
     uint8_t newPitch;
     uint8_t newHiPitch;
+    uint8_t newWave;
   };
 
   void writeGb(std::ostream& ostream) const;
   uint8_t getLength(void) const;
 };
 
-class Instrument {
+class GbInstrument {
  public:
   void addCommand(const InstrumentCommand&);
   void writeGb(std::ostream&) const;
@@ -174,7 +176,7 @@ class Song {
   Song(Song&&);
   ~Song();
 
-  void addInstrument(const Instrument&);
+  void addInstrument(const GbInstrument&);
 
   void setTempo(uint8_t tempo);
 

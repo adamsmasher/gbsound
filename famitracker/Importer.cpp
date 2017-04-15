@@ -860,8 +860,7 @@ private:
 
     Wave wave;
     for (size_t sample = 0; sample < Wave::SAMPLE_CNT; sample++) {
-      // TODO: this seems wrong
-      int value = t.readInt(0, 1);
+      int value = t.readInt(0, 16);
       wave.setSample(sample, value);
     }
     t.readEOL();

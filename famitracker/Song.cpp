@@ -20,6 +20,8 @@
 
 #include "Song.h"
 
+#include <sstream>
+
 Wave::Wave() : samples{0} {}
 
 void Wave::writeGb(std::ostream& ostream) const {
@@ -355,8 +357,11 @@ uint16_t EngineCommand::getLength(void) const {
   case ENGINE_CMD_STOP: return 1;
   case ENGINE_CMD_END_OF_PAT: return 1;
   case ENGINE_CMD_JMP_FRAME: return 2;
-  default: throw "internal error - invalid engine command";
   }
+  
+  std::stringstream err;
+  err << "internal error - invalid engine command " << type;
+  throw err.str();
 }
 
 void GbNote::writeGb(std::ostream& ostream) const {
@@ -398,8 +403,11 @@ uint16_t ChannelCommand::getLength(void) const {
   case CHANNEL_CMD_OCTAVE_UP: return 1;
   case CHANNEL_CMD_OCTAVE_DOWN: return 1;
   case CHANNEL_CMD_SET_INSTRUMENT: return 2;
-  default: throw "internal error - invalid channel command";
+  case CHANNEL_CMD_SET_WAVE: return 2;
   }
+  std::stringstream err;
+  err << "Internal error - invalid channel command " << type;
+  throw err.str();
 }
 
 // TODO: use some tasteful inheritence for commands and stuff
@@ -458,8 +466,11 @@ uint8_t InstrumentCommand::getLength(void) const {
   case INSTR_DUTY_25: return 1;
   case INSTR_DUTY_50: return 1;
   case INSTR_DUTY_75: return 1;
-  default: throw "internal error - invalid instrument command type";
+  case INSTR_SETWAVE: return 2;
   }
+  std::stringstream err;
+  err <<  "internal error - invalid instrument command type " << type;
+  throw err.str();
 }
 
 void Row::ensureUnlocked(void) const {

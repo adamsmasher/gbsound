@@ -1200,7 +1200,7 @@ private:
   
   int getChannelCount(void) const {
     if(hasN163) {
-      return 6;
+      return 13;
     } else {
       return 5;
     }

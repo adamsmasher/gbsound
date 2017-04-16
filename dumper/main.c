@@ -6,7 +6,8 @@ int dump_file(FILE*);
 int ctrl_byte(FILE*);
 int tempo(FILE*);
 int waves(FILE*);
-int instruments(FILE*);
+int pattern_table(FILE*);
+int instrument_table(FILE*);
 
 int main(int argc, char **argv) {
   if(argc != 2) {
@@ -47,7 +48,11 @@ int dump_file(FILE *fp) {
     return ret;
   }
 
-  if((ret = instruments(fp))) {
+  if((ret = pattern_table(fp))) {
+    return ret;
+  }
+
+  if((ret = instrument_table(fp))) {
     return ret;
   }
 
@@ -114,21 +119,40 @@ int waves(FILE *fp) {
   return 0;
 }
 
-int instruments(FILE *fp) {
-  int instrumentBytes;
+int pattern_table(FILE *fp) {
+  int pattern_bytes;
 
-  if((instrumentBytes = fgetc(fp)) == EOF) {
+  if((pattern_bytes = fgetc(fp)) == EOF) {
     fprintf(stderr, "unexpected EOF\n");
     return EOF;
   }
-  instrumentBytes = instrumentBytes ? instrumentBytes : 256;
-  printf("Instrument bytes: %d\n", instrumentBytes);
+  pattern_bytes = pattern_bytes ? pattern_bytes : 256;
+  printf("Pattern bytes: %d\n", pattern_bytes);
 
-  if(instrumentBytes % 16 != 0) {
-    fprintf(stderr, "Invalid instrument byte count: %d\n", instrumentBytes);
+  if(pattern_bytes % 2 != 0) {
+    fprintf(stderr, "Invalid pattern byte count: %d\n", pattern_bytes);
+    return 1;
+  }
+
+  printf("Skipping pattern table\n");
+  fseek(fp, pattern_bytes, SEEK_CUR);
+}
+
+int instrument_table(FILE *fp) {
+  int instrument_bytes;
+
+  if((instrument_bytes = fgetc(fp)) == EOF) {
+    fprintf(stderr, "unexpected EOF\n");
+    return EOF;
+  }
+  instrument_bytes = instrument_bytes ? instrument_bytes : 256;
+  printf("Instrument bytes: %d\n", instrument_bytes);
+
+  if(instrument_bytes % 2 != 0) {
+    fprintf(stderr, "Invalid instrument byte count: %d\n", instrument_bytes);
     return 1;
   }
 
   printf("Skipping instrument table\n");
-  fseek(fp, instrumentBytes, SEEK_CUR);
+  fseek(fp, instrument_bytes, SEEK_CUR);
 }

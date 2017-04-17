@@ -110,7 +110,9 @@ int waves(FILE *fp) {
       return EOF;
     }
     for(i = 0; i < 16; i++) {
-      printf("%2X ", wave[i]);
+      uint8_t high = wave[i] >> 4;
+      uint8_t low = wave[i] & 0x0F;
+      printf("%2X %2X ", high, low);
     }
     printf("\n");
     waveBytes -= 16;

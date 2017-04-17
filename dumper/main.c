@@ -138,6 +138,8 @@ int pattern_table(FILE *fp) {
 
   printf("Skipping pattern table\n");
   fseek(fp, pattern_bytes, SEEK_CUR);
+
+  return 0;
 }
 
 int instrument_table(FILE *fp) {
@@ -157,4 +159,6 @@ int instrument_table(FILE *fp) {
 
   printf("Skipping instrument table\n");
   fseek(fp, instrument_bytes, SEEK_CUR);
+
+  return 0;
 }

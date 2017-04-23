@@ -595,6 +595,13 @@ ChDutyInstr50:	LD B, $80
 ChDutyInstr75:	LD B, $C0
 		JR ChDutyInstr
 
+ChInstrSetWave:	LD H, ChInstrPtrs >> 8
+		LD A, [ChNum]
+		ADD A
+		LD L, A
+		CALL PopInstr
+		JP LoadWave
+
 ChInstrMark:	LD H, ChInstrPtrs >> 8
 		LD A, [ChNum]
 		ADD A
@@ -742,6 +749,7 @@ InstrTblCh:	DW ChVolInstr
 		DW ChDutyInstr25
 		DW ChDutyInstr50
 		DW ChDutyInstr75
+		DW ChInstrSetWave
 
 SECTION "CmdTable", HOME[$7D00]
 CmdTblCh:	DW ChKeyOff

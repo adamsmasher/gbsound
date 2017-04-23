@@ -84,8 +84,10 @@ InitSndEngine::
 	;; set this to $FF, so it ticks as soon as we start playing
 		LD A, $FF
 		LD [SongTimer], A
+	;; NextPattern = 0, the first pattern
 		INC A
 		LD [NextPattern], A
+	;; Set the EndOfPat flag to 1, so that we'll load the NextPattern (the first one) once we tick
 		INC A
 		LD [EndOfPat], A
 		CALL LoadSong
@@ -116,7 +118,7 @@ LoadSongCtrlCh:	LD A, [HLI]			; volume config
 		LD [SongRate], A
 		RET
 
-LoadWaves:	LD A, [HLI]
+LoadWaves:	LD A, [HLI]			; how many bytes of wave data to load
 		LD B, A
 		LD DE, Waves
 .loop:		LD A, [HLI]
@@ -127,7 +129,7 @@ LoadWaves:	LD A, [HLI]
 		RET
 
 LoadPatternTbl:	LD DE, PatternTable
-		LD A, [HLI]
+		LD A, [HLI]			; how many pattern table bytes to load
 		LD B, A
 		LD [PatTblLen], A
 .loop:		LD A, [HLI]

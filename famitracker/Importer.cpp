@@ -731,7 +731,7 @@ private:
       switch(channel) {
       case CHANID_SQUARE1:
       case CHANID_SQUARE2:
-      case CHANID_N163_CHAN1:
+      case N163_INDEX:
       case CHANID_NOISE:
 	break;
       default:
@@ -759,13 +759,14 @@ private:
 	  command.newInstrument = instrument;
 	  currentInstruments[channel] = instrument;
 	  gbNote.addCommand(command);
-	  if (channel == CHANID_N163_CHAN1) {
+	  if (channel == N163_INDEX) {
 	    ChannelCommand command;
 	    command.type = CHANNEL_CMD_SET_WAVE;
 	    command.newWave = waveForInstrument.at(instrument) * 16;
 	    gbNote.addCommand(command);
 	  }
 	}
+
 	switch(channel) {
 	case CHANID_SQUARE1:
 	  row.setSquareNote1(gbNote);
@@ -773,7 +774,7 @@ private:
 	case CHANID_SQUARE2:
 	  row.setSquareNote2(gbNote);
 	  break;
-	case CHANID_N163_CHAN1:
+	case N163_INDEX:
 	  row.setWaveNote(gbNote);
 	  break;
 	case CHANID_NOISE:

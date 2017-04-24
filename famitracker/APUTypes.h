@@ -70,6 +70,8 @@ enum chan_id_t {
 	CHANNELS		/* Total number of channels */
 };
 
+#define N163_INDEX 5
+
 enum apu_machine_t {
 	MACHINE_NTSC, 
 	MACHINE_PAL

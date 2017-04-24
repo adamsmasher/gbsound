@@ -728,7 +728,13 @@ private:
       Effect effect = cell.getEffect();
 
       // don't actually do anything if this isn't a GB channel
-      if(channel == CHANID_TRIANGLE || channel == CHANID_DPCM) {
+      switch(channel) {
+      case CHANID_SQUARE1:
+      case CHANID_SQUARE2:
+      case CHANID_N163_CHAN1:
+      case CHANID_NOISE:
+	break;
+      default:
 	continue;
       }
 

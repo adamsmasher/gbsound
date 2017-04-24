@@ -123,16 +123,23 @@ class GbNote {
 class Row {
  public:
   Row();
-  void setNote(int, GbNote);
   void writeGb(std::ostream&) const;
   void jump(uint8_t newFrame);
   void endOfPattern(void);
   void stop(void);
   uint16_t getLength(void) const;
+  void setSquareNote1(const GbNote&);
+  void setSquareNote2(const GbNote&);
+  void setWaveNote(const GbNote&);
+  void setNoiseNote(const GbNote&);
+  
  private:
   bool hasFlowControlCommand;
   std::vector<EngineCommand> engineCommands;
-  GbNote notes[4];
+  GbNote squareNote1;
+  GbNote squareNote2;
+  GbNote waveNote;
+  GbNote noiseNote;
 
   void ensureUnlocked(void) const;
   void setFlowControlCommand(EngineCommand);

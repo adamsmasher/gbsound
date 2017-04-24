@@ -766,7 +766,20 @@ private:
 	    gbNote.addCommand(command);
 	  }
 	}
-	row.setNote(gbChannel, gbNote);
+	switch(channel) {
+	case CHANID_SQUARE1:
+	  row.setSquareNote1(gbNote);
+	  break;
+	case CHANID_SQUARE2:
+	  row.setSquareNote2(gbNote);
+	  break;
+	case CHANID_N163_CHAN1:
+	  row.setWaveNote(gbNote);
+	  break;
+	case CHANID_NOISE:
+	  row.setNoiseNote(gbNote);
+	  break;
+	}
       }
       gbChannel++;
     }

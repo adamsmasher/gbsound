@@ -276,18 +276,22 @@ GbNote::GbNote() : pitch(0) {}
 
 GbNote::GbNote(uint8_t pitch) : pitch(pitch) {}
 
-Row::Row() : hasFlowControlCommand(false) {
-  for (GbNote *i = std::begin(notes); i < std::end(notes); ++i) {
-    *i = GbNote();
-  }
+Row::Row() : hasFlowControlCommand(false) {}
+
+void Row::setSquareNote1(const GbNote& note) {
+  squareNote1 = note;
 }
 
-void Row::setNote(int i, GbNote note) {
-  if(i >= 4) {
-    throw "setNote out of bounds";
-  }
+void Row::setSquareNote2(const GbNote& note) {
+  squareNote2 = note;
+}
 
-  notes[i] = note;
+void Row::setWaveNote(const GbNote& note) {
+  waveNote = note;
+}
+
+void Row::setNoiseNote(const GbNote& note) {
+  noiseNote = note;
 }
 
 void Song::addRow(const Row& row, PatternNumber i) {
@@ -316,9 +320,10 @@ void Row::writeGb(std::ostream& ostream) const {
     // end engine commands
     ostream.put(0);
 
-    for (const GbNote *i = std::begin(notes); i != std::end(notes); ++i) {
-      i->writeGb(ostream);    
-    }
+    squareNote1.writeGb(ostream);
+    squareNote2.writeGb(ostream);
+    waveNote.writeGb(ostream);
+    noiseNote.writeGb(ostream);
   }
 }
 
@@ -332,9 +337,11 @@ uint16_t Row::getLength(void) const {
     }
     length++; // end of engine commands
 
-    for (const GbNote *i = std::begin(notes); i != std::end(notes); ++i) {
-      length += i->getLength();
-    }
+    length += squareNote1.getLength();
+    length += squareNote2.getLength();
+    length += waveNote.getLength();
+    length += noiseNote.getLength();
+
     return length;
   }
 }

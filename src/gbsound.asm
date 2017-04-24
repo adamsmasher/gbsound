@@ -282,6 +282,7 @@ RunSndTick:	CALL TickSongCtrl
 		LD HL, ChNum
 		XOR A
 		LD [HLI], A
+	;; set reg base ($FF10)
 		LD A, $10
 		LD [HL], A
 .loop:		CALL TickCh

@@ -398,7 +398,7 @@ void ChannelCommand::writeGb(std::ostream& ostream) const {
   case CHANNEL_CMD_SET_SND_LEN: /* TODO */ throw "Unimplemented";
   case CHANNEL_CMD_OCTAVE_UP: break;
   case CHANNEL_CMD_OCTAVE_DOWN: break;
-  case CHANNEL_CMD_SET_INSTRUMENT: ostream.put(newInstrument); break;
+  case CHANNEL_CMD_SET_INSTRUMENT: ostream.put(newInstrument * 2); break;
   case CHANNEL_CMD_SET_WAVE: ostream.put(newWave); break;
   }      
 }

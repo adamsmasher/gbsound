@@ -175,7 +175,7 @@ private:
     uint16_t computeOpcodeAddress() const {
       return 
 	SongMasterConfig::GB_SIZE
-	+ song.waves.size() * 16 + 1
+	+ (song.waves.size() ? song.waves.size() * 16 : 1) + 1
 	+ song.patterns.size() * 2 + 1
 	+ song.instruments.size() * 2 + 1;
     }

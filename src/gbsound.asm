@@ -230,6 +230,7 @@ ClearSndRegs:	XOR A
 		LD C, $10
 		LD B, 5 * 4	; number of sound registers
 .loop:		LD [C], A
+		INC C
 		DEC B
 		JR NZ, .loop
 		RET

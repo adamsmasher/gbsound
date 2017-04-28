@@ -50,6 +50,10 @@ ChInstrMarkers:	DS 4 * 2
 SECTION "ChFreqs", BSS[$C300]
 ;;; Stores the current frequency being output on each channel
 ChFreqs:	DS 4 * 2
+;;; these need to be organized like this
+;;; 1 if the channel is dirty, otherwise 0
+;;; the second byte of each channel is ignored
+ChDirty:	DS 4 * 2
 
 SECTION "ChCurNotes", BSS[$C400]
 ;;; Stores the current note (offset into the note table) being output on each channel
@@ -216,7 +220,7 @@ ClearEffects:   LD HL, ChOctaves
 
 ClearFreqs:	LD HL, ChFreqs
 		XOR A
-		LD B, 8
+		LD B, 16	; clear both Freqs and Dirties
 .loop:		LD [HLI], A
 		DEC B
 		JR NZ, .loop
@@ -414,18 +418,26 @@ ApplyInstrCh:	LD H, ChInstrPtrs >> 8
 		LD L, A
 		JP [HL]
 
-UpdateHardware:
-	;; TODO: if the registers aren't "dirty", don't restart the note
-		LD B, 4		; channel count
+UpdateHardware:	LD B, 4		; channel count
 		LD C, $13	; freq register 1
-		LD HL, ChFreqs
-.loop:		LD A, [HLI]	; get frequency 1
+		LD HL, ChDirty
+.loop:		BIT 0, [HL]	; is this channel dirty?
+		RES 0, [HL]	; (clear it either way)
+		JR Z, .notDirty
+		RES 3, L	; move to frequencies
+		LD A, [HLI]	; get frequency 1
 		LD [C], A	; write to freq register 1
 		INC C		; freq reg 2
 		LD A, [HLI]	; get frequency 2
 		SET 7,A		; TODO: uh now that we have to set this every time we write maybe do this once on write?
-		LD [C], A
-		LD A, C
+		LD [C], A	; write frequency 2
+;;; TODO: properly set the sound output register for channel 3
+		SET 3, L	; move back to dirtyness
+		JR .next
+.notDirty:	INC C		; just reproduce the changes we do above to the loop state, without updating hardware
+		INC L
+		INC L
+.next:		LD A, C
 		ADD 4		; next freq register 1
 		LD C, A
 		DEC B
@@ -448,22 +460,25 @@ ChRstInstr:	LD A, [ChNum]
 
 ChNote:		CALL ChRstInstr
 		LD A, [ChNum]
-		LD B, A
+		LD B, A		; B = current channel
 		LD H, ChCurNotes >> 8
 		LD L, A
-		LD A, [HL]
-		INC H		; octaves
-		ADD [HL]
+		LD A, [HL]	; A = current note for this channel
+		INC H		; HL -> octaves
+		ADD [HL]	; add octaves change
 	;; look up current note in frequency table
 		LD H, FreqTable >> 8
 		LD L, A
-		LD A, [HLI]
-		LD C, [HL]
+		LD A, [HLI]	; A = low frequency for this note
+		LD C, [HL]	; C = high frequency for this note
 		LD H, ChFreqs >> 8
 		LD L, B
 		SLA L
-		LD [HLI], A
-		LD [HL], C
+		LD [HLI], A	; write low freq
+		LD [HL], C	; write high freq
+		DEC L		; go back to first byte of the channel
+		SET 3, L	; goto Dirtyness
+		SET 0, [HL]	; mark channel dirty
 		RET
 
 ;;; Assumes A = Cmd + 1
@@ -505,40 +520,47 @@ ChSetSndLen:	CALL PopOpcode
 		LD [C], A
 		RET
 
-ChVolInstr:	LD A, [ChRegBase]
+ChVolInstr:	LD H, ChInstrPtrs >> 8
+		LD A, [ChNum]
+		ADD A
+		LD L, A
+		CALL PopInstr
+		LD A, [ChRegBase]
 		ADD 2		; volume
 		LD C, A
+		LD [C], A
+		LD H, ChFreqs >> 8
+		LD A, [ChNum]
+		ADD A
+		LD L, A
+		SET 3, L	; move to ChDirty
+		SET 7, [HL]
+		RET
+
+ChPitchInstr:
+	;; get how much to shift the pitch by
 		LD H, ChInstrPtrs >> 8
 		LD A, [ChNum]
 		ADD A
 		LD L, A
 		CALL PopInstr
-		LD [C], A
-		RET
-
-ChPitchInstr:	LD H, ChInstrPtrs >> 8
-		LD A, [ChNum]
-		ADD A
-		LD L, A
-		CALL PopInstr
-		LD B, A
-		LD A, [ChRegBase]
-		ADD 3		; freq reg 1
+		LD B, A		; B = pitch shift
 		LD H, ChFreqs >> 8
-		LD A, [ChNum]
+		LD A, [ChNum]	
 		ADD A
 		LD L, A
-		LD A, [HL]
-		ADD B
-		LD [HLI], A
-		LD [C], A
-		RET NC
-		INC C		; freq reg 2
-		INC A
-		LD [HL], A
-		LD [C], A
+		LD A, [HL]	; A = current frequency
+		ADD B		; A = shifted frequency
+		LD [HL], A	; write back
+		JR NC, .nc
+		INC L		; move to upper frequency
+		INC [HL]	; carry
+		DEC L
+.nc:		SET 3, L	; move to dirtiness
+		SET 0, [HL]	; mark dirty
 		RET
 
+;;; TODO: fix this to mimic the above
 ChHPitchInstr:	LD A, [ChRegBase]
 		ADD 3		; freq reg 1
 		LD C, A

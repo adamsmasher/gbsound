@@ -416,13 +416,13 @@ ApplyInstrCh:	LD H, ChInstrPtrs >> 8
 
 UpdateHardware:
 	;; TODO: if the registers aren't "dirty", don't restart the note
-		LD B, 4
+		LD B, 4		; channel count
 		LD C, $13	; freq register 1
 		LD HL, ChFreqs
-.loop:		LD A, [HLI]
-		LD [C], A
+.loop:		LD A, [HLI]	; get frequency 1
+		LD [C], A	; write to freq register 1
 		INC C		; freq reg 2
-		LD A, [HLI]
+		LD A, [HLI]	; get frequency 2
 		SET 7,A		; TODO: uh now that we have to set this every time we write maybe do this once on write?
 		LD [C], A
 		LD A, C

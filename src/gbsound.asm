@@ -432,7 +432,6 @@ UpdateHardware:	LD B, 4		; channel count
 		LD A, [HLI]	; get frequency 2
 		SET 7,A		; TODO: uh now that we have to set this every time we write maybe do this once on write?
 		LD [C], A	; write frequency 2
-;;; TODO: properly set the sound output register for channel 3
 		SET 3, L	; move back to dirtyness
 		JR .next
 .notDirty:	INC C		; just reproduce the changes we do above to the loop state, without updating hardware
@@ -748,11 +747,17 @@ LoadWave:	LD H, Waves >> 8
 		LD L, A
 		LD C, $30
 		LD B, 16
+	;; disable the wave channel while we load in the new wave
+		XOR A
+		LDH [$1A], A
 .loop:		LD A, [HLI]
 		LD [C], A
 		INC C
 		DEC B
 		JR NZ, .loop
+	;; reenable the wave channel
+		LD A, $80
+		LDH [$1A], A
 		RET
 
 SECTION "FreqTable", HOME[$7A00]

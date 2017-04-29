@@ -1169,7 +1169,8 @@ private:
 	if(volume != currentVolume) {
 	  currentVolume = volume;
 	  command.type = INSTR_VOL;
-	  command.newVolume = volume << 4;
+	  // note that this is different than for the standard GB channels
+	  command.newVolume = (volume >= 4 ? 4 - (volume >> 2) : 0) << 5;
 	  instrument.addCommand(command);
 	}
       }

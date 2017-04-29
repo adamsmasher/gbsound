@@ -525,9 +525,11 @@ ChVolInstr:	LD H, ChInstrPtrs >> 8
 		ADD A
 		LD L, A
 		CALL PopInstr
+		LD B, A		; B = new volume
 		LD A, [ChRegBase]
 		ADD 2		; volume
-		LD C, A
+		LD C, A		; C = volume register
+		LD A, B		; A = new volume
 		LD [C], A
 		LD H, ChFreqs >> 8
 		LD A, [ChNum]

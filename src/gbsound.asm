@@ -536,7 +536,7 @@ ChVolInstr:	LD H, ChInstrPtrs >> 8
 		ADD A
 		LD L, A
 		SET 3, L	; move to ChDirty
-		SET 7, [HL]
+		SET 0, [HL]
 		RET
 
 ChPitchInstr:

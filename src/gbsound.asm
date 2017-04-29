@@ -387,16 +387,16 @@ ApplyInstrCh:	LD H, ChInstrPtrs >> 8
 		LD A, [ChNum]
 		ADD A
 		LD L, A
-		LD D, H
+		LD D, H		; DE = pointer to channel instr data
 		LD E, L
-		LD A, [HLI]
+		LD A, [HLI]	; HL = current instr data
 		LD H, [HL]
 		LD L, A
-		LD A, [HLI]
+		LD A, [HLI]	; A = current command, HL = next
 	;; 0 indicates the end of the instrument - don't do anything more (ever)
 		AND A
 		RET Z
-		LD B, A
+		LD B, A		; B = current command
 	;; write the new pointer back
 		LD A, L
 		LD [DE], A

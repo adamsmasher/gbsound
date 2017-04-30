@@ -643,6 +643,7 @@ private:
     int pitch     = readSequenceNumber();
     int hiPitch   = readSequenceNumber();
     int dutyCycle = readSequenceNumber();
+
     song.addInstrument(buildStdGbInstrument(volume, arpeggio, pitch, hiPitch, dutyCycle));
 
     skipInstrumentName();
@@ -929,7 +930,6 @@ private:
       throw "invalid wave count";
     }
 
-    std::cerr << "adding instrument" << std::endl;
     song.addInstrument(buildN163GbInstrument(volume, arpeggio, pitch, hiPitch, wave));
 
     skipInstrumentName();
@@ -1102,9 +1102,7 @@ private:
     auto arpeggioSeq = getInstrSequence(InstrSequenceIndex(SNDCHIP_N163, SEQ_ARPEGGIO, arpeggioNum));
     auto pitchSeq    = getInstrSequence(InstrSequenceIndex(SNDCHIP_N163, SEQ_PITCH,    pitchNum));
     auto hiPitchSeq  = getInstrSequence(InstrSequenceIndex(SNDCHIP_N163, SEQ_HIPITCH,  hiPitchNum));
-    std::cerr << "adding wave " << waveNum << std::endl;
     auto waveSeq     = getInstrSequence(InstrSequenceIndex(SNDCHIP_N163, 4,     waveNum));
-    std::cerr << "done" << std::endl;
 
     // the engine only has one "sequence" for each instrument, so we need to combine
     // all the famitracker sequences into one

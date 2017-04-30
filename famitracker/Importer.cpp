@@ -156,6 +156,11 @@ public:
     return 12 * (octave - 2) + pitchClass;
   }
 
+  uint8_t toWavePitch(void) const {
+    Note octaveUp(this->pitchClass, this->octave + 1);
+    return octaveUp.toGbPitch();
+  }
+
   operator bool() const {
     return pitchClass || octave;
   }
@@ -752,7 +757,7 @@ private:
       }
 
       if(note) {
-	GbNote gbNote(note.toGbPitch());
+	GbNote gbNote(channel == N163_INDEX ? note.toWavePitch() : note.toGbPitch());
 	if(cell.getInstrumentId() != currentInstruments[channel]) {
 	  ChannelCommand command;
 	  command.type = CHANNEL_CMD_SET_INSTRUMENT;

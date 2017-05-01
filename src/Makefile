@@ -1,6 +1,7 @@
 all: ../gbsound.gb
 
 DEPS=\
+build/decompress.o\
 build/gbsound.o\
 build/main.o
 

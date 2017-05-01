@@ -903,6 +903,13 @@ private:
     t.readEOL();
   }
 
+  void checkWaveCount() {
+    int waveCount = t.readInt(1, 1);
+    if(waveCount != 1) {
+      throw "invalid wave count";
+    }
+  }
+
   void importN163Instrument(void) {
     skipInstrumentNumber();
 
@@ -922,13 +929,6 @@ private:
     // wave pos - where the sample gets loaded into wave RAM
     // this must be 0 in our engine
     int wavePos = t.readInt(0, 0);
-
-    // TODO: clean this up
-    // i.e. put it into a function
-    int waveCount = t.readInt(1, 1);
-    if(waveCount != 1) {
-      throw "invalid wave count";
-    }
 
     song.addInstrument(buildN163GbInstrument(volume, arpeggio, pitch, hiPitch, wave));
 

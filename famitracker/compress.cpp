@@ -1,6 +1,5 @@
-#include <cstddef>
-#include <cstdint>
-#include <vector>
+#include "compress.h"
+
 #include <experimental/optional>
 
 using namespace std::experimental;

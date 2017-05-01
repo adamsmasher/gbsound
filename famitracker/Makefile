@@ -11,6 +11,7 @@ build/Tokenizer.o
 
 HEADERS=\
 Command.h\
+compress.h\
 hash.h\
 Importer.h\
 Song.h\

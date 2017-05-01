@@ -1149,7 +1149,7 @@ private:
     auto arpeggioSeq = getInstrSequence(InstrSequenceIndex(SNDCHIP_N163, SEQ_ARPEGGIO, arpeggioNum));
     auto pitchSeq    = getInstrSequence(InstrSequenceIndex(SNDCHIP_N163, SEQ_PITCH,    pitchNum));
     auto hiPitchSeq  = getInstrSequence(InstrSequenceIndex(SNDCHIP_N163, SEQ_HIPITCH,  hiPitchNum));
-    auto waveSeq     = getInstrSequence(InstrSequenceIndex(SNDCHIP_N163, 4,     waveNum));
+    auto waveSeq     = getInstrSequence(InstrSequenceIndex(SNDCHIP_N163, SEQ_WAVE,     waveNum));
 
     // the engine only has one "sequence" for each instrument, so we need to combine
     // all the famitracker sequences into one

@@ -548,20 +548,35 @@ private:
     case CT_INSTFDS:
     case CT_FDSWAVE:
     case CT_FDSMOD:
-    case CT_FDSMACRO:
-      throw std::invalid_argument("FDS not supported on the Game Boy.");
+    case CT_FDSMACRO: {
+      auto err = makeError();
+      err << "FDS not supported on the Game Boy.";
+      throw err;
+    }
     case CT_KEYDPCM:
     case CT_DPCMDEF:
-    case CT_DPCM:
-      throw std::invalid_argument("DPCM not supported on the Game Boy.");
+    case CT_DPCM: {
+      auto err = makeError();
+      err << "DPCM not supported on the Game Boy.";
+      throw err;
+    }
     case CT_INSTVRC6:
-    case CT_MACROVRC6:
-      throw std::invalid_argument("VRC6 not supported on the Game Boy.");
-    case CT_INSTVRC7:
-      throw std::invalid_argument("VRC7 not supported on the Game Boy.");
+    case CT_MACROVRC6: {
+      auto err = makeError();
+      err << "VRC6 not supported on the Game Boy.";
+      throw err;
+    }
+    case CT_INSTVRC7: {
+      auto err = makeError();
+      err << "VRC7 not supported on the Game Boy.";
+      throw err;
+    }
     case CT_INSTS5B:
-    case CT_MACROS5B:
-      throw std::invalid_argument("S5B not supported on the Game Boy.");
+    case CT_MACROS5B: {
+      auto err = makeError();
+      err << "S5B not supported on the Game Boy.";
+      throw err;
+    }
     case CT_INSTN163:
       importN163Instrument();
       return;
@@ -603,7 +618,9 @@ private:
   void ignoreReleasePoint(void) {
     int releasePoint = t.readInt(-1, MAX_SEQUENCE_ITEMS);
     if(releasePoint != -1) {
-      throw std::invalid_argument("Instrument has release point, unsupported.");
+      auto err = makeError();
+      err << "Instrument has release point, unsupported.";
+      throw err;
     }
   }
 
@@ -624,7 +641,9 @@ private:
       // in the file, 0 is both absolute and non-arpeggio sequence
       // so if it's absolute and a non-arpeggio sequence, we're ok
       // otherwise raise
-      throw std::invalid_argument("Non-arpeggio sequence given arpeggio type!");
+      auto err = makeError();
+      err << "Non-arpeggio sequence given arpeggio type!";
+      throw err;
     }
 
     checkColon();
@@ -666,7 +685,9 @@ private:
 
   void importTrack(void) {
     if (track != 0) {
-      throw std::invalid_argument("Multiple tracks not supported");
+      auto err = makeError();
+      err << "Multiple tracks are not supported.";
+      throw err;
     }
 
     ignorePatternLength();
@@ -685,7 +706,9 @@ private:
     for (int c = 0; c < getChannelCount(); ++c) {
       int i = t.readInt(1, MAX_EFFECT_COLUMNS);
       if(i != 1) {
-	throw std::invalid_argument("All channels must have 1 effect column.");
+	auto err = makeError();
+	err << "All channels must have 1 effect column, not " << i;
+	throw err;
       }
     }
     t.readEOL();
@@ -806,7 +829,9 @@ private:
   void importMachine(void) {
     int i = t.readInt(0, PAL);
     if(i == PAL) {
-      throw std::invalid_argument("The Game Boy always runs at 60Hz. PAL songs are not supported.");
+      auto errMsg = makeError();
+      errMsg << "The Game Boy always runs at 60Hz. PAL songs are not supported.";
+      throw errMsg;
     }
     t.readEOL();
   }
@@ -827,7 +852,9 @@ private:
   void importFramerate(void) {
     int i = t.readInt(0, 800);
     if(i != 0 && i != 60) {
-      throw std::invalid_argument("Engine speed must be 60Hz.");
+      auto errMsg = makeError();
+      errMsg << "Engine speed must be 60Hz; got " << i;
+      throw errMsg;
     }
     t.readEOL();
   }
@@ -867,7 +894,10 @@ private:
     switch(i) {
     case SNDCHIP_NONE: hasN163 = false; break;
     case SNDCHIP_N163: hasN163 = true;  break;
-    default: throw std::domain_error("Unsupported expansion.");
+    default:
+      auto errMsg = makeError();
+      errMsg << "Unsupported expansion: " << i;
+      throw errMsg;
     }
     
     t.readEOL();
@@ -906,7 +936,9 @@ private:
   void importN163Channels(void) {
     int i = t.readInt(1, 8);
     if(i > 1) {
-      throw std::invalid_argument("Only 1 N163 wave channel is supported.");
+      auto errMsg = makeError();
+      errMsg << "Only 1 N163 wave channel is supported.";
+      throw errMsg;
     }
     t.readEOL();
   }
@@ -914,7 +946,9 @@ private:
   void checkWaveCount() {
     int waveCount = t.readInt(1, 1);
     if(waveCount != 1) {
-      throw std::invalid_argument("invalid wave count");
+      auto errMsg = makeError();
+      errMsg << "invalid wave count: " << waveCount;
+      throw errMsg;
     }
   }
 
@@ -1024,7 +1058,9 @@ private:
     }
 
     if(loopPoint < -1) {
-      throw std::invalid_argument("invalid loop point");
+      auto err = makeError();
+      err << "invalid loop point " << loopPoint;
+      throw err;
     }
     unsigned loopPoint_ = loopPoint == -1 ? 0 : (unsigned)loopPoint;
 
@@ -1079,7 +1115,10 @@ private:
 	  case 1: command.type = INSTR_DUTY_25; break;
 	  case 2: command.type = INSTR_DUTY_50; break;
 	  case 3: command.type = INSTR_DUTY_75; break;
-	  default: throw std::invalid_argument("Invalid duty");
+	  default:
+	    auto err = makeError();
+	    err << "Invalid duty: " << duty;
+	    throw err;
 	  }
 	  instrument.addCommand(command);
 	}
@@ -1159,7 +1198,9 @@ private:
     }
 
     if(loopPoint < -1) {
-      throw std::invalid_argument("invalid loop point");
+      auto err = makeError();
+      err << "invalid loop point: " << loopPoint;
+      throw err;
     }
     unsigned loopPoint_ = loopPoint == -1 ? 0 : (unsigned)loopPoint;
 

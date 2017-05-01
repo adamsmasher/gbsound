@@ -18,11 +18,11 @@ int main(int argc, char **argv) {
     Song song = importer.runImport();
     out.open(argv[2], std::ios::binary);
     song.writeGb(out);
-  } catch (std::string error) {
-    std::cerr << "Error: " << error;
+  } catch (const std::stringstream& error) {
+    std::cerr << "Error: " << error.str();
     return -2;
-  } catch (const char *error) {
-    std::cerr << "Error: " << error;
+  } catch (const std::runtime_error& error) {
+    std::cerr << "Error: " << error.what();
     return -2;
   }
   out.close();

@@ -151,7 +151,7 @@ public:
   uint8_t toGbPitch(void) const {
     if (octave < 2 || (octave == 2 && pitchClass >= 9)) {
       // nothing lower than C-2 is representable, apparently
-      throw "Note unrepresentable on GB.";
+      throw std::range_error("Note unrepresentable on GB.");
     }
     return 12 * (octave - 2) + pitchClass;
   }
@@ -181,7 +181,7 @@ static EffectType effectTypeOfId(int id) {
   case 1: return EFFECT_JUMP;
   case 2: return EFFECT_END_OF_PATTERN;
   case 3: return EFFECT_STOP;
-  default: throw "Unsupported effect";
+  default: throw std::domain_error("Unsupported effect");
   }
 }
 
@@ -224,14 +224,14 @@ class InstrSequence {
 
   void setLoopPoint(int loopPoint) {
     if(loopPoint < -1 || (loopPoint >= 0 && (unsigned)loopPoint > sequence.size())) {
-      throw "Loop point out of range";
+      throw std::out_of_range("Loop point out of range");
     }
     this->loopPoint = loopPoint;
   }
 
   void setArpeggioType(ArpeggioType arpeggioType) {
     if(this->type != SEQ_ARPEGGIO) {
-      throw "Cannot set arpeggio type for non-arpeggio sequence!";
+      throw std::logic_error("Cannot set arpeggio type for non-arpeggio sequence!");
     }
     this->arpeggioType = arpeggioType;
   }
@@ -265,7 +265,7 @@ public:
 
   Song runImport(void) {
     if(isExpired) {
-      throw "Cannot run the same Importer multiple times";
+      throw std::logic_error("Cannot run the same Importer multiple times");
     }
     isExpired = true;
 
@@ -307,31 +307,37 @@ private:
   } state;
   std::unordered_map<int, int> waveForInstrument;
   int lastWaveRead;
+
+  std::stringstream makeError() const {
+    std::stringstream errMsg;
+    errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": ";
+    return errMsg;
+  }
   
   void ignoreVolId() {
     std::string sVol = t.readToken();
 
     if(sVol != ".") {
-      std::stringstream errMsg;
-      errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": unrecognized volume token '" << sVol << "'; volume column is unsupported";
-      throw errMsg.str();
+      auto err = makeError();
+      err << "unrecognized volume token '" << sVol << "'; volume column is unsupported";
+      throw err;
     }
   }
   
   int getInstrumentId(const std::string& sInst) const {
-    std::ostringstream errMsg;
-  
     if (sInst.size() != 2) {
-      errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": instrument column should be 2 characters wide, '" << sInst << "' found.";
-      throw errMsg.str();
+      auto errMsg = makeError();
+      errMsg << "column should be 2 characters wide, '" << sInst << "' found.";
+      throw errMsg;
     } else if (sInst == "..") {
       return MAX_INSTRUMENTS;
     } else {
       int h = importHex(sInst);
 
       if (h >= MAX_INSTRUMENTS) {
-	errMsg << "Line " << t.getLine() << " column " << ": instrument '" << sInst << "' is out of bounds.";
-	throw errMsg.str();
+	auto errMsg = makeError();
+	errMsg << "instrument '" << sInst << "' is out of bounds.";
+	throw errMsg;
       }
 
       return h;
@@ -339,12 +345,11 @@ private:
   }
 
   Note readNote() {
-    std::ostringstream errMsg;
-
     std::string sNote = t.readToken();
     if (sNote.size() != 3) {
-      errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": note column should be 3 characters wide, '" << sNote << "' found.";
-      throw errMsg.str();
+      auto errMsg = makeError();
+      errMsg << "note column should be 3 characters wide, '" << sNote << "' found.";
+      throw errMsg;
     } else if (sNote == "...") {
       return Note(0, 0);
     } else if (sNote == "---") {
@@ -359,13 +364,13 @@ private:
 
       return Note(h % 12 + 1, h / 12);
     } else if (channel == CHANID_TRIANGLE) {
-      std::ostringstream errMsg;
-      errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": non-empty cell " << sNote << " in triangle channel";
-      throw errMsg.str();
+      auto errMsg = makeError();
+      errMsg << "non-empty cell " << sNote << " in triangle channel";
+      throw errMsg;
     } else if (channel == CHANID_DPCM) {
-      std::ostringstream errMsg;
-      errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": non-empty cell " << sNote  << " in DPCM channel";
-      throw errMsg.str();
+      auto errMsg = makeError();
+      errMsg << "non-empty cell " << sNote  << " in DPCM channel";
+      throw errMsg;
     } else {
       int n;
       switch (sNote.at(0)) {
@@ -377,8 +382,9 @@ private:
       case 'a': case 'A': n = 9; break;
       case 'b': case 'B': n = 11; break;
       default:
-	errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": unrecognized note '" << sNote << "'.";
-	throw errMsg.str();
+	auto errMsg = makeError();
+	errMsg << "unrecognized note '" << sNote << "'.";
+	throw errMsg;
       }
 
       switch (sNote.at(1)) {
@@ -386,8 +392,9 @@ private:
       case '#': case '+': n += 1; break;
       case 'b': case 'f': n -= 1; break;
       default:
-	errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": unrecognized note '" << sNote << "'.";
-	throw errMsg.str();
+	auto errMsg = makeError();
+	errMsg << "unrecognized note '" << sNote << "'.";
+	throw errMsg;
       }
 
       while (n <   0) n += 12;
@@ -395,8 +402,9 @@ private:
 
       int o = sNote.at(2) - '0';
       if (o < 0 || o >= OCTAVE_RANGE) {
-	errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": unrecognized octave '" << sNote << "'.";
-	throw errMsg.str();
+	auto errMsg = makeError();
+	errMsg << "unrecognized octave '" << sNote << "'.";
+	throw errMsg;
       }
 
       return Note(n + 1, o);
@@ -407,9 +415,9 @@ private:
     std::string effectColumn = t.readToken();
     
     if (effectColumn.size() != 3) {
-      std::ostringstream errMsg;
-      errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": effect column should be 3 characters wide, '" << effectColumn << "' found.";
-      throw errMsg.str();
+      auto errMsg = makeError();
+      errMsg << "effect column should be 3 characters wide, '" << effectColumn << "' found.";
+      throw errMsg;
     }
 
     return effectColumn;
@@ -423,9 +431,9 @@ private:
       }
     }
 
-    std::ostringstream errMsg;
-    errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": unrecognized effect '" << effectColumn << "'.";
-    throw errMsg.str();
+    auto errMsg = makeError();
+    errMsg << "unrecognized effect '" << effectColumn << "'.";
+    throw errMsg;
   }
 
   Effect readEffect(void) {
@@ -465,9 +473,9 @@ private:
       }
     }
 
-    std::ostringstream errMsg;
-    errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": hexadecimal char expected, '" << c << "' found.";
-    throw errMsg.str();
+    auto errMsg = makeError();
+    errMsg << "hexadecimal char expected, '" << c << "' found.";
+    throw errMsg;
   }
 
   int importHex(const std::string& sToken) const {
@@ -486,10 +494,10 @@ private:
         return (Command)c;
       }
     }
-  
-    std::ostringstream errMsg;
-    errMsg << "Unrecognized command at line " << t.getLine() << ": '" << command << "'.";
-    throw errMsg.str();
+
+    auto errMsg = makeError();
+    errMsg << "Unrecognized command: '" << command << "'.";
+    throw errMsg;
   }
 
   void importCommand(Command c) {
@@ -541,19 +549,19 @@ private:
     case CT_FDSWAVE:
     case CT_FDSMOD:
     case CT_FDSMACRO:
-      throw "FDS not supported on the Game Boy.";
+      throw std::invalid_argument("FDS not supported on the Game Boy.");
     case CT_KEYDPCM:
     case CT_DPCMDEF:
     case CT_DPCM:
-      throw "DPCM not supported on the Game Boy.";
+      throw std::invalid_argument("DPCM not supported on the Game Boy.");
     case CT_INSTVRC6:
     case CT_MACROVRC6:
-      throw "VRC6 not supported on the Game Boy.";
+      throw std::invalid_argument("VRC6 not supported on the Game Boy.");
     case CT_INSTVRC7:
-      throw "VRC7 not supported on the Game Boy.";
+      throw std::invalid_argument("VRC7 not supported on the Game Boy.");
     case CT_INSTS5B:
     case CT_MACROS5B:
-      throw "S5B not supported on the Game Boy.";
+      throw std::invalid_argument("S5B not supported on the Game Boy.");
     case CT_INSTN163:
       importN163Instrument();
       return;
@@ -595,7 +603,7 @@ private:
   void ignoreReleasePoint(void) {
     int releasePoint = t.readInt(-1, MAX_SEQUENCE_ITEMS);
     if(releasePoint != -1) {
-      throw "Instrument has release point, unsupported.";
+      throw std::invalid_argument("Instrument has release point, unsupported.");
     }
   }
 
@@ -616,7 +624,7 @@ private:
       // in the file, 0 is both absolute and non-arpeggio sequence
       // so if it's absolute and a non-arpeggio sequence, we're ok
       // otherwise raise
-      throw "Non-arpeggio sequence given arpeggio type!";
+      throw std::invalid_argument("Non-arpeggio sequence given arpeggio type!");
     }
 
     checkColon();
@@ -658,7 +666,7 @@ private:
 
   void importTrack(void) {
     if (track != 0) {
-      throw "Multiple tracks not supported";
+      throw std::invalid_argument("Multiple tracks not supported");
     }
 
     ignorePatternLength();
@@ -677,7 +685,7 @@ private:
     for (int c = 0; c < getChannelCount(); ++c) {
       int i = t.readInt(1, MAX_EFFECT_COLUMNS);
       if(i != 1) {
-	throw "All channels must have 1 effect column.";
+	throw std::invalid_argument("All channels must have 1 effect column.");
       }
     }
     t.readEOL();
@@ -699,9 +707,9 @@ private:
     for (int c = 1; c < getChannelCount(); ++c) {
       PatternNumber pattern_ = readPatternNumber();
       if(pattern != pattern_) {
-	std::ostringstream errMsg;
-	errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": Mismatched pattern number, expected " << pattern << " got " << pattern_;
-	throw errMsg.str();
+	auto errMsg = makeError();
+	errMsg << "Mismatched pattern number, expected " << pattern << " got " << pattern_;
+	throw errMsg;
       }
     }
     t.readEOL();
@@ -715,9 +723,9 @@ private:
 
   void importRow(void) {
     if (track == 0) {
-      std::ostringstream errMsg;
-      errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": no TRACK defined, cannot add ROW data.";
-      throw errMsg.str();
+      auto errMsg = makeError();
+      errMsg << "no TRACK defined, cannot add ROW data.";
+      throw errMsg;
     }
 
     Row row;
@@ -798,7 +806,7 @@ private:
   void importMachine(void) {
     int i = t.readInt(0, PAL);
     if(i == PAL) {
-      throw "The Game Boy always runs at 60Hz. PAL songs are not supported.";
+      throw std::invalid_argument("The Game Boy always runs at 60Hz. PAL songs are not supported.");
     }
     t.readEOL();
   }
@@ -819,7 +827,7 @@ private:
   void importFramerate(void) {
     int i = t.readInt(0, 800);
     if(i != 0 && i != 60) {
-      throw "Engine speed must be 60Hz.";
+      throw std::invalid_argument("Engine speed must be 60Hz.");
     }
     t.readEOL();
   }
@@ -844,9 +852,9 @@ private:
     }
 
     if(pattern != this->pattern.next()) {
-      std::stringstream errMsg;
-      errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": bad pattern order; expected " << this->pattern.next() << ", got " << pattern;
-      throw errMsg.str();
+      auto err = makeError();
+      err << "bad pattern order; expected " << this->pattern.next() << ", got " << pattern;
+      throw err;
     }
 
     this->pattern = pattern;
@@ -859,7 +867,7 @@ private:
     switch(i) {
     case SNDCHIP_NONE: hasN163 = false; break;
     case SNDCHIP_N163: hasN163 = true;  break;
-    default: throw "Unsupported expansion.";
+    default: throw std::domain_error("Unsupported expansion.");
     }
     
     t.readEOL();
@@ -872,9 +880,9 @@ private:
   void checkSymbol(const std::string& x) {
     std::string symbol = t.readToken();
     if (symbol != x) {
-      std::ostringstream errMsg;
-      errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": expected '" << x << "', '" << symbol << "' found.";
-      throw errMsg.str();
+      auto errMsg = makeError();
+      errMsg << "expected '" << x << "', '" << symbol << "' found.";
+      throw errMsg;
     }
   }
 
@@ -898,7 +906,7 @@ private:
   void importN163Channels(void) {
     int i = t.readInt(1, 8);
     if(i > 1) {
-      throw "Only 1 N163 wave channel is supported.";
+      throw std::invalid_argument("Only 1 N163 wave channel is supported.");
     }
     t.readEOL();
   }
@@ -906,7 +914,7 @@ private:
   void checkWaveCount() {
     int waveCount = t.readInt(1, 1);
     if(waveCount != 1) {
-      throw "invalid wave count";
+      throw std::invalid_argument("invalid wave count");
     }
   }
 
@@ -921,9 +929,9 @@ private:
 
     int waveSize = t.readInt(0, Wave::SAMPLE_CNT);
     if(waveSize != Wave::SAMPLE_CNT) {
-      std::stringstream errMsg;
-      errMsg << "Line " << t.getLine() << " Column " << t.getColumn() << ": invalid wave size";
-      throw errMsg.str();
+      auto err = makeError();
+      err << "invalid wave size";
+      throw err;
     }
 
     // wave pos - where the sample gets loaded into wave RAM
@@ -985,9 +993,9 @@ private:
     for (auto length_ : lengths) {
       if(length) {
 	if(length_ && length_ != length) {
-	  std::stringstream errMsg;
-	  errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": mismatched sequence lengths; expected " << length << ", got " << length_;
-	  throw errMsg.str();
+	  auto err = makeError();
+	  err << "mismatched sequence lengths; expected " << length << ", got " << length_;
+	  throw err;
 	}
       } else {
 	length = length_;
@@ -1006,9 +1014,9 @@ private:
     for (auto loopPoint_ : loopPoints) {
       if(loopPoint != -1) {
 	if(loopPoint_ != -1 && loopPoint_ != loopPoint) {
-	  std::stringstream errMsg;
-	  errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": mismatched loop point; expected " << loopPoint << ", got " << loopPoint_;
-	  throw errMsg.str();
+	  auto err = makeError();
+	  err << "mismatched loop point; expected " << loopPoint << ", got " << loopPoint_;
+	  throw err;
 	}
       } else {
 	loopPoint = loopPoint_;
@@ -1016,7 +1024,7 @@ private:
     }
 
     if(loopPoint < -1) {
-      throw "invalid loop point";
+      throw std::invalid_argument("invalid loop point");
     }
     unsigned loopPoint_ = loopPoint == -1 ? 0 : (unsigned)loopPoint;
 
@@ -1071,7 +1079,7 @@ private:
 	  case 1: command.type = INSTR_DUTY_25; break;
 	  case 2: command.type = INSTR_DUTY_50; break;
 	  case 3: command.type = INSTR_DUTY_75; break;
-	  default: throw "Invalid duty";
+	  default: throw std::invalid_argument("Invalid duty");
 	  }
 	  instrument.addCommand(command);
 	}
@@ -1120,9 +1128,9 @@ private:
     for (auto length_ : lengths) {
       if(length) {
 	if(length_ && length_ != length) {
-	  std::stringstream errMsg;
-	  errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": mismatched sequence lengths; expected " << length << ", got " << length_;
-	  throw errMsg.str();
+	  auto err = makeError();
+	  err << "mismatched sequence lengths; expected " << length << ", got " << length_;
+	  throw err;
 	}
       } else {
 	length = length_;
@@ -1141,9 +1149,9 @@ private:
     for (auto loopPoint_ : loopPoints) {
       if(loopPoint != -1) {
 	if(loopPoint_ != -1 && loopPoint_ != loopPoint) {
-	  std::stringstream errMsg;
-	  errMsg << "Line " << t.getLine() << " column " << t.getColumn() << ": mismatched loop point; expected " << loopPoint << ", got " << loopPoint_;
-	  throw errMsg.str();
+	  auto err = makeError();
+	  err << "mismatched loop point; expected " << loopPoint << ", got " << loopPoint_;
+	  throw err;
 	}
       } else {
 	loopPoint = loopPoint_;
@@ -1151,7 +1159,7 @@ private:
     }
 
     if(loopPoint < -1) {
-      throw "invalid loop point";
+      throw std::invalid_argument("invalid loop point");
     }
     unsigned loopPoint_ = loopPoint == -1 ? 0 : (unsigned)loopPoint;
 

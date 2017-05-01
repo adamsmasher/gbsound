@@ -2,6 +2,7 @@ all: ../famiconv
 
 DEPS=\
 build/Command.o\
+build/compress.o\
 build/famiconv.o\
 build/hash.o\
 build/Importer.o\

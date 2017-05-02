@@ -4,7 +4,7 @@
 
 using namespace std::experimental;
 
-// TODO: change this to be a class that you repeatedly query for the next block
+// TODO: change this to be a class that you repeatedly query for the next block or something
 
 struct Match {
   uint8_t length;

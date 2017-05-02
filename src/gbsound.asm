@@ -314,20 +314,9 @@ PlayNextPat:
 		LD A, [HLI]
 		LD H, [HL]
 		LD L, A
-	;; TODO: compress/decompress
-	;; copy it into the song data
-		LD A, [HLI]
-		LD C, A
-		LD A, [HLI]
-		LD B, A
+	;; decompress it into the song data
 		LD DE, SongData
-.loop:		LD A, [HLI]
-		LD [DE], A
-		INC DE
-		DEC BC
-		LD A, B
-		OR C
-		JR NZ, .loop
+		CALL Decompress
 	;; finally - point the SongPtr to the beginning of the new data
 		LD HL, SongPtr
 		XOR A

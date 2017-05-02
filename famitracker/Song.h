@@ -178,6 +178,7 @@ class Wave {
 
 struct PatternImpl;
 class Pattern {
+  friend class Song;
  public:
   Pattern();
   Pattern(Pattern&&);
@@ -188,7 +189,7 @@ class Pattern {
   void addRow(const Row&);
   void addJump(PatternNumber to);
   void terminate(void);
-  // TODO: hide me
+ private:
   std::unique_ptr<PatternImpl> impl;
 };
 

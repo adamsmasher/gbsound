@@ -161,8 +161,8 @@ public:
     writer.writeGb();
   }
 
-  void addPattern(const Pattern& pattern) {
-    patterns.push_back(pattern.impl->compress());
+  void addPattern(const PatternImpl& pattern) {
+    patterns.push_back(pattern.compress());
   }
 
   void addWave(const Wave& wave) {
@@ -269,7 +269,7 @@ void Song::writeGb(std::ostream& ostream) const {
 }
 
 void Song::addPattern(const Pattern& pattern) {
-  impl->addPattern(pattern);
+  impl->addPattern(*pattern.impl);
 }
 
 std::ostream& operator<<(std::ostream& ostream, const PatternNumber& patternNumber) {

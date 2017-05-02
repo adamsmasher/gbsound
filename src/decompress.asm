@@ -1,5 +1,3 @@
-Import Copy
-
 SECTION "Decompress", HOME
 
 ;;; TODO: unroll the loop for speed, and also so you don't need to use any memory
@@ -25,7 +23,11 @@ Decompress::
 .nowrap		LDH A, [$FE]			; get length
                 PUSH BC				; backup flags
 		LD B, A
-		CALL Copy			; HL = SRC, DE = DEST, B = LEN
+.copy:		LD A, [HLI]
+		LD [DE], A
+		INC DE
+		DEC B
+		JR NZ, .copy
 		POP BC
 		POP HL				; get pointer to compressed data
 		JR .nextbyte

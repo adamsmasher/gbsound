@@ -974,6 +974,8 @@ private:
     // this must be 0 in our engine
     int wavePos = t.readInt(0, 0);
 
+    checkWaveCount();
+
     song.addInstrument(buildN163GbInstrument(volume, arpeggio, pitch, hiPitch, wave));
 
     skipInstrumentName();

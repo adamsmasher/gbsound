@@ -73,16 +73,15 @@ std::vector<char> compress(const char *inputBuffer, size_t inputLength) {
 
 optional<Match> find_longest_match(const char *inputBuffer, size_t bufferLength, size_t i) {
   optional<Match> longest_match;
-  uint8_t match_len;
-  uint8_t j;
 
   /* walk backwards from the read head */
-  for (j = 1; i - j >= 0; j++) {
+  for (uint8_t j = 1; i - j < i /* wrap around test */; j++) {
+    uint8_t match_len;
 
     /* find the biggest match from this starting point */
     for(match_len = 0;
         i + match_len < bufferLength &&
-        inputBuffer[i + match_len] == inputBuffer[i + match_len - j];
+	  inputBuffer[i + match_len] == inputBuffer[i + match_len - j];
         match_len++) {
       if (match_len == 255) {
         break;

@@ -259,7 +259,7 @@ const InstrSequence InstrSequence::emptySequence = InstrSequence();
 class ImporterImpl {
 public:
   ImporterImpl(const std::string& text) :
-    isExpired(false), t(text), track(0), pattern(-1), hasN163(false),
+    isExpired(false), t(text), track(0), patternNumber(-1), hasN163(false),
     lastWaveRead(-1)
   {}
 
@@ -282,7 +282,8 @@ public:
       importCommand(c);
     }
 
-    song.terminateLastPattern();
+    this->pattern.terminate();
+    song.addPattern(this->pattern);
 
     return std::move(song);
   }
@@ -293,7 +294,8 @@ private:
   unsigned int track;
   // this is used both to track the current pattern we're on as we read orders
   // and also to track the pattern we're on as we read patterns
-  PatternNumber pattern;
+  PatternNumber patternNumber;
+  Pattern pattern;
   std::unordered_map<PatternNumber, PatternNumber> jumps;
   int channel;
   uint8_t currentInstruments[6]; // two dummy channels, one for triangle, one for DPCM
@@ -723,25 +725,25 @@ private:
 
     skipFrameNumber();
 
-    PatternNumber pattern = readPatternNumber();
+    PatternNumber patternNumber = readPatternNumber();
 
     // unlike in Famitracker, in our driver there's only one
     // pattern per frame
     for (int c = 1; c < getChannelCount(); ++c) {
-      PatternNumber pattern_ = readPatternNumber();
-      if(pattern != pattern_) {
+      PatternNumber patternNumber_ = readPatternNumber();
+      if(patternNumber != patternNumber_) {
 	auto errMsg = makeError();
-	errMsg << "Mismatched pattern number, expected " << pattern << " got " << pattern_;
+	errMsg << "Mismatched pattern number, expected " << patternNumber << " got " << patternNumber_;
 	throw errMsg;
       }
     }
     t.readEOL();
 
-    if(pattern != this->pattern.next()) {
-      addJump(this->pattern, pattern);
+    if(patternNumber != this->patternNumber.next()) {
+      addJump(this->patternNumber, patternNumber);
     }
 
-    this->pattern = pattern;
+    this->patternNumber = patternNumber;
   }
 
   void importRow(void) {
@@ -823,7 +825,7 @@ private:
     }
     t.readEOL();
 
-    song.addRow(row, pattern);
+    pattern.addRow(row);
   }
 
   void importMachine(void) {
@@ -860,32 +862,32 @@ private:
   }
     
   void importPattern(void) {
-    PatternNumber pattern(t.readHex(0, MAX_PATTERN - 1));
+    PatternNumber patternNumber(t.readHex(0, MAX_PATTERN - 1));
 
     switch(state) {
     case IMPORTING_ORDERS:
       state = IMPORTING_PATTERNS;
-      this->pattern = PatternNumber(0xFF);
+      this->patternNumber = PatternNumber(0xFF);
       break;
     case IMPORTING_PATTERNS:
-      if(jumps.count(this->pattern)) {
-	song.addJump(this->pattern, jumps[this->pattern]);
+      if(this->jumps.count(this->patternNumber)) {
+	this->pattern.addJump(this->jumps[this->patternNumber]);
       } else {
 	Row row;
 	row.endOfPattern();
-	song.addRow(row, this->pattern);
+	this->pattern.addRow(row);
       }
       break;
     }
 
-    if(pattern != this->pattern.next()) {
+    if(patternNumber != this->patternNumber.next()) {
       auto err = makeError();
-      err << "bad pattern order; expected " << this->pattern.next() << ", got " << pattern;
+      err << "bad pattern order; expected " << this->patternNumber.next() << ", got " << patternNumber;
       throw err;
     }
 
-    this->pattern = pattern;
-    song.addPattern();
+    this->patternNumber = patternNumber;
+    this->pattern = Pattern();
     t.readEOL();
   }
 

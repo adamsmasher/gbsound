@@ -176,6 +176,22 @@ class Wave {
   uint8_t samples[SAMPLE_CNT];
 };
 
+struct PatternImpl;
+class Pattern {
+ public:
+  Pattern();
+  Pattern(Pattern&&);
+  ~Pattern();
+
+  Pattern& operator=(Pattern&&);
+  
+  void addRow(const Row&);
+  void addJump(PatternNumber to);
+  void terminate(void);
+  // TODO: hide me
+  std::unique_ptr<PatternImpl> impl;
+};
+
 struct SongImpl;
 class Song {
  public:
@@ -193,9 +209,7 @@ class Song {
 
   void writeGb(std::ostream&) const;
 
-  void addPattern(void);
-
-  void terminateLastPattern(void);
+  void addPattern(const Pattern&);
 
   void addWave(const Wave&);
  private:

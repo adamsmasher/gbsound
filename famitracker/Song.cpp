@@ -20,6 +20,8 @@
 
 #include "Song.h"
 
+#include "compress.h"
+
 #include <sstream>
 
 Wave::Wave() : samples{0} {}
@@ -62,17 +64,26 @@ class SongMasterConfig {
   uint8_t outputTerminals;
 };
 
-class Pattern {
- public:
+class CompressedPattern {
+public:
+  CompressedPattern(const char *data, size_t length) {
+    compressedData = compress(data, length);
+  }
+  
   void writeGb(std::ostream& ostream) const {
-    uint16_t length = getLength();
-    ostream.put(length & 0x00FF);
-    ostream.put(length >> 8);
-    for (const auto& row : rows) {
-      row.writeGb(ostream);
-    }
+    ostream.write(&compressedData[0], compressedData.size());
   }
 
+  uint16_t getLength(void) const {
+    return compressedData.size();
+  }
+  
+private:
+  std::vector<char> compressedData;
+};
+
+class PatternImpl {
+ public:
   void addRow(const Row& row) {
     rows.push_back(row);
   }
@@ -83,18 +94,44 @@ class Pattern {
     rows.push_back(row);
   }
 
-  uint16_t getLength(void) const {
-    uint16_t length = 0;
+  void terminate() {
+    Row terminatingRow;
+    terminatingRow.stop();
+    addRow(terminatingRow);
+  }
+
+  CompressedPattern compress() const {
+    std::stringstream rowData;
     for (const auto& row : rows) {
-      length += row.getLength();
+      row.writeGb(rowData);
     }
-    length++; // for the end of pattern byte
-    return length;
+    return CompressedPattern(rowData.str().data(), rowData.str().size());
   }
 
  private:
   std::vector<Row> rows;
 };
+
+Pattern::Pattern() : impl(std::make_unique<PatternImpl>()) {}
+Pattern::Pattern(Pattern&& pattern) : impl(std::move(pattern.impl)) {} 
+Pattern::~Pattern() {}
+
+Pattern& Pattern::operator=(Pattern&& pattern) {
+  impl = std::move(pattern.impl);
+  return *this;
+}
+
+void Pattern::addRow(const Row& row) {
+  impl->addRow(row);
+}
+
+void Pattern::addJump(PatternNumber to) {
+  impl->addJump(to);
+}
+
+void Pattern::terminate(void) {
+  impl->terminate();
+}
 
 bool operator==(const PatternNumber& n, const PatternNumber& n_) {
   return n.patternNumber == n_.patternNumber;
@@ -115,14 +152,6 @@ public:
     songMasterConfig.setTempo(tempo);
   }
 
-  void addRow(const Row& row, PatternNumber i) {
-    patterns.at(i.toInt()).addRow(row);
-  }
-
-  void addJump(PatternNumber from, PatternNumber to) {
-    patterns.at(from.toInt()).addJump(to);
-  }
-
   void addInstrument(const GbInstrument& instrument) {
     instruments.push_back(instrument);
   }
@@ -132,15 +161,8 @@ public:
     writer.writeGb();
   }
 
-  void addPattern(void) {
-    patterns.push_back(Pattern());
-  }
-
-  void terminateLastPattern(void) {
-    Pattern& lastPattern = patterns.back();
-    Row terminatingRow;
-    terminatingRow.stop();
-    lastPattern.addRow(terminatingRow);
+  void addPattern(const Pattern& pattern) {
+    patterns.push_back(pattern.impl->compress());
   }
 
   void addWave(const Wave& wave) {
@@ -150,7 +172,7 @@ public:
 private:
   std::vector<GbInstrument> instruments;
   SongMasterConfig songMasterConfig;
-  std::vector<Pattern> patterns;
+  std::vector<CompressedPattern> patterns;
   std::vector<Wave> waves;
 
   class Writer {
@@ -222,7 +244,6 @@ private:
       }
     }
 
-    // TODO: compression
     void writePatterns(void) {
       for (const auto& pattern : song.patterns) {
 	pattern.writeGb(ostream);
@@ -247,12 +268,8 @@ void Song::writeGb(std::ostream& ostream) const {
   impl->writeGb(ostream);
 }
 
-void Song::addPattern(void) {
-  impl->addPattern();
-}
-
-void Song::terminateLastPattern(void) {
-  impl->terminateLastPattern();
+void Song::addPattern(const Pattern& pattern) {
+  impl->addPattern(pattern);
 }
 
 std::ostream& operator<<(std::ostream& ostream, const PatternNumber& patternNumber) {
@@ -292,14 +309,6 @@ void Row::setWaveNote(const GbNote& note) {
 
 void Row::setNoiseNote(const GbNote& note) {
   noiseNote = note;
-}
-
-void Song::addRow(const Row& row, PatternNumber i) {
-  impl->addRow(row, i);
-}
-
-void Song::addJump(PatternNumber from, PatternNumber to) {
-  impl->addJump(from, to);
 }
 
 void Song::addWave(const Wave& wave) {

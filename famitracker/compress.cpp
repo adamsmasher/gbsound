@@ -11,9 +11,9 @@ struct Match {
   uint8_t delta;
 };
 
-optional<Match> find_longest_match(uint8_t* buffer, size_t bufferLength, size_t i);
+optional<Match> find_longest_match(const char* buffer, size_t bufferLength, size_t i);
 
-std::vector<uint8_t> compress(uint8_t *inputBuffer, size_t inputLength) {
+std::vector<char> compress(const char *inputBuffer, size_t inputLength) {
   /* we can think of the compressed output as being a sequence of "blocks", with each block
      containing eight "commands". A command can be either a literal byte or compressed; each command
      has a corresponding bit in the flag_byte that tells us which (it's 1 if literal or 0 if not) */
@@ -25,7 +25,7 @@ std::vector<uint8_t> compress(uint8_t *inputBuffer, size_t inputLength) {
   // where in the output stream the last flag byte was
   size_t last_flag_pos;
 
-  std::vector<uint8_t> output;
+  std::vector<char> output;
 
   command_cnt = 0;
   for (size_t i = 0; i < inputLength;) {
@@ -71,7 +71,7 @@ std::vector<uint8_t> compress(uint8_t *inputBuffer, size_t inputLength) {
   return output;
 }
 
-optional<Match> find_longest_match(uint8_t *inputBuffer, size_t bufferLength, size_t i) {
+optional<Match> find_longest_match(const char *inputBuffer, size_t bufferLength, size_t i) {
   optional<Match> longest_match;
   uint8_t match_len;
   uint8_t j;

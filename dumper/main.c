@@ -8,6 +8,8 @@ int tempo(FILE*);
 int waves(FILE*);
 int pattern_table(FILE*);
 int instrument_table(FILE*);
+int patterns(FILE*);
+int instruments(FILE*);
 
 int main(int argc, char **argv) {
   if(argc != 2) {
@@ -53,6 +55,14 @@ int dump_file(FILE *fp) {
   }
 
   if((ret = instrument_table(fp))) {
+    return ret;
+  }
+
+  if((ret = patterns(fp))) {
+    return ret;
+  }
+
+  if((ret = instruments(fp))) {
     return ret;
   }
 
@@ -160,5 +170,15 @@ int instrument_table(FILE *fp) {
   printf("Skipping instrument table\n");
   fseek(fp, instrument_bytes, SEEK_CUR);
 
+  return 0;
+}
+
+int patterns(FILE *fp) {
+  /* TODO */
+  return 0;
+}
+
+int instruments(FILE *fp) {
+  /* TODO */
   return 0;
 }

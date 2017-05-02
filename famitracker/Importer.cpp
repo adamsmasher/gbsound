@@ -33,7 +33,7 @@
 #include <tuple>
 #include <unordered_map>
 
-const bool debug = true;
+const bool debug = false;
 
 static const char* CT[CT_LAST + 1] = {
   // comment

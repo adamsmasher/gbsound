@@ -225,7 +225,7 @@ private:
       for (const auto& instrument : song.instruments) {
 	ostream.put(opcodeAddress & 0x00FF);
 	ostream.put(opcodeAddress >> 8);
-	opcodeAddress += instrument.getLength() + 1; // extra byte for length
+	opcodeAddress += instrument.getLength(); // extra byte for length
       }
     }
 
@@ -429,7 +429,6 @@ uint16_t ChannelCommand::getLength(void) const {
 // TODO: use some tasteful inheritence for commands and stuff
 // to get rid of switch statements
 void GbInstrument::writeGb(std::ostream& ostream) const {
-  ostream.put(getLength());
   for (const auto& command : commands) {
     command.writeGb(ostream);
   }

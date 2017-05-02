@@ -31,7 +31,7 @@ std::vector<char> compress(const char *inputBuffer, size_t inputLength) {
   for (size_t i = 0; i < inputLength;) {
     // check if we need to reserve a flag byte
     if (command_cnt % 8 == 0) {
-      last_flag_pos = i;
+      last_flag_pos = output.size();
       /* just write a garbage byte to reserve a slot for the flags */
       output.push_back(0xAA);
       flag_byte = 0;

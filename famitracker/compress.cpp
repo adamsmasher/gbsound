@@ -15,7 +15,7 @@ optional<Match> find_longest_match(const char* buffer, size_t bufferLength, size
 
 std::vector<char> compress(const char *inputBuffer, size_t inputLength) {
   /* we can think of the compressed output as being a sequence of "blocks", with each block
-     containing seven "commands". A command can be either a literal byte or compressed; each command
+     containing eight "commands". A command can be either a literal byte or compressed; each command
      has a corresponding bit in the flag_byte that tells us which (it's 1 if literal or 0 if not) */
   uint8_t flag_byte = 0;
 

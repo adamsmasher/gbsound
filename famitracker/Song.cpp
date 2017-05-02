@@ -234,7 +234,7 @@ private:
       for (const auto& pattern : song.patterns) {
 	ostream.put(opcodeAddress & 0x00FF);
 	ostream.put(opcodeAddress >> 8);
-	opcodeAddress += pattern.getLength() + 2; // two extra bytes for length
+	opcodeAddress += pattern.getLength();
       }
     }
 

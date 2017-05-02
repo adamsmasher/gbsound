@@ -1,39 +1,33 @@
 SECTION "Decompress", HOME
 
-;;; TODO: unroll the loop for speed, and also so you don't need to use any memory
 ;; assumes HL contains src
 ;;         DE contains dest
 Decompress::
 .chunk		LD A, [HLI]			; get flags
 		LD B, A				; put flags in B
-		LD C, 8				; 8 commands per chunk
-.command	LD A, [HLI]			; get next byte
+REPT 8
+		LD A, [HLI]			; get next byte
 		BIT 0, B			; is this flag hi?
-		JR NZ, .literal			; if so, we have a literal
+		JR NZ, .literal\@		; if so, we have a literal
 		AND A				; otherwise, check for EOF
 		RET Z
-		LDH [$FE], A			; store length to copy
+		LD C, A				; store length to copy
 		LD A, [HLI]			; get -offset
 		PUSH HL				; backup read location
 		ADD E				; newLoc = E + (-offset)
 		LD L, A
 		LD H, D
-		JR c, .nowrap
+		JR C, .copy\@
 		DEC H
-.nowrap		LDH A, [$FE]			; get length
-                PUSH BC				; backup flags
-		LD B, A
-.copy:		LD A, [HLI]
+.copy\@		LD A, [HLI]
 		LD [DE], A
 		INC DE
-		DEC B
-		JR NZ, .copy
-		POP BC
+		DEC C
+		JR NZ, .copy\@
 		POP HL				; get pointer to compressed data
-		JR .nextbyte
-.literal	LD [DE], A
+		JR .nextbyte\@
+.literal\@	LD [DE], A
 		INC DE
-.nextbyte	SRL B				; move to next flag
-		DEC C				; one less command
-		JR NZ, .command
-		JR .chunk
+.nextbyte\@	SRL B				; move to next flag
+ENDR
+		JP .chunk

@@ -215,8 +215,7 @@ enum ArpeggioType {
 class InstrSequence {
  public:
   InstrSequence() : loopPoint(-1) {}
-  InstrSequence(sequence_t type) 
-    : type(type), loopPoint(0),  arpeggioType(NON_ARPEGGIO) {}
+  InstrSequence(sequence_t type) : type(type), loopPoint(0) {}
 
   size_t getLength(void) const { return sequence.size(); }
 
@@ -227,13 +226,6 @@ class InstrSequence {
       throw std::out_of_range("Loop point out of range");
     }
     this->loopPoint = loopPoint;
-  }
-
-  void setArpeggioType(ArpeggioType arpeggioType) {
-    if(this->type != SEQ_ARPEGGIO) {
-      throw std::logic_error("Cannot set arpeggio type for non-arpeggio sequence!");
-    }
-    this->arpeggioType = arpeggioType;
   }
 
   uint8_t at(size_t i) const { return sequence.at(i); }
@@ -251,7 +243,6 @@ class InstrSequence {
   std::vector<uint8_t> sequence;
   sequence_t type;
   int loopPoint;
-  ArpeggioType arpeggioType;
 };
 
 const InstrSequence InstrSequence::emptySequence = InstrSequence();
@@ -610,11 +601,23 @@ private:
   }
 
   sequence_t readSequenceType(void) {
-    return (sequence_t)t.readInt(0, SEQ_COUNT - 1);
+    sequence_t sequenceType = (sequence_t)t.readInt(0, SEQ_COUNT - 1);
+    if (sequenceType == SEQ_ARPEGGIO) {
+      auto err = makeError();
+      err << "arpeggio sequences are not supported";
+      throw err;
+    } 
+    return sequenceType;
   }
 
-  ArpeggioType readArpeggioType(void) {
-    return (ArpeggioType)(t.readInt(0, 255) + 1);
+  void checkArpeggioType(void) {
+    // TODO: is the + 1 correct?
+    ArpeggioType arpeggioType = (ArpeggioType)(t.readInt(0, 255));
+    if(arpeggioType != NON_ARPEGGIO) {
+      auto err = makeError();
+      err << "all sequences must have a non-arpeggio arpeggio type";
+      throw err;
+    }
   }
 
   void ignoreReleasePoint(void) {
@@ -636,17 +639,7 @@ private:
     
     ignoreReleasePoint();
 
-    ArpeggioType arpeggioType = readArpeggioType();
-    if(sequenceType == SEQ_ARPEGGIO) {
-      sequence.setArpeggioType(arpeggioType);
-    } else if (arpeggioType != ABSOLUTE) {
-      // in the file, 0 is both absolute and non-arpeggio sequence
-      // so if it's absolute and a non-arpeggio sequence, we're ok
-      // otherwise raise
-      auto err = makeError();
-      err << "Non-arpeggio sequence given arpeggio type!";
-      throw err;
-    }
+    checkArpeggioType();
 
     checkColon();
 
@@ -664,16 +657,26 @@ private:
     importInstrSequence(SNDCHIP_NONE);
   }
 
+  void readArpeggioSequenceNumber(void) {
+    int arpeggio  = readSequenceNumber();
+
+    if(arpeggio != -1) {
+      auto err = makeError();
+      err << "instruments shouldn't specify arpeggio sequence; arpeggios are not supported";
+      throw err;
+    }
+  }
+
   void importStandardInstrument(void) {
     skipInstrumentNumber();
   
     int volume    = readSequenceNumber();
-    int arpeggio  = readSequenceNumber();
+    readArpeggioSequenceNumber();    
     int pitch     = readSequenceNumber();
     int hiPitch   = readSequenceNumber();
     int dutyCycle = readSequenceNumber();
 
-    song.addInstrument(buildStdGbInstrument(volume, arpeggio, pitch, hiPitch, dutyCycle));
+    song.addInstrument(buildStdGbInstrument(volume, pitch, hiPitch, dutyCycle));
 
     skipInstrumentName();
     t.readEOL();
@@ -958,7 +961,7 @@ private:
     skipInstrumentNumber();
 
     int volume    = readSequenceNumber();
-    int arpeggio  = readSequenceNumber();
+    readArpeggioSequenceNumber();
     int pitch     = readSequenceNumber();
     int hiPitch   = readSequenceNumber();
     int wave      = readSequenceNumber();
@@ -976,7 +979,7 @@ private:
 
     checkWaveCount();
 
-    song.addInstrument(buildN163GbInstrument(volume, arpeggio, pitch, hiPitch, wave));
+    song.addInstrument(buildN163GbInstrument(volume, pitch, hiPitch, wave));
 
     skipInstrumentName();
     t.readEOL();
@@ -1006,11 +1009,10 @@ private:
     return PatternNumber(t.readHex(0, MAX_PATTERN - 1));
   }
 
-  GbInstrument buildStdGbInstrument(int volumeNum, int arpeggioNum, int pitchNum, int hiPitchNum, int dutyCycleNum) {
+  GbInstrument buildStdGbInstrument(int volumeNum, int pitchNum, int hiPitchNum, int dutyCycleNum) {
     GbInstrument instrument;
 
     auto volumeSeq    = getInstrSequence(InstrSequenceIndex(SNDCHIP_NONE, SEQ_VOLUME,    volumeNum));
-    auto arpeggioSeq  = getInstrSequence(InstrSequenceIndex(SNDCHIP_NONE, SEQ_ARPEGGIO,  arpeggioNum));
     auto pitchSeq     = getInstrSequence(InstrSequenceIndex(SNDCHIP_NONE, SEQ_PITCH,     pitchNum));
     auto hiPitchSeq   = getInstrSequence(InstrSequenceIndex(SNDCHIP_NONE, SEQ_HIPITCH,   hiPitchNum));
     auto dutyCycleSeq = getInstrSequence(InstrSequenceIndex(SNDCHIP_NONE, SEQ_DUTYCYCLE, dutyCycleNum));
@@ -1021,7 +1023,6 @@ private:
 
     size_t lengths[] = {
       volumeSeq.getLength(),
-      arpeggioSeq.getLength(),
       pitchSeq.getLength(),
       hiPitchSeq.getLength(),
       dutyCycleSeq.getLength()
@@ -1042,7 +1043,6 @@ private:
 
     int loopPoints[] = {
       volumeSeq.getLoopPoint(),
-      arpeggioSeq.getLoopPoint(),
       pitchSeq.getLoopPoint(),
       hiPitchSeq.getLoopPoint(),
       dutyCycleSeq.getLoopPoint()
@@ -1146,11 +1146,10 @@ private:
 #define SEQ_WAVE 4
   
   // TODO: combine this with the previous function, this is ridiculous
-  GbInstrument buildN163GbInstrument(int volumeNum, int arpeggioNum, int pitchNum, int hiPitchNum, int waveNum) {
+  GbInstrument buildN163GbInstrument(int volumeNum, int pitchNum, int hiPitchNum, int waveNum) {
     GbInstrument instrument;
 
     auto volumeSeq   = getInstrSequence(InstrSequenceIndex(SNDCHIP_N163, SEQ_VOLUME,   volumeNum));
-    auto arpeggioSeq = getInstrSequence(InstrSequenceIndex(SNDCHIP_N163, SEQ_ARPEGGIO, arpeggioNum));
     auto pitchSeq    = getInstrSequence(InstrSequenceIndex(SNDCHIP_N163, SEQ_PITCH,    pitchNum));
     auto hiPitchSeq  = getInstrSequence(InstrSequenceIndex(SNDCHIP_N163, SEQ_HIPITCH,  hiPitchNum));
     auto waveSeq     = getInstrSequence(InstrSequenceIndex(SNDCHIP_N163, SEQ_WAVE,     waveNum));
@@ -1161,7 +1160,6 @@ private:
 
     size_t lengths[] = {
       volumeSeq.getLength(),
-      arpeggioSeq.getLength(),
       pitchSeq.getLength(),
       hiPitchSeq.getLength(),
       waveSeq.getLength()
@@ -1182,7 +1180,6 @@ private:
 
     int loopPoints[] = {
       volumeSeq.getLoopPoint(),
-      arpeggioSeq.getLoopPoint(),
       pitchSeq.getLoopPoint(),
       hiPitchSeq.getLoopPoint(),
       waveSeq.getLoopPoint()

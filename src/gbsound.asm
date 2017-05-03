@@ -550,40 +550,57 @@ ChPitchInstr:
 		SET 0, [HL]	; mark dirty
 		RET
 
-;;; TODO: fix this to mimic the above
-ChHPitchInstr:	LD A, [ChRegBase]
-		ADD 3		; freq reg 1
-		LD C, A
+;;; Hipitch works conceptually by taking an eight bit value, sign extending it to 16-bits,
+;;; shifting it left by 4 (i.e. multiplying it by 16), and then adding it to
+;;; the current 11-bit pitch.
+ChHPitchInstr:	
+	;; get how much to shift the pitch by
 		LD H, ChInstrPtrs >> 8
 		LD A, [ChNum]
 		ADD A
 		LD L, A
 		CALL PopInstr
-		LD D, A
-		SWAP A
-		AND $F0
+	;; BC = 00sh
+		LD C, A
+		XOR A
 		LD B, A
+	;; shift left once
+		SLA C
+		RL B
+	;; now sign extend
+		SUB B
+		LD B, A
+	;; now do the remaining shifting
+REPT 3
+		SLA C
+		RL B
+ENDR
+	;; get a pointer to the current 16-bit frequency
 		LD H, ChFreqs >> 8
-		LD A, [ChNum]
+		LD A, [ChNum]	
 		ADD A
 		LD L, A
-		LD A, [HL]
-		BIT 7,D
-		JR NZ, .neg
-		ADD B
-		JR .hi
-.neg:		SUB B
-.hi:		LD [HLI], A
-		LD [C], A
-		SRA D
-		SRA D
-		SRA D
-		SRA D
-		LD A, [HL]
-		ADD D
-		LD [HL], A
-		INC C		; freq reg 2
-		LD [C], A
+	;; keep the frequency address in DE
+		LD D, H
+		LD E, L
+	;; now load the current 16-bit frequency into HL
+		LD A, [HLI]
+		LD H, [HL]
+		LD L, A
+		ADD HL, BC	; apply pitch shift
+	;; exchange DE and HL, to speed up writing and flagging things dirty
+		PUSH DE
+		LD D, H
+		LD E, L
+		POP HL
+	;; write it back
+		LD A, E
+		LD [HLI], A
+		LD A, D
+		LD [HLD], A
+	;; now flag the channel as dirty
+		SET 3, L	; move to dirtiness
+		SET 0, [HL]	; mark dirty
 		RET
 
 ;;; B - duty bits (OR'd onto register)

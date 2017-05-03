@@ -560,16 +560,11 @@ ChHPitchInstr:
 		ADD A
 		LD L, A
 		CALL PopInstr
-	;; BC = 00sh
-		LD C, A
+		LD C, A		; C = pitch shift
 		XOR A
-		LD B, A
-	;; shift left once
-		SLA C
-		RL B
-	;; now sign extend
-		SUB B
-		LD B, A
+		SLA C		; get the sign bit into carry
+		SBC A		; do sign extension, basically
+		LD B, A		; B = sign extended
 	;; now do the remaining shifting
 REPT 3
 		SLA C

@@ -4,102 +4,103 @@
 
 using namespace std::experimental;
 
-// TODO: change this to be a class that you repeatedly query for the next block or something
+Block::Block() : flagByte(0), commandCount(0) {}
 
-struct Match {
-  uint8_t length;
-  uint8_t delta;
-};
-
-optional<Match> find_longest_match(const char* buffer, size_t bufferLength, size_t i);
-
-std::vector<char> compress(const char *inputBuffer, size_t inputLength) {
-  /* we can think of the compressed output as being a sequence of "blocks", with each block
-     containing eight "commands". A command can be either a literal byte or compressed; each command
-     has a corresponding bit in the flag_byte that tells us which (it's 1 if literal or 0 if not) */
-  uint8_t flag_byte = 0;
-
-  // how many commands we've written this block
-  int command_cnt;
-
-  // where in the output stream the last flag byte was
-  size_t last_flag_pos;
-
-  std::vector<char> output;
-
-  command_cnt = 0;
-  for (size_t i = 0; i < inputLength;) {
-    // check if we need to reserve a flag byte
-    if (command_cnt % 8 == 0) {
-      last_flag_pos = output.size();
-      /* just write a garbage byte to reserve a slot for the flags */
-      output.push_back(0xAA);
-      flag_byte = 0;
-      command_cnt = 0;
-    }
-
-    /* write out the next command */
-    optional<Match> longest_match = find_longest_match(inputBuffer, inputLength, i);
-    if (longest_match) {
-      output.push_back(longest_match->length);
-      output.push_back(-longest_match->delta);
-      i += longest_match->length;
-    } else {
-      output.push_back(inputBuffer[i]);
-      i++;
-      /* raise the literal flag */
-      flag_byte = (uint8_t)(flag_byte | (1 << command_cnt));
-    }
-
-    /* check if we need to write a flag byte */
-    command_cnt++;
-    if (command_cnt == 8) {
-      output[last_flag_pos] = flag_byte;
-    }
-  }
-
-  /* if we just wrote a flag byte, we need to write another one */
-  if (command_cnt % 8 == 0) {
-    output.push_back(0);
-  } else {
-    /* otherwise we need to write this one properly */
-    output[last_flag_pos] = flag_byte;
-  }
-
-  /* write an EOF marker */
-  output.push_back(0);
-  return output;
+void Block::addMatch(const Match& match) {
+  this->data.push_back(match.length);
+  this->data.push_back(-match.delta);
+  this->commandCount++;
 }
 
-optional<Match> find_longest_match(const char *inputBuffer, size_t bufferLength, size_t i) {
-  optional<Match> longest_match;
+void Block::addLiteral(char c) {
+  this->data.push_back(c);
+  /* raise the literal flag */
+  this->flagByte |= (1 << this->commandCount);
+  this->commandCount++;
+}
 
-  /* walk backwards from the read head */
-  for (uint8_t j = 1; i - j < i /* wrap around test */; j++) {
-    uint8_t match_len;
+void Block::addEOF(void) {
+  this->data.push_back(0);
+}
 
-    /* find the biggest match from this starting point */
-    for(match_len = 0;
-        i + match_len < bufferLength &&
-	  inputBuffer[i + match_len] == inputBuffer[i + match_len - j];
-        match_len++) {
-      if (match_len == 255) {
-        break;
+bool Block::isFull(void) const {
+  return this->commandCount == COMMANDS_PER_BLOCK;
+}
+
+class CompressorImpl {
+public:
+  CompressorImpl(const std::vector<char>& inputBuffer) : inputBuffer(inputBuffer) {
+    this->i = this->inputBuffer.cbegin();
+  }
+
+  bool isDone(void) const {
+    return (this->i == this->inputBuffer.cend());
+  }
+
+  Block getNextBlock(void) {
+    Block nextBlock;
+
+    while(!nextBlock.isFull() && !this->isDone()) {
+      optional<Match> longestMatch = getNextLongestMatch();
+      if (longestMatch) {
+	nextBlock.addMatch(*longestMatch);
+	i += longestMatch->length;
+      } else {
+	nextBlock.addLiteral(*this->i);
+	i++;
       }
     }
 
-    /* update it if this is the best */
-    if ((longest_match && match_len > longest_match->length) ||
-        (!longest_match && match_len > 2)) {
-      longest_match.emplace();
-      longest_match->delta = j; 
-      longest_match->length = match_len;
+    if(this->isDone()) {
+      nextBlock.addEOF();
     }
 
-    if (j == 255) {
-      break;
-    }
+    return nextBlock;
   }
 
-  return longest_match;
-}
+private:
+  const int COMMANDS_PER_BLOCK = 8;
+  const std::vector<char> inputBuffer;
+  std::vector<char>::const_iterator i;
+
+  optional<Match> getNextLongestMatch() const {
+    optional<Match> longestMatch;
+
+    /* walk backwards from the read head */
+    for (uint8_t j = 1; this->i - j >= inputBuffer.cbegin(); j++) {
+      uint8_t matchLen;
+
+      /* find the biggest match from this starting point */
+      for(matchLen = 0;
+	  this->i + matchLen < inputBuffer.cend() && *(this->i + matchLen) == *(this->i + matchLen - j);
+	  matchLen++)
+	{
+	  if (matchLen == 255) {
+	    break;
+	  }
+	}
+
+      /* update it if this is the best */
+      if ((longestMatch && matchLen > longestMatch->length) ||
+	  (!longestMatch && matchLen > 2))
+	{
+	  longestMatch.emplace();
+	  longestMatch->delta = j; 
+	  longestMatch->length = matchLen;
+	}
+
+      if (j == 255) {
+	break;
+      }
+    }
+
+    return longestMatch;
+  }
+};
+
+Compressor::Compressor(const std::vector<char>& inputBuffer) : impl(std::make_unique<CompressorImpl>(inputBuffer)) {}
+Compressor::Compressor(Compressor&& compressor) : impl(std::move(compressor.impl)) {}
+Compressor::~Compressor() {}
+
+bool Compressor::isDone(void) const { return impl->isDone(); }
+Block Compressor::getNextBlock(void) { return impl->getNextBlock(); }

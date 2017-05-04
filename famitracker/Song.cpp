@@ -66,20 +66,31 @@ class SongMasterConfig {
 
 class CompressedPattern {
 public:
-  CompressedPattern(const char *data, size_t length) {
-    compressedData = compress(data, length);
+  CompressedPattern(const std::vector<char>& data) {
+    Compressor compressor(data);
+    while(!compressor.isDone()) {
+      this->compressedBlocks.push_back(compressor.getNextBlock());
+    }
   }
-  
+
   void writeGb(std::ostream& ostream) const {
-    ostream.write(&compressedData[0], compressedData.size());
+    for(const auto& block : this->compressedBlocks) {
+      ostream.put(block.flagByte);
+      ostream.write(&block.data[0], block.data.size());
+    }
   }
 
   uint16_t getLength(void) const {
-    return compressedData.size();
+    uint16_t totalSize = 0;
+    for(const auto& block : this->compressedBlocks) {
+      // TODO: add block.size()
+      totalSize += 1 + block.data.size();
+    }
+    return totalSize;
   }
-  
+
 private:
-  std::vector<char> compressedData;
+  std::vector<Block> compressedBlocks;
 };
 
 class PatternImpl {
@@ -101,11 +112,13 @@ class PatternImpl {
   }
 
   CompressedPattern compress() const {
-    std::stringstream rowData;
+    std::stringstream rowStream;
     for (const auto& row : rows) {
-      row.writeGb(rowData);
+      row.writeGb(rowStream);
     }
-    return CompressedPattern(rowData.str().data(), rowData.str().size());
+    auto rowDataStr = rowStream.str();
+    std::vector<char> rowData(rowDataStr.cbegin(), rowDataStr.cend());
+    return CompressedPattern(rowData);
   }
 
  private:
@@ -526,4 +539,3 @@ size_t std::hash<PatternNumber>::operator()(const PatternNumber& patternNumber) 
 
   return byteHash(patternNumber.patternNumber);
 }
-

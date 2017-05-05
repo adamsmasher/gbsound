@@ -2,7 +2,7 @@ all: ../famiconv
 
 DEPS=\
 build/Command.o\
-build/compress.o\
+build/Compressor.o\
 build/famiconv.o\
 build/hash.o\
 build/Importer.o\
@@ -11,7 +11,7 @@ build/Tokenizer.o
 
 HEADERS=\
 Command.h\
-compress.h\
+Compressor.h\
 hash.h\
 Importer.h\
 Song.h\

@@ -1,4 +1,4 @@
-#include "compress.h"
+#include "Compressor.h"
 
 #include <experimental/optional>
 

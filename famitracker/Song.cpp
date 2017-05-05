@@ -20,7 +20,7 @@
 
 #include "Song.h"
 
-#include "compress.h"
+#include "Compressor.h"
 
 #include <sstream>
 

@@ -1,7 +1,5 @@
 #pragma once
 
-// TODO: rename me
-
 #include <cstddef>
 #include <cstdint>
 #include <memory>

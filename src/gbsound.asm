@@ -152,6 +152,8 @@ SECTION "GbSound", ROM0
 
 ;;; Song initialization:
 ;;; Call with HL = Song
+;;; this is one of the few functions exported from this module; it should be called whenever you'd like to
+;;; play a new song
 InitSndEngine:: 
 	;; set this to $FF, so it ticks as soon as we start playing
 		LD A, $FF
@@ -182,6 +184,9 @@ LoadSong:	LD A, L
 		CALL OffsetPatTbl
 		JP OffsetInstrTbl
 
+;;; The first three bytes in the song data provide this information: settings for two hardware registers
+;;; indicating which channels should be active and their volume; and a number that controls how often
+;;; the sound engine ticks (see UpdateSndFrame)
 LoadSongCtrlCh:	LD A, [HLI]			; volume config
 		LDH [$24], A
 		LD A, [HLI]			; channel select
@@ -190,6 +195,11 @@ LoadSongCtrlCh:	LD A, [HLI]			; volume config
 		LD [SongRate], A
 		RET
 
+;;; The raw wave data is copied from the ROM into RAM. One day we might want to compress it in the ROM?
+;;; At any rate, the reason is simple: while we could pull it from the ROM rather than RAM in theory,
+;;; we can't guarantee that it'll be nicely aligned on a page in ROM, and we'd need to compute/store
+;;; the initial pointer to it to boot. With the waves in RAM at a fixed, page-aligned location,
+;;; it's much faster to switch waves during playback, at the expense of some memory and an upfront speed cost here
 LoadWaves:	LD A, [HLI]			; how many bytes of wave data to load
 		LD B, A
 		LD DE, Waves
@@ -200,6 +210,11 @@ LoadWaves:	LD A, [HLI]			; how many bytes of wave data to load
 		JR NZ, .loop
 		RET
 
+;;; We copy the pointers of the pattern table into RAM from ROM for now. In part this is for the same reason
+;;; as why we copy in the waves - quicker lookup. But there's another reason, too - the pointers given in ROM
+;;; are *relative to the start of the song*, rather than absolute memory addresses. In OffsetTbl below we patch
+;;; the pattern table in RAM and translate it from relative to absolute addresses, so naturally it needs to be in
+;;; RAM.
 LoadPatternTbl:	LD DE, PatternTable
 		LD A, [HLI]			; how many pattern table bytes to load
 		LD B, A
@@ -211,6 +226,7 @@ LoadPatternTbl:	LD DE, PatternTable
 		JR NZ, .loop
 		RET
 
+;;; See the comments about the pattern table above, in LoadPatternTbl
 LoadInstrTbl:	LD DE, InstrumentTbl
 		LD A, [HLI]
 		LD B, A
@@ -224,17 +240,24 @@ LoadInstrTbl:	LD DE, InstrumentTbl
 
 ;;; B = number of BYTES to update
 ;;; HL - pointer to table
-OffsetTbl:	SRL B
+;;; See the comment in LoadPatternTbl above
+OffsetTbl:	SRL B		; B = number of pointers to update
+	;; DE = the beginning of the song that the pointers are currently relative to
 		LD A, [SongBase]
-		LD D, A
-		LD A, [SongBase+1]
 		LD E, A
-.loop:		LD A, D
+		LD A, [SongBase+1]
+		LD D, A
+	;; add DE to each pointer
+.loop:		
+	;; update the least signifigant byte
+		LD A, E
 		ADD [HL]
 		LD [HLI], A
 		JR NC, .nc
 		INC [HL]
-.nc:		LD A, E
+.nc:
+	;; and now the most significant byte
+		LD A, D
 		ADD [HL]
 		LD [HLI], A
 		DEC B
@@ -330,6 +353,7 @@ InitInstrs:	LD HL, ChInstrBases
 		JR NZ, .loop2
 		RET
 
+;;; this should be called every frame; a good pattern is to call it in vblank AFTER updating VRAM
 ;;; each frame, add a "rate" var to a timer variable
 ;;; if the timer wraps around, play the next note
 ;;; this allows tempos as fast as notes 60 per second

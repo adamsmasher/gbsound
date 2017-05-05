@@ -295,6 +295,7 @@ ChSetInstr:
 		LD [HL], D
 		RET
 
+;;; Clears out the octave and pitch adjust control variables
 ClearEffects:   LD HL, ChOctaves
 		XOR A
 		LD B, 4 
@@ -309,6 +310,7 @@ ClearEffects:   LD HL, ChOctaves
 		JR NZ, .loop2
 		RET
 
+;;; Clears out the stored channel frequencies and the per-channel dirty flags that trigger updates
 ClearFreqs:	LD HL, ChFreqs
 		XOR A
 		LD B, 16	; clear both Freqs and Dirties
@@ -317,6 +319,7 @@ ClearFreqs:	LD HL, ChFreqs
 		JR NZ, .loop
 		RET
 
+;;; Clears out the Game Boy's sound registers, which are linearly mapped in memory from $FF10 to $FF35
 ClearSndRegs:	XOR A
 		LD C, $10
 		LD B, 5 * 4	; number of sound registers
@@ -326,12 +329,12 @@ ClearSndRegs:	XOR A
 		JR NZ, .loop
 		RET
 
+;;; Clears the "next pattern" variable, used to store what the next pattern to play is
 InitNextPat:	XOR A
 		LD [NextPattern], A
 		RET
 
-;;; make all the instruments just point to the dummy
-;;; "NullInstr"
+;;; make all the instruments just point to the dummy "NullInstr" that does nothing
 InitInstrs:	LD HL, ChInstrBases
 		LD B, 4
 		LD C, NullInstr & $00FF
@@ -355,9 +358,10 @@ InitInstrs:	LD HL, ChInstrBases
 
 ;;; this should be called every frame; a good pattern is to call it in vblank AFTER updating VRAM
 ;;; each frame, add a "rate" var to a timer variable
-;;; if the timer wraps around, play the next note
+;;; if the timer wraps around, play the next note ("tick")
 ;;; this allows tempos as fast as notes 60 per second
 ;;; or as slow as 1 every ~4s (256 frames at 60fps)
+;;; Even if this frame doesn't trigger a tick, we still update the instruments
 UpdateSndFrame::LD HL, EndOfPat	; test the current pattern over flag
 		LD A, [HL]
 		AND A
@@ -375,6 +379,9 @@ UpdateSndFrame::LD HL, EndOfPat	; test the current pattern over flag
 	;; finally, we tell the hardware to refresh by writing the frequencies
 		JP UpdateHardware
 
+;;; Called whenever the sound engine "ticks"; every frame the song's "rate" variable gets
+;;; added to an 8-bit timer variable, and when the timer wraps around (exceeds 255) 
+;;; we trigger a tick and play the next command on each channel.
 RunSndTick:	CALL TickSongCtrl
 		LD HL, ChNum
 		XOR A
@@ -394,6 +401,15 @@ RunSndTick:	CALL TickSongCtrl
 		JR NZ, .loop
 		RET
 
+;;; A song is divided into "patterns"; all flow control (i.e. looping) is done by pattern
+;;; Moreover, the end of one pattern DOES NOT automatically trigger the playback of the next;
+;;; if a pattern doesn't end with a song end or pattern jump command, the sound engine will
+;;; start executing garbage and likely crash the game
+;;; The execution of a "jump" command will raise an "end of pattern" flag and load the pattern
+;;; to play into a "next pattern" variable; then, when the sound engine ticks again, it will call
+;;; this procedure if the end of pattern flag has been raised to actually load the new pattern in
+;;; This is also how the initial pattern gets loaded - the init routines raise an end of pattern
+;;; condition and set the initial pattern to be the "next pattern".
 PlayNextPat:
 	;; first, figure out what pattern to play
 		LD HL, NextPattern
@@ -417,6 +433,9 @@ PlayNextPat:
 		LD [HL], A
 		RET
 
+;;; Each tick, before playing the next note on each channel, the music engine executes an optional song 
+;;; control command that updates the overall state of the engine. This might be a jump command, a tempo
+;;; control command, etc. - something that has global, rather than per channel effects.
 TickSongCtrl:	CALL PopOpcode
 	;; 0 is a NOP
 		AND A
@@ -430,6 +449,9 @@ TickSongCtrl:	CALL PopOpcode
 		LD L, A
 		JP [HL]
 
+;;; There are two different type of channel commands - note commands and for lack of a better name
+;;; "normal" commands. On any given tick, the music engine will execute, per channel, an arbitrarily
+;;; long sequence of normal commands (ChCmd tail calls back into TickCh) and at most one note.
 TickCh:		CALL PopOpcode
 	;; 0 is a NOP
 		AND A
@@ -437,7 +459,7 @@ TickCh:		CALL PopOpcode
 		DEC A
 	;; all commands have their LSB set to 0 (i.e., the first is 2, then 4...)
 	;; after shifting everything down by 1, that means they now have a 1 in the LSB
-		BIT 0,A
+		BIT 0, A
 		JP NZ, ChCmd
 		LD B, A
 		LD H, ChCurNotes >> 8
@@ -446,6 +468,11 @@ TickCh:		CALL PopOpcode
 		LD [HL], B
 		JP ChNote
 
+;;; Instruments allow the engine to update playback properties of a note while the note is
+;;; being played, allowing for a more diverse range of sounds to be produced by the engine.
+;;; Each *frame* (i.e. always 60Hz) the engine will run an arbitrary number of instrument commands
+;;; for each channel. Every time a new note is played on a channel the engine will restart that channel's
+;;; instrument.
 UpdateInstrs:	LD HL, ChNum
 		XOR A
 		LD [HLI], A
@@ -464,6 +491,7 @@ UpdateInstrs:	LD HL, ChNum
 		JR NZ, .loop
 		RET
 
+;;; Executes an arbitrary number of instrument commands for the channel in ChNum.
 ApplyInstrCh:	LD H, ChInstrPtrs >> 8
 		LD A, [ChNum]
 		ADD A
@@ -500,6 +528,10 @@ ApplyInstrCh:	LD H, ChInstrPtrs >> 8
 		LD L, A
 		JP [HL]
 
+;;; Rather than have different commands update the hardware haphazardly, they update a number
+;;; of state variables; this function, called after all processing is done each frame, then does
+;;; the final hardware updates (only for channels that have been marked "dirty" - the rest are
+;;; untouched)
 UpdateHardware:	LD B, 4		; channel count
 		LD C, $13	; freq register 1
 		LD HL, ChDirty
@@ -538,6 +570,7 @@ ChRstInstr:	LD A, [ChNum]
 		LD [DE], A
 		RET
 
+;;; Plays the next note for ChNum
 ChNote:		CALL ChRstInstr
 		LD A, [ChNum]
 		LD B, A		; B = current channel
@@ -574,6 +607,7 @@ ChCmd:		LD HL, TickCh	; put this on the stack so that we'll try to run the next 
 
 NullInstr:	DB 0
 
+;;; A channel command that silences the channel
 ChKeyOff:	LD A, [ChRegBase]
 		ADD 2		; volume register
 		LD C, A
@@ -600,6 +634,7 @@ ChSetSndLen:	CALL PopOpcode
 		LD [C], A
 		RET
 
+;;; An instrument command that adjusts a channel's volume
 ChVolInstr:	LD H, ChInstrPtrs >> 8
 		LD A, [ChNum]
 		ADD A
@@ -619,6 +654,7 @@ ChVolInstr:	LD H, ChInstrPtrs >> 8
 		SET 0, [HL]
 		RET
 
+;;; An instrument command that adjusts a channel's volume by -128 to +127
 ChPitchInstr:
 	;; get how much to shift the pitch by
 		LD H, ChInstrPtrs >> 8
@@ -644,7 +680,8 @@ ChPitchInstr:
 
 ;;; Hipitch works conceptually by taking an eight bit value, sign extending it to 16-bits,
 ;;; shifting it left by 4 (i.e. multiplying it by 16), and then adding it to
-;;; the current 11-bit pitch.
+;;; the current 11-bit pitch; useful when the pitch instrument command is insufficient for the
+;;; effect desired
 ChHPitchInstr:	
 	;; get how much to shift the pitch by
 		LD H, ChInstrPtrs >> 8

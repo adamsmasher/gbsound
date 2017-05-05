@@ -4,27 +4,74 @@
 
 using namespace std::experimental;
 
-Block::Block() : flagByte(0), commandCount(0) {}
+class BlockImpl {
+public:
+  BlockImpl() : commandCount(0), flagByte(0) {}
+  
+  void addMatch(const Match& match) {
+    this->data.push_back(match.length);
+    this->data.push_back(-match.delta);
+    this->commandCount++;
+  }
 
-void Block::addMatch(const Match& match) {
-  this->data.push_back(match.length);
-  this->data.push_back(-match.delta);
-  this->commandCount++;
+  void addLiteral(char c) {
+    this->data.push_back(c);
+    /* raise the literal flag */
+    this->flagByte |= (1 << this->commandCount);
+    this->commandCount++;
+  }
+
+  void addEOF(void) {
+    this->data.push_back(0);
+  }
+
+  bool isFull(void) const {
+    return this->commandCount == COMMANDS_PER_BLOCK;
+  }
+
+  uint8_t getFlagByte(void) const {
+    return this->flagByte;
+  }
+
+  uint16_t sizeIncludingFlagByte(void) const {
+    return this->data.size() + 1;
+  }
+
+  uint16_t sizeNoFlagByte(void) const {
+    return this->data.size();
+  }
+
+  const char* begin(void) const {
+    return &this->data[0];
+  }
+
+private:
+  std::vector<char> data;
+  uint8_t commandCount;
+  uint8_t flagByte;
+
+  const int COMMANDS_PER_BLOCK = 8;
+};
+
+Block::Block() : impl(std::make_unique<BlockImpl>()) {}
+Block::Block(const BlockImpl& impl) : impl(std::make_unique<BlockImpl>(impl)) {}
+Block::Block(Block&& block) : impl(std::move(block.impl)) {}
+Block::~Block() {}
+
+uint8_t Block::getFlagByte(void) const {
+  return impl->getFlagByte();
 }
 
-void Block::addLiteral(char c) {
-  this->data.push_back(c);
-  /* raise the literal flag */
-  this->flagByte |= (1 << this->commandCount);
-  this->commandCount++;
+uint16_t Block::sizeIncludingFlagByte(void) const {
+  return impl->sizeIncludingFlagByte();
 }
 
-void Block::addEOF(void) {
-  this->data.push_back(0);
+uint16_t Block::sizeNoFlagByte(void) const {
+  return impl->sizeNoFlagByte();
 }
 
-bool Block::isFull(void) const {
-  return this->commandCount == COMMANDS_PER_BLOCK;
+const char* Block::begin(void) const {
+  return impl->begin();
 }
 
 class CompressorImpl {
@@ -38,7 +85,7 @@ public:
   }
 
   Block getNextBlock(void) {
-    Block nextBlock;
+    BlockImpl nextBlock;
 
     while(!nextBlock.isFull() && !this->isDone()) {
       optional<Match> longestMatch = getNextLongestMatch();
@@ -55,7 +102,7 @@ public:
       nextBlock.addEOF();
     }
 
-    return nextBlock;
+    return Block(nextBlock);
   }
 
 private:

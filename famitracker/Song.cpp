@@ -75,16 +75,15 @@ public:
 
   void writeGb(std::ostream& ostream) const {
     for(const auto& block : this->compressedBlocks) {
-      ostream.put(block.flagByte);
-      ostream.write(&block.data[0], block.data.size());
+      ostream.put(block.getFlagByte());
+      ostream.write(block.begin(), block.sizeNoFlagByte());
     }
   }
 
   uint16_t getLength(void) const {
     uint16_t totalSize = 0;
     for(const auto& block : this->compressedBlocks) {
-      // TODO: add block.size()
-      totalSize += 1 + block.data.size();
+      totalSize += block.sizeIncludingFlagByte();
     }
     return totalSize;
   }

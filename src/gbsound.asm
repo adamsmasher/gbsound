@@ -1,5 +1,74 @@
-;;; TODO: implement effects?
-;;; TODO: document/test
+;;; A few key tricks of memory arrangement to keep in mind:
+;;; 
+;;; * we often want to keep two related values together, because e.g.:
+;;;   LD HL, Foo
+;;;   LD [HLI], A
+;;;   LD [HL], B
+;;; is tighter than:
+;;;   LD [Foo], A
+;;;   LD A, B
+;;;   LD [Bar], A
+;;; 
+;;; * aligning arrays of < 256 bytes to a "page" (i.e. the lower byte of the address is $00) allows for fast lookups:
+;;;   LD H, Foos >> 8
+;;;   LD L, A
+;;;   LD A, [HL]
+;;; vs.
+;;;   LD HL, Foos
+;;;   ADD L
+;;;   LD L, A
+;;;   LD A, [HL]
+;;; (or worse, if we don't know whether Foos crosses a page boundary):
+;;;   LD HL, Foos
+;;;   ADD L
+;;;   LD L, A
+;;;   JR NC, .nc
+;;;   INC H
+;;;   .nc: LD A, [HL]
+;;; 
+;;; * you can very quickly switch between consecutive page aligned arrays by incrementing/decrementing H:
+;;;   LD H, Foos >> 8
+;;;   LD L, A
+;;;   LD A, [HL]
+;;;   INC H
+;;;   LD L, B
+;;;   ADD [HL]
+;;; vs.
+;;;   LD H, Foos >> 8
+;;;   LD L, A
+;;;   LD A, [HL]
+;;;   LD H, Bars >> 8
+;;;   LD L, B
+;;;   ADD [HL]
+;;; 
+;;; * you can use the SET/RES instructions to switch between power-of-two packed arrays on the same page; particularly useful when they're associated, e.g.:
+;;;   LD H, Foos >> 8
+;;;   LD L, A
+;;;   LD A, [HL]
+;;;   SET 3, L
+;;;   ADD [HL]
+;;; vs.
+;;;   LD H, Foos >> 8
+;;;   LD L, A
+;;;   LD B, [HL]
+;;;   LD HL, Bars
+;;;   ADD L
+;;;   LD L, A
+;;;   LD A, [HL]
+;;;   ADD B
+;;; or maybe:
+;;;   LD H, Foos >> 8
+;;;   LD L, A
+;;;   LD B, [HL]
+;;;   LD A, 8
+;;;   ADD L
+;;;   LD L, A
+;;;   LD A, [HL]
+;;;   ADD B
+;;; 
+;;; Bear all this in mind when you look at how memory's arranged below and the comments about keeping definitions together.
+;;; I don't claim that the below arrangement is 100% ideal - I could pack more onto single pages and pay only minor costs
+;;; in speed at the expense of getting lots of RAM back - but it's "good enough".
 
 SECTION "MusicVars", BSS
 ;;; where the song starts in ROM

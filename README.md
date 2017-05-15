@@ -61,6 +61,7 @@ I leave it to you to sort that sort of thing out.
 
 ### Song format
 
+```
 1 byte - initial value for $FF24 (aka NR50)
 1 byte - initial value for $FF25 (aka NR51)
 1 byte - tempo control byte
@@ -76,5 +77,6 @@ I leave it to you to sort that sort of thing out.
 
 m bytes - instrument code
 n bytes - compressed pattern code
+```
 
 _TODO: document the instrument code, pattern code_
